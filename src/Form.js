@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { firestore } from './firebase';
 
 const Form = () => {
-  const [id, setId] = useState('');
+  const [numbering, setNumbering] = useState(1); // Initial numbering value
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
   const [tags, setTags] = useState('');
@@ -13,7 +13,7 @@ const Form = () => {
 
     try {
       const docRef = await firestore.collection('lyrics').add({
-        id: parseInt(id), // Convert id to a number
+        numbering, // Include the numbering value
         title,
         artist,
         tags: tags.split(',').map((tag) => tag.trim()),
@@ -22,7 +22,7 @@ const Form = () => {
       console.log('Document written with ID:', docRef.id);
 
       // Reset form fields
-      setId('');
+      setNumbering(numbering + 1); // Increment the numbering value
       setTitle('');
       setArtist('');
       setTags('');
@@ -36,9 +36,9 @@ const Form = () => {
     <form onSubmit={handleSubmit}>
       <input
         type="number"
-        placeholder="Id"
-        value={id}
-        onChange={(e) => setId(e.target.value)}
+        placeholder="Numbering"
+        value={numbering}
+        onChange={(e) => setNumbering(parseInt(e.target.value))}
       />
       <input
         type="text"

@@ -1,0 +1,102 @@
+.song-list-container {
+    width: 500px;
+    margin: 0 auto;
+    font-family: Arial, sans-serif;
+    padding-bottom: 50px;
+  }
+  
+  h2 {
+    text-align: center;
+    margin-top: 30px;
+    color: #333;
+  }
+  
+  .song-list {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  .song-item {
+    margin-bottom: 20px;
+    border: 1px solid #ccc;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .song-id {
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+  
+  .edit-input,
+  .edit-textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    margin-bottom: 10px;
+  }
+  
+  .save-button,
+  .edit-button,
+  .delete-button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    cursor: pointer;
+    border-radius: 3px;
+    font-weight: bold;
+    margin-right: 5px;
+    transition: background-color 0.3s ease;
+  }
+  
+  .save-button:hover,
+  .edit-button:hover,
+  .delete-button:hover {
+    background-color: #0056b3;
+  }
+  
+  .confirm-delete {
+    font-size: 14px;
+    color: #ff0000;
+    margin-top: 10px;
+  }
+  
+  .confirm-delete button {
+    background-color: #ff0000;
+    margin-left: 10px;
+  }
+  
+  .confirm-delete button:hover {
+    background-color: #cc0000;
+  }
+  
+  .song-title,
+  .song-numbering,
+  .song-artist,
+  .song-tags {
+    margin-bottom: 5px;
+  }
+  
+  .edit-label {
+    font-weight: bold;
+  }
+  
+  .edit-container {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .edit-container > * {
+    margin-bottom: 10px;
+  }
+  
+  @media (max-width: 600px) {
+    .song-list-container {
+      width: 90%;
+    }
+  }
+  
