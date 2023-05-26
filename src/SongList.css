@@ -93,6 +93,25 @@
   .edit-container > * {
     margin-bottom: 10px;
   }
+
+  .search-container {
+    margin-bottom: 20px;
+  }
+  
+  .search-input {
+    width: 100%;
+    padding: 8px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  
+  .search-input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  }
+  
   
   @media (max-width: 600px) {
     .song-list-container {

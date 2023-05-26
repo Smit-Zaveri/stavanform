@@ -10,6 +10,8 @@ const SongList = () => {
   const [editArtist, setEditArtist] = useState('');
   const [editTags, setEditTags] = useState('');
   const [editContent, setEditContent] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -27,6 +29,25 @@ const SongList = () => {
 
     fetchData();
   }, []);
+
+  useEffect(() => {
+    const performSearch = () => {
+      const searchTerm = searchInput.toLowerCase();
+      const filteredSongs = songs.filter((song) => {
+        const { title, numbering, tags } = song;
+        const lowercaseNumbering = String(numbering).toLowerCase(); // Convert numbering to string before calling toLowerCase
+        return (
+          title.toLowerCase().includes(searchTerm) ||
+          lowercaseNumbering.includes(searchTerm) ||
+          tags.some((tag) => tag.toLowerCase().includes(searchTerm))
+        );
+      });
+      setSearchResults(filteredSongs);
+    };
+  
+    performSearch();
+  }, [searchInput, songs]);
+  
 
   const handleDelete = async (id) => {
     try {
@@ -82,8 +103,17 @@ const SongList = () => {
   return (
     <div className="song-list-container">
       <h2>Song List</h2>
+      <div className="search-container">
+        <input
+          type="text"
+          className="search-input"
+          placeholder="Search by title, numbering, or tag"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+        />
+      </div>
       <ul className="song-list">
-        {songs.map((song) => (
+        {searchResults.map((song) => (
           <li key={song.id} className="song-item">
             <div className="song-id">ID: {song.id}</div>
             {editId === song.id ? (
