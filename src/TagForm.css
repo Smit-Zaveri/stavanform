@@ -83,13 +83,3 @@
   cursor: pointer;
 }
 
-/* Additional CSS for the laptop layout */
-@media (min-width: 1024px) {
-  .tag-list {
-    flex-wrap: nowrap;
-  }
-  
-  .tag-item {
-    margin-right: 10px;
-  }
-}
