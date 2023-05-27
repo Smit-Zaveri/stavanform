@@ -1,105 +1,95 @@
+/* TagForm.css */
+
+.tag-form-container {
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 20px;
+  text-transform: capitalize;
+}
+
 .tag-form {
-    display: flex;
-    align-items: center;
-    margin-bottom: 10px;
-  }
-  
-  .tag-form input[type="text"] {
-    flex: 1;
-    padding: 12px;
-    font-size: 16px;
-    border: none;
-    border-radius: 4px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-  
-  .tag-form button[type="submit"] {
-    padding: 12px 20px;
-    font-size: 14px;
-    background-color: #4caf50;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-  
+  display: flex;
+}
+
+.tag-form input[type="text"] {
+  flex-grow: 1;
+  padding: 10px;
+  border-radius: 5px;
+  margin-right: 10px;
+  border: 1px solid #ccc;
+}
+
+.tag-form button[type="submit"] {
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: #fff;
+  border-radius: 5px;
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+}
+
+.tag-list {
+  margin-top: 20px;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.tag-item {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  margin-right: 10px;
+  margin-bottom: 10px;
+  background-color: #f2f2f2;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.tag-item span {
+  margin-right: 5px;
+}
+
+.tag-item button {
+  padding: 5px 10px;
+  background-color: #ff5555;
+  font-weight: bold;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.confirm-dialog {
+  margin-top: 20px;
+  padding: 10px;
+  background-color: #f2f2f2;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.confirm-dialog p {
+  margin-bottom: 10px;
+}
+
+.confirm-dialog button {
+  padding: 5px 10px;
+  margin-right: 10px;
+  background-color: #ff5555;
+  border-radius: 5px;
+  font-weight: bold;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+}
+
+/* Additional CSS for the laptop layout */
+@media (min-width: 1024px) {
   .tag-list {
-    display: flex;
-    flex-direction: column;
+    flex-wrap: nowrap;
   }
   
   .tag-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px;
-    border-bottom: 1px solid #ccc;
-    transition: background-color 0.3s ease;
-  }
-  
-  .tag-item:last-child {
-    border-bottom: none;
-  }
-  
-  .tag-item span {
-    font-size: 18px;
-    font-weight: bold;
-  }
-  
-  .tag-item button {
-    padding: 8px 12px;
-    font-size: 14px;
-    background-color: #ff0000;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-  
-  .tag-item button:hover {
-    background-color: #cc0000;
-  }
-  
-  .confirm-dialog {
-    margin-top: 10px;
-    padding: 12px;
-    background-color: #f2f2f2;
-    border-radius: 4px;
-  }
-  
-  .confirm-dialog p {
-    font-size: 16px;
-    margin-bottom: 10px;
-  }
-  
-  .confirm-dialog button {
-    padding: 8px 12px;
-    font-size: 14px;
     margin-right: 10px;
-    background-color: #4caf50;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
   }
-  
-  .confirm-dialog button:last-child {
-    background-color: #ff0000;
-  }
-  
-  .confirm-dialog button:hover {
-    background-color: #3d8b3d;
-  }
-  
-  @media (max-width: 480px) {
-    .tag-form {
-      flex-direction: column;
-    }
-    
-    .tag-form input[type="text"] {
-      margin-bottom: 10px;
-    }
-  }
-  
+}

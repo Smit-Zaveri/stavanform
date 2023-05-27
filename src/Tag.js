@@ -29,11 +29,11 @@ const TagForm = () => {
 
     try {
       const docRef = await firestore.collection('tags').add({
-        name: tagName,
+        name: tagName.toLowerCase(),
       });
       console.log('Tag added successfully');
 
-      const updatedTags = [...tags, { id: docRef.id, name: tagName }];
+      const updatedTags = [...tags, { id: docRef.id, name: tagName.toLowerCase() }];
       setTags(updatedTags);
       setTagName('');
     } catch (error) {
@@ -63,7 +63,7 @@ const TagForm = () => {
   };
 
   return (
-    <div>
+    <div className="tag-form-container">
       <form onSubmit={handleSubmit} className="tag-form">
         <input
           type="text"

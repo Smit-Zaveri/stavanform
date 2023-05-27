@@ -68,7 +68,7 @@ const SongList = () => {
         title: editTitle,
         numbering: editNumbering,
         artist: editArtist,
-        tags: editTags.split(',').map((tag) => tag.trim()),
+        tags: editTags.split(',').map((tag) => tag.trim().toLowerCase()), // Convert tags to lowercase
         content: editContent,
       });
       console.log('Document updated with ID:', id);

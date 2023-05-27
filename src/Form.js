@@ -16,7 +16,7 @@ const Form = () => {
         numbering, // Include the numbering value
         title,
         artist,
-        tags: tags.split(',').map((tag) => tag.trim()),
+        tags: tags.split(',').map((tag) => tag.trim().toLowerCase()), // Convert tags to lowercase
         content,
       });
       console.log('Document written with ID:', docRef.id);
@@ -33,37 +33,52 @@ const Form = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form className="form" onSubmit={handleSubmit}>
+      <label className="form-label">Numbering:</label>
       <input
         type="number"
+        className="form-input"
         placeholder="Numbering"
         value={numbering}
         onChange={(e) => setNumbering(parseInt(e.target.value))}
       />
+
+      <label className="form-label">Title:</label>
       <input
         type="text"
+        className="form-input"
         placeholder="Title"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
       />
+
+      <label className="form-label">Artist:</label>
       <input
         type="text"
+        className="form-input"
         placeholder="Artist"
         value={artist}
         onChange={(e) => setArtist(e.target.value)}
       />
+
+      <label className="form-label">Tags (comma-separated):</label>
       <input
         type="text"
-        placeholder="Tags (comma-separated)"
+        className="form-input"
+        placeholder="Tags"
         value={tags}
         onChange={(e) => setTags(e.target.value)}
       />
+
+      <label className="form-label">Content:</label>
       <textarea
+        className="form-textarea"
         placeholder="Content"
         value={content}
         onChange={(e) => setContent(e.target.value)}
       />
-      <button type="submit">Submit</button>
+
+      <button type="submit" className="form-button">Submit</button>
     </form>
   );
 };
