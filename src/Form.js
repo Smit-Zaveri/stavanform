@@ -1,34 +1,38 @@
-import React, { useState } from 'react';
-import { firestore } from './firebase';
+import React, { useState } from "react";
+import { firestore } from "./firebase";
 
 const Form = () => {
   const [numbering, setNumbering] = useState(1); // Initial numbering value
-  const [title, setTitle] = useState('');
-  const [artist, setArtist] = useState('');
-  const [tags, setTags] = useState('');
-  const [content, setContent] = useState('');
+  const [title, setTitle] = useState("");
+  const [artist, setArtist] = useState("");
+  const [tags, setTags] = useState("");
+  const [content, setContent] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      const docRef = await firestore.collection('lyrics').add({
+      if (!title || !numbering || !artist || !tags || !content) {
+        console.log("Form fields are empty. Cannot submit.");
+        return;
+      }
+      const docRef = await firestore.collection("lyrics").add({
         numbering, // Include the numbering value
         title,
         artist,
-        tags: tags.split(',').map((tag) => tag.trim().toLowerCase()), // Convert tags to lowercase
+        tags: tags.split(",").map((tag) => tag.trim().toLowerCase()), // Convert tags to lowercase
         content,
       });
-      console.log('Document written with ID:', docRef.id);
+      console.log("Document written with ID:", docRef.id);
 
       // Reset form fields
       setNumbering(numbering + 1); // Increment the numbering value
-      setTitle('');
-      setArtist('');
-      setTags('');
-      setContent('');
+      setTitle("");
+      setArtist("");
+      setTags("");
+      setContent("");
     } catch (error) {
-      console.error('Error adding document:', error);
+      console.error("Error adding document:", error);
     }
   };
 
@@ -78,7 +82,9 @@ const Form = () => {
         onChange={(e) => setContent(e.target.value)}
       />
 
-      <button type="submit" className="form-button">Submit</button>
+      <button type="submit" className="form-button">
+        Submit
+      </button>
     </form>
   );
 };

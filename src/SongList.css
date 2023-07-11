@@ -40,9 +40,20 @@ h2 {
 }
 
 .save-button,
-.edit-button,
-.delete-button {
+.edit-button {
   background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  cursor: pointer;
+  border-radius: 3px;
+  font-weight: bold;
+  margin-right: 5px;
+  transition: background-color 0.3s ease;
+}
+
+.delete-button {
+  background-color: #ff0000;
   color: white;
   border: none;
   padding: 8px 16px;
@@ -90,7 +101,7 @@ h2 {
   flex-direction: column;
 }
 
-.edit-container > * {
+.edit-container>* {
   margin-bottom: 10px;
 }
 
@@ -118,4 +129,3 @@ h2 {
     width: 90%;
   }
 }
-

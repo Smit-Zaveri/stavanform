@@ -1,23 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import { firestore } from './firebase';
-import './TagForm.css';
+import React, { useState, useEffect } from "react";
+import { firestore } from "./firebase";
+import "./TagForm.css";
 
 const TagForm = () => {
   const [tags, setTags] = useState([]);
-  const [tagName, setTagName] = useState('');
+  const [tagName, setTagName] = useState("");
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
   useEffect(() => {
     const fetchTags = async () => {
       try {
-        const snapshot = await firestore.collection('tags').get();
+        const snapshot = await firestore.collection("tags").get();
         const fetchedTags = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
         setTags(fetchedTags);
       } catch (error) {
-        console.error('Error fetching tags:', error);
+        console.error("Error fetching tags:", error);
       }
     };
 
@@ -28,16 +28,23 @@ const TagForm = () => {
     e.preventDefault();
 
     try {
-      const docRef = await firestore.collection('tags').add({
+      if (!tagName) {
+        console.log("Form fields are empty. Cannot submit.");
+        return;
+      }
+      const docRef = await firestore.collection("tags").add({
         name: tagName.toLowerCase(),
       });
-      console.log('Tag added successfully');
+      console.log("Tag added successfully");
 
-      const updatedTags = [...tags, { id: docRef.id, name: tagName.toLowerCase() }];
+      const updatedTags = [
+        ...tags,
+        { id: docRef.id, name: tagName.toLowerCase() },
+      ];
       setTags(updatedTags);
-      setTagName('');
+      setTagName("");
     } catch (error) {
-      console.error('Error adding tag:', error);
+      console.error("Error adding tag:", error);
     }
   };
 
@@ -47,14 +54,14 @@ const TagForm = () => {
 
   const confirmDelete = async () => {
     try {
-      await firestore.collection('tags').doc(confirmDeleteId).delete();
-      console.log('Tag deleted successfully');
+      await firestore.collection("tags").doc(confirmDeleteId).delete();
+      console.log("Tag deleted successfully");
 
       const updatedTags = tags.filter((tag) => tag.id !== confirmDeleteId);
       setTags(updatedTags);
       setConfirmDeleteId(null);
     } catch (error) {
-      console.error('Error deleting tag:', error);
+      console.error("Error deleting tag:", error);
     }
   };
 
@@ -85,7 +92,12 @@ const TagForm = () => {
         <div className="confirm-dialog">
           <p>Are you sure you want to delete this tag?</p>
           <div>
-            <button onClick={confirmDelete}>Confirm</button>
+            <button
+              style={{ backgroundColor: "#007bff" }}
+              onClick={confirmDelete}
+            >
+              Confirm
+            </button>
             <button onClick={cancelDelete}>Cancel</button>
           </div>
         </div>
