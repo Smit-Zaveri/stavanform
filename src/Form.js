@@ -12,7 +12,7 @@ const Form = () => {
     e.preventDefault();
 
     try {
-      if (!title || !numbering || !artist || !tags || !content) {
+      if (!title || !numbering || !tags || !content) {
         console.log("Form fields are empty. Cannot submit.");
         return;
       }
