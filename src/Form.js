@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import { firestore } from "./firebase";
+import firebase from "firebase/compat/app";
+import "firebase/firestore";
 
 const Form = () => {
   const [numbering, setNumbering] = useState(1); // Initial numbering value
@@ -7,6 +9,26 @@ const Form = () => {
   const [artist, setArtist] = useState("");
   const [tags, setTags] = useState("");
   const [content, setContent] = useState("");
+  const [youtube, setYoutube] = useState("");
+  const [artistOptions, setArtistOptions] = useState([]);
+
+  useEffect(() => {
+    // Fetch the artist options from the artist collection
+    const fetchArtistOptions = async () => {
+      try {
+        const snapshot = await firestore.collection("artists").get();
+        const artistList = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setArtistOptions(artistList);
+      } catch (error) {
+        console.error("Error fetching artist options:", error);
+      }
+    };
+
+    fetchArtistOptions();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -16,17 +38,22 @@ const Form = () => {
         console.log("Form fields are empty. Cannot submit.");
         return;
       }
+
+      const publishDate = firebase.firestore.Timestamp.now(); // Get the current timestamp
+
       const docRef = await firestore.collection("lyrics").add({
-        numbering, // Include the numbering value
+        numbering,
         title,
         artist,
-        tags: tags.split(",").map((tag) => tag.trim().toLowerCase()), // Convert tags to lowercase
+        tags: tags.split(",").map((tag) => tag.trim().toLowerCase()),
         content,
+        youtube, // Add the youtubeLink field
+        publishDate,
       });
       console.log("Document written with ID:", docRef.id);
 
       // Reset form fields
-      setNumbering(numbering + 1); // Increment the numbering value
+      setNumbering(numbering + 1);
       setTitle("");
       setArtist("");
       setTags("");
@@ -57,13 +84,18 @@ const Form = () => {
       />
 
       <label className="form-label">Artist:</label>
-      <input
-        type="text"
+      <select
         className="form-input"
-        placeholder="Artist"
         value={artist}
         onChange={(e) => setArtist(e.target.value)}
-      />
+      >
+        <option value="">Select an artist</option>
+        {artistOptions.map((option) => (
+          <option key={option.id} value={option.name}>
+            {option.name}
+          </option>
+        ))}
+      </select>
 
       <label className="form-label">Tags (comma-separated):</label>
       <input
@@ -72,6 +104,15 @@ const Form = () => {
         placeholder="Tags"
         value={tags}
         onChange={(e) => setTags(e.target.value)}
+      />
+
+      <label className="form-label">YouTube Link:</label>
+      <input
+        type="text"
+        className="form-input"
+        placeholder="YouTube Link"
+        value={youtube}
+        onChange={(e) => setYoutube(e.target.value)}
       />
 
       <label className="form-label">Content:</label>

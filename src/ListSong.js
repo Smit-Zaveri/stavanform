@@ -6,9 +6,11 @@ const SongList = () => {
   const [songs, setSongs] = useState([]);
   const [editId, setEditId] = useState("");
   const [editTitle, setEditTitle] = useState("");
+  const [artistOptions, setArtistOptions] = useState([]);
   const [editNumbering, setEditNumbering] = useState("");
   const [editArtist, setEditArtist] = useState("");
   const [editTags, setEditTags] = useState("");
+  const [editYoutubeLink, setEditYoutubeLink] = useState("");
   const [editContent, setEditContent] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -28,6 +30,23 @@ const SongList = () => {
     };
 
     fetchData();
+  }, []);
+
+  useEffect(() => {
+    const fetchArtistOptions = async () => {
+      try {
+        const snapshot = await firestore.collection("artists").get();
+        const artistList = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setArtistOptions(artistList);
+      } catch (error) {
+        console.error("Error fetching artist options:", error);
+      }
+    };
+
+    fetchArtistOptions();
   }, []);
 
   useEffect(() => {
@@ -82,15 +101,18 @@ const SongList = () => {
           title: editTitle,
           numbering: editNumbering,
           artist: editArtist,
-          tags: editTags.split(",").map((tag) => tag.trim().toLowerCase()), // Convert tags to lowercase
+          tags: editTags.split(",").map((tag) => tag.trim().toLowerCase()),
           content: editContent,
+          youtube: editYoutubeLink, // Add the youtubeLink field
         });
+
       console.log("Document updated with ID:", id);
       setEditId("");
       setEditTitle("");
       setEditNumbering("");
       setEditArtist("");
       setEditTags("");
+      setEditYoutubeLink("");
       setEditContent("");
 
       // Refresh the data
@@ -111,6 +133,7 @@ const SongList = () => {
     setEditNumbering(song.numbering);
     setEditArtist(song.artist);
     setEditTags(song.tags.join(", "));
+    setEditYoutubeLink(song.youtube);
     setEditContent(song.content);
   };
 
@@ -147,12 +170,20 @@ const SongList = () => {
                   onChange={(e) => setEditNumbering(e.target.value)}
                 />
                 <label>Artist:</label>
-                <input
-                  type="text"
+                <label>Artist:</label>
+                <select
                   className="edit-input"
                   value={editArtist}
                   onChange={(e) => setEditArtist(e.target.value)}
-                />
+                >
+                  <option value="">Select an artist</option>
+                  {artistOptions.map((option) => (
+                    <option key={option.id} value={option.name}>
+                      {option.name}
+                    </option>
+                  ))}
+                </select>
+
                 <label>Tags:</label>
                 <input
                   type="text"
@@ -160,6 +191,14 @@ const SongList = () => {
                   value={editTags}
                   onChange={(e) => setEditTags(e.target.value)}
                 />
+                <label>YouTube Link:</label>
+                <input
+                  type="text"
+                  className="edit-input"
+                  value={editYoutubeLink}
+                  onChange={(e) => setEditYoutubeLink(e.target.value)}
+                />
+
                 <label>Content:</label>
                 <textarea
                   className="edit-textarea"
