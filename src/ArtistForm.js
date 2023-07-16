@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { firestore } from "./firebase"; // Import the 'firestore' module from the Firebase SDK
-
+import "./ArtistForm.css";
 const ArtistForm = () => {
   const [name, setName] = useState("");
   const [pictureUrl, setPictureUrl] = useState("");
@@ -120,7 +120,7 @@ const ArtistForm = () => {
   };
 
   return (
-    <div>
+    <div className="artist-form-container">
       <form className="form" onSubmit={handleSubmit}>
         <label className="form-label">Name:</label>
         <input
@@ -151,7 +151,7 @@ const ArtistForm = () => {
         <h2>Artists:</h2>
         <ul>
           {artists.map((artist) => (
-            <li key={artist.id}>
+            <li key={artist.id} className="artist-item">
               {editingArtistId === artist.id ? (
                 <>
                   <input
@@ -169,16 +169,30 @@ const ArtistForm = () => {
                     onChange={(e) => setEditingPictureUrl(e.target.value)}
                   />
                   {error && <p className="form-error">{error}</p>}
-                  <button onClick={handleSaveEdit}>Save</button>
-                  <button onClick={handleCancelEdit}>Cancel</button>
+                  <button className="save-button" onClick={handleSaveEdit}>
+                    Save
+                  </button>
+                  <button className="cancel-button" onClick={handleCancelEdit}>
+                    Cancel
+                  </button>
                 </>
               ) : (
                 <>
-                  {artist.name}{" "}
-                  <button onClick={() => handleDeleteArtist(artist.id)}>
-                    Delete
-                  </button>{" "}
-                  <button onClick={() => handleEditArtist(artist)}>Edit</button>
+                  <div className="artist-name">{artist.name}</div>
+                  <div className="artist-actions">
+                    <button
+                      className="edit-button"
+                      onClick={() => handleEditArtist(artist)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="delete-button"
+                      onClick={() => handleDeleteArtist(artist.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </>
               )}
             </li>

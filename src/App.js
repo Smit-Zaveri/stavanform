@@ -10,6 +10,8 @@ import LabelIcon from "@mui/icons-material/Label";
 import MusicNoteIcon from "@mui/icons-material/MusicNote";
 import { useState } from "react";
 import ArtistForm from "./ArtistForm";
+import Catagory from "./Catagory";
+import CollectionForm from "./CollectionForm";
 
 const App = () => {
   const [selectedTab, setSelectedTab] = useState(0);
@@ -24,7 +26,9 @@ const App = () => {
       {selectedTab === 0 && <Form />}
       {selectedTab === 1 && <Tag />}
       {selectedTab === 2 && <ArtistForm />}
-      {selectedTab === 3 && <SongList />}
+      {selectedTab === 3 && <Catagory />}
+      {selectedTab === 4 && <CollectionForm />}
+      {selectedTab === 5 && <SongList />}
 
       <BottomNavigation
         sx={{ position: "fixed", bottom: 0, left: 0, right: 0 }}
@@ -35,6 +39,14 @@ const App = () => {
         <BottomNavigationAction label="Form" icon={<EditIcon />} />
         <BottomNavigationAction label="Tag" icon={<LabelIcon />} />
         <BottomNavigationAction label="Artist Form" icon={<MusicNoteIcon />} />
+        <BottomNavigationAction
+          label="Category Form"
+          icon={<MusicNoteIcon />}
+        />
+        <BottomNavigationAction
+          label="Collection Form"
+          icon={<MusicNoteIcon />}
+        />
         <BottomNavigationAction label="List Song" icon={<MusicNoteIcon />} />
       </BottomNavigation>
     </div>

@@ -13,8 +13,11 @@ const SongList = () => {
   const [editYoutubeLink, setEditYoutubeLink] = useState("");
   const [editContent, setEditContent] = useState("");
   const [searchInput, setSearchInput] = useState("");
+  const [collectionList, setCollectionList] = useState([]);
+
   const [searchResults, setSearchResults] = useState([]);
   const [reports, setReports] = useState([]);
+  const [selectedCollection, setSelectedCollection] = useState("");
 
   useEffect(() => {
     const fetchReports = async () => {
@@ -46,7 +49,7 @@ const SongList = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const snapshot = await firestore.collection("lyrics").get();
+        const snapshot = await firestore.collection(selectedCollection).get();
         const songsData = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
@@ -58,7 +61,7 @@ const SongList = () => {
     };
 
     fetchData();
-  }, []);
+  }, [selectedCollection]);
 
   useEffect(() => {
     const fetchArtistOptions = async () => {
@@ -75,6 +78,24 @@ const SongList = () => {
     };
 
     fetchArtistOptions();
+  }, []);
+
+  useEffect(() => {
+    // Fetch the collection list from the "collections" collection
+    const fetchCollectionList = async () => {
+      try {
+        const snapshot = await firestore.collection("collections").get();
+        const collectionList = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setCollectionList(collectionList);
+      } catch (error) {
+        console.error("Error fetching collection list:", error);
+      }
+    };
+
+    fetchCollectionList();
   }, []);
 
   useEffect(() => {
@@ -101,7 +122,7 @@ const SongList = () => {
         "Are you sure you want to delete this song?"
       );
       if (confirmation) {
-        await firestore.collection("lyrics").doc(id).delete();
+        await firestore.collection(selectedCollection).doc(id).delete();
         setSongs(songs.filter((song) => song.id !== id));
         console.log("Document deleted with ID:", id);
       }
@@ -123,7 +144,7 @@ const SongList = () => {
         return;
       }
       await firestore
-        .collection("lyrics")
+        .collection(selectedCollection)
         .doc(id)
         .update({
           title: editTitle,
@@ -144,7 +165,7 @@ const SongList = () => {
       setEditContent("");
 
       // Refresh the data
-      const snapshot = await firestore.collection("lyrics").get();
+      const snapshot = await firestore.collection(selectedCollection).get();
       const songsData = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
@@ -168,6 +189,26 @@ const SongList = () => {
   return (
     <div className="song-list-container">
       <h2>Song List</h2>
+      <div className="collection-select">
+        <label>Select Collection:</label>
+        <select
+          className="form-input"
+          value={selectedCollection}
+          onChange={(e) => setSelectedCollection(e.target.value)}
+        >
+          <option value="">Select a collection</option>
+          <option selected value="lyrics">
+            {" "}
+            lyrics
+          </option>
+          {collectionList.map((collection) => (
+            <option key={collection.id} value={collection.name}>
+              {collection.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <div className="search-container">
         <input
           type="text"
@@ -180,14 +221,23 @@ const SongList = () => {
       <ul className="song-list">
         {[
           ...searchResults.filter((song) =>
-            reports.some((report) => report.lyricsId === song.id)
+            reports.some(
+              (report) =>
+                report.lyricsId === song.id && report.lyricsTitle === song.title
+            )
           ),
           ...searchResults.filter(
-            (song) => !reports.some((report) => report.lyricsId === song.id)
+            (song) =>
+              !reports.some(
+                (report) =>
+                  report.lyricsId === song.id &&
+                  report.lyricsTitle === song.title
+              )
           ),
         ].map((song) => {
           const hasReport = reports.some(
-            (report) => report.lyricsId === song.id
+            (report) =>
+              report.lyricsId === song.id && report.lyricsTitle === song.title
           );
           return (
             <li
@@ -277,7 +327,10 @@ const SongList = () => {
                 </div>
               )}{" "}
               {reports.map((report) => {
-                if (report.lyricsId === song.id) {
+                if (
+                  report.lyricsId === song.id &&
+                  report.lyricsTitle === song.title
+                ) {
                   return (
                     <div key={report.id} className="report-item">
                       <div className="report-text">{report.reportText}</div>
