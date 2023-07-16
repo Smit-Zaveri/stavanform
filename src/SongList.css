@@ -39,6 +39,34 @@ h2 {
   margin-bottom: 10px;
 }
 
+.song-item.has-report {
+  background-color: #ffcccc;
+  /* Set the desired background color */
+}
+
+.report-item {
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  padding: 10px;
+  margin-top: 10px;
+}
+
+.report-text {
+  margin-bottom: 5px;
+}
+
+.resolve-button {
+  background-color: #4caf50;
+  color: #fff;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.resolve-button:hover {
+  background-color: #45a049;
+}
+
 .save-button,
 .edit-button {
   background-color: #007bff;

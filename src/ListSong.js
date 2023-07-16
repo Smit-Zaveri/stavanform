@@ -14,6 +14,34 @@ const SongList = () => {
   const [editContent, setEditContent] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [searchResults, setSearchResults] = useState([]);
+  const [reports, setReports] = useState([]);
+
+  useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        const snapshot = await firestore.collection("reports").get();
+        const reportsData = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setReports(reportsData);
+      } catch (error) {
+        console.error("Error fetching reports:", error);
+      }
+    };
+
+    fetchReports();
+  }, []);
+
+  const handleResolve = async (id) => {
+    try {
+      await firestore.collection("reports").doc(id).delete();
+      setReports(reports.filter((report) => report.id !== id));
+      console.log("Report resolved and deleted with ID:", id);
+    } catch (error) {
+      console.error("Error deleting report:", error);
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -150,92 +178,123 @@ const SongList = () => {
         />
       </div>
       <ul className="song-list">
-        {searchResults.map((song) => (
-          <li key={song.id} className="song-item">
-            <div className="song-id">ID: {song.id}</div>
-            {editId === song.id ? (
-              <div>
-                <label>Title:</label>
-                <input
-                  type="text"
-                  className="edit-input"
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                />
-                <label>Numbering:</label>
-                <input
-                  type="text"
-                  className="edit-input"
-                  value={editNumbering}
-                  onChange={(e) => setEditNumbering(e.target.value)}
-                />
-                <label>Artist:</label>
-                <label>Artist:</label>
-                <select
-                  className="edit-input"
-                  value={editArtist}
-                  onChange={(e) => setEditArtist(e.target.value)}
-                >
-                  <option value="">Select an artist</option>
-                  {artistOptions.map((option) => (
-                    <option key={option.id} value={option.name}>
-                      {option.name}
-                    </option>
-                  ))}
-                </select>
+        {[
+          ...searchResults.filter((song) =>
+            reports.some((report) => report.lyricsId === song.id)
+          ),
+          ...searchResults.filter(
+            (song) => !reports.some((report) => report.lyricsId === song.id)
+          ),
+        ].map((song) => {
+          const hasReport = reports.some(
+            (report) => report.lyricsId === song.id
+          );
+          return (
+            <li
+              key={song.id}
+              className={`song-item ${hasReport ? "has-report" : ""}`}
+            >
+              <div className="song-id">ID: {song.id}</div>
+              {editId === song.id ? (
+                <div>
+                  <label>Title:</label>
+                  <input
+                    type="text"
+                    className="edit-input"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                  />
+                  <label>Numbering:</label>
+                  <input
+                    type="text"
+                    className="edit-input"
+                    value={editNumbering}
+                    onChange={(e) => setEditNumbering(e.target.value)}
+                  />
+                  <label>Artist:</label>
+                  <label>Artist:</label>
+                  <select
+                    className="edit-input"
+                    value={editArtist}
+                    onChange={(e) => setEditArtist(e.target.value)}
+                  >
+                    <option value="">Select an artist</option>
+                    {artistOptions.map((option) => (
+                      <option key={option.id} value={option.name}>
+                        {option.name}
+                      </option>
+                    ))}
+                  </select>
 
-                <label>Tags:</label>
-                <input
-                  type="text"
-                  className="edit-input"
-                  value={editTags}
-                  onChange={(e) => setEditTags(e.target.value)}
-                />
-                <label>YouTube Link:</label>
-                <input
-                  type="text"
-                  className="edit-input"
-                  value={editYoutubeLink}
-                  onChange={(e) => setEditYoutubeLink(e.target.value)}
-                />
+                  <label>Tags:</label>
+                  <input
+                    type="text"
+                    className="edit-input"
+                    value={editTags}
+                    onChange={(e) => setEditTags(e.target.value)}
+                  />
+                  <label>YouTube Link:</label>
+                  <input
+                    type="text"
+                    className="edit-input"
+                    value={editYoutubeLink}
+                    onChange={(e) => setEditYoutubeLink(e.target.value)}
+                  />
 
-                <label>Content:</label>
-                <textarea
-                  className="edit-textarea"
-                  value={editContent}
-                  onChange={(e) => setEditContent(e.target.value)}
-                />
-                <button
-                  className="save-button"
-                  onClick={() => handleEdit(song.id)}
-                >
-                  Save
-                </button>
-              </div>
-            ) : (
-              <div>
-                <div className="song-title">Title: {song.title}</div>
-                <div className="song-numbering">
-                  Numbering: {song.numbering}
+                  <label>Content:</label>
+                  <textarea
+                    className="edit-textarea"
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                  />
+                  <button
+                    className="save-button"
+                    onClick={() => handleEdit(song.id)}
+                  >
+                    Save
+                  </button>
                 </div>
-                <div className="song-artist">Artist: {song.artist}</div>
-                <div className="song-tags">Tags: {song.tags.join(", ")}</div>
-                <button
-                  className="edit-button"
-                  onClick={() => handleEditClick(song)}
-                >
-                  Edit
-                </button>
-                <button
-                  className="delete-button"
-                  onClick={() => handleDelete(song.id)}
-                >
-                  Delete
-                </button>
-              </div>
-            )}
-          </li>
-        ))}
+              ) : (
+                <div>
+                  <div className="song-title">Title: {song.title}</div>
+                  <div className="song-numbering">
+                    Numbering: {song.numbering}
+                  </div>
+                  <div className="song-artist">Artist: {song.artist}</div>
+                  <div className="song-tags">Tags: {song.tags.join(", ")}</div>
+                  <button
+                    className="edit-button"
+                    onClick={() => handleEditClick(song)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    className="delete-button"
+                    onClick={() => handleDelete(song.id)}
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}{" "}
+              {reports.map((report) => {
+                if (report.lyricsId === song.id) {
+                  return (
+                    <div key={report.id} className="report-item">
+                      <div className="report-text">{report.reportText}</div>
+                      <button
+                        className="resolve-button"
+                        onClick={() => handleResolve(report.id)}
+                      >
+                        Resolve
+                      </button>
+                    </div>
+                  );
+                }
+                return null;
+              })}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
