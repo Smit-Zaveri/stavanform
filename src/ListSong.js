@@ -133,13 +133,7 @@ const SongList = () => {
 
   const handleEdit = async (id) => {
     try {
-      if (
-        !editTitle ||
-        !editNumbering ||
-        !editArtist ||
-        !editTags ||
-        !editContent
-      ) {
+      if (!editTitle || !editNumbering || !editTags || !editContent) {
         console.log("Form fields are empty. Cannot submit.");
         return;
       }

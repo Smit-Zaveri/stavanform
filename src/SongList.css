@@ -1,23 +1,19 @@
 .song-list-container {
-  width: 500px;
+  width: 90%;
   margin: 0 auto;
   font-family: Arial, sans-serif;
   padding-bottom: 50px;
 }
 
-h2 {
-  text-align: center;
-  margin-top: 30px;
-  color: #333;
-}
-
 .song-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-gap: 20px;
   list-style-type: none;
   padding: 0;
 }
 
 .song-item {
-  margin-bottom: 20px;
   border: 1px solid #ccc;
   padding: 20px;
   background-color: #f9f9f9;
@@ -41,7 +37,6 @@ h2 {
 
 .song-item.has-report {
   background-color: #ffcccc;
-  /* Set the desired background color */
 }
 
 .report-item {
@@ -149,11 +144,4 @@ h2 {
   outline: none;
   border-color: #007bff;
   box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
-}
-
-
-@media (max-width: 600px) {
-  .song-list-container {
-    width: 90%;
-  }
 }

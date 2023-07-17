@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { firestore } from "./firebase";
+import "./CollectionForm.css";
 
 const CollectionForm = () => {
   const [name, setName] = useState("");
