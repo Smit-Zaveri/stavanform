@@ -31,7 +31,15 @@ const App = () => {
       {selectedTab === 5 && <SongList />}
 
       <BottomNavigation
-        sx={{ position: "fixed", bottom: 0, left: 0, right: 0 }}
+        sx={{
+          position: "fixed",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1000, // Add a higher zIndex to make sure the navigation is on top
+          justifyContent: "space-around", // Distribute the icons evenly
+          backgroundColor: "white", // Set a background color to ensure visibility
+        }}
         showLabels
         value={selectedTab}
         onChange={handleTabChange}
