@@ -3,6 +3,7 @@ import { firestore } from "./firebase";
 
 const CollectionForm = () => {
   const [name, setName] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [collections, setCollections] = useState([]);
   const [error, setError] = useState(null);
 
@@ -32,19 +33,21 @@ const CollectionForm = () => {
     e.preventDefault();
 
     try {
-      if (!name) {
+      if (!name || !displayName) {
         setError("Please fill in all fields.");
         return;
       }
 
       const collectionData = {
         name,
+        displayName,
       };
 
       await firestore.collection("collections").add(collectionData);
       console.log("Collection added successfully.");
 
       setName("");
+      setDisplayName("");
       setError(null);
 
       fetchCollections(); // Reload data after submission
@@ -77,6 +80,14 @@ const CollectionForm = () => {
           value={name}
           onChange={handleNameChange}
         />
+        <label className="form-label">Display Name:</label>
+        <input
+          type="text"
+          className="form-input"
+          placeholder="Display Name"
+          value={displayName}
+          onChange={(e) => setDisplayName(e.target.value)}
+        />
 
         {error && <p className="form-error">{error}</p>}
 
@@ -90,7 +101,7 @@ const CollectionForm = () => {
         <ul>
           {collections.map((collection) => (
             <li key={collection.id}>
-              {collection.name}{" "}
+              {collection.name} - {collection.displayName}{" "}
               <button onClick={() => handleDeleteCollection(collection.id)}>
                 Delete
               </button>
