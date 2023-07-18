@@ -10,6 +10,7 @@ const Form = () => {
   const [tags, setTags] = useState("");
   const [content, setContent] = useState("");
   const [youtube, setYoutube] = useState("");
+  const [newFlag, setNewFlag] = useState(false); // New flag default set to false
   const [artistOptions, setArtistOptions] = useState([]);
 
   useEffect(() => {
@@ -49,6 +50,7 @@ const Form = () => {
         content,
         youtube, // Add the youtubeLink field
         publishDate,
+        newFlag, // Add the newFlag field
       });
       console.log("Document written with ID:", docRef.id);
 
@@ -58,6 +60,7 @@ const Form = () => {
       setArtist("");
       setTags("");
       setContent("");
+      setNewFlag(false); // Reset newFlag to false after submission
     } catch (error) {
       console.error("Error adding document:", error);
     }
@@ -121,6 +124,13 @@ const Form = () => {
         placeholder="Content"
         value={content}
         onChange={(e) => setContent(e.target.value)}
+      />
+      <label className="form-label">New:</label>
+      <input
+        type="checkbox"
+        className="form-checkbox"
+        checked={newFlag}
+        onChange={(e) => setNewFlag(e.target.checked)}
       />
 
       <button type="submit" className="form-button">
