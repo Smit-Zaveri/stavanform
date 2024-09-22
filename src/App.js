@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   CssBaseline,
@@ -7,6 +7,7 @@ import {
   Toolbar,
   Typography,
   IconButton,
+  Button,
   List,
   ListItem,
   ListItemIcon,
@@ -14,16 +15,14 @@ import {
   useTheme,
   useMediaQuery,
   Divider,
+  CircularProgress,
 } from "@mui/material";
+
+import { auth } from "./firebase";  // Import Firebase auth
+import { onAuthStateChanged } from "firebase/auth";  
 
 import EditIcon from '@mui/icons-material/Edit';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import LabelIcon from '@mui/icons-material/Label';
-import ListIcon from '@mui/icons-material/List';
-import LibraryMusicIcon from '@mui/icons-material/LibraryMusic';
-import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
-import EmojiObjectsIcon from '@mui/icons-material/EmojiObjects';
 import CollectionsIcon from '@mui/icons-material/Collections'; 
 import MenuIcon from "@mui/icons-material/Menu";
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
@@ -34,25 +33,55 @@ import ArtistForm from "./ArtistForm";
 import CollectionForm from "./CollectionForm";
 import SongList from "./ListSong.js";
 import Tirthankar from "./Tirthankar.js";
-import SuggestionForm from "./Suggetion.js";
+import SuggestionForm from "./Suggestion.js";
+import Login from "./Login.js";
 
 const drawerWidth = 245;
 
 const App = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [user, setUser] = useState(null); // User state
+  const [loading, setLoading] = useState(true); // Loading state
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const navigate = useNavigate();
   const location = useLocation(); // Get current location
 
+  // Function to handle logout
+  const handleLogout = async () => {
+    try {
+      await auth.signOut();
+      setUser(null); // Reset user state
+      navigate("/login");  // Redirect to login page after logout
+    } catch (error) {
+      console.error("Failed to log out", error);
+    }
+  };
+
+  // Authentication check (useEffect)
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);  // Set authenticated user
+        setLoading(false);  // Remove loading state
+      } else {
+        setUser(null);  // Reset user state if not logged in
+        setLoading(false);  // Remove loading state
+        navigate("/login");  // Redirect to login if not authenticated
+      }
+    });
+
+    return () => unsubscribe();  // Cleanup subscription on unmount
+  }, [navigate]);
+
   const navItems = [
     { label: "Form", icon: <EditIcon />, path: "/" }, // Form - Editing icon
-    { label: "Artist Form", icon: <MusicNoteIcon />, path: "/artist-form" }, // Music-related form
-    { label: "Collection", icon: <CollectionsIcon />, path: "/collection" }, // Collections icon
-    { label: "Tirtankar", icon: <LibraryMusicIcon />, path: "/tirtankar" }, // Sacred music collection
-    { label: "Tag", icon: <LabelIcon />, path: "/tag" }, // Tagging
-    { label: "Suggestion", icon: <EmojiObjectsIcon />, path: "/suggestion" }, // Suggestions
-    { label: "List Song", icon: <PlaylistAddCheckIcon />, path: "/list-song" }, // Playlist for song listing
+    { label: "Artist Form", icon: <MusicNoteIcon />, path: "/artist-form" },
+    { label: "Collection", icon: <CollectionsIcon />, path: "/collection" }, 
+    { label: "Tirtankar", icon: <MusicNoteIcon />, path: "/tirtankar" },
+    { label: "Tag", icon: <EditIcon />, path: "/tag" },
+    { label: "Suggestion", icon: <EditIcon />, path: "/suggestion" },
+    { label: "List Song", icon: <EditIcon />, path: "/list-song" },
   ];
 
   const handleDrawerToggle = () => {
@@ -74,10 +103,10 @@ const App = () => {
               }
             }}
             sx={{
-              backgroundColor: location.pathname === item.path ? theme.palette.action.selected : 'transparent', // Change background color if selected
+              backgroundColor: location.pathname === item.path ? theme.palette.action.selected : 'transparent',
               '&:hover': {
-                backgroundColor: theme.palette.action.hover, // Change background color on hover
-              }
+                backgroundColor: theme.palette.action.hover,
+              },
             }}
           >
             <ListItemIcon>{item.icon}</ListItemIcon>
@@ -87,6 +116,15 @@ const App = () => {
       </List>
     </Box>
   );
+
+  if (loading) {
+    // Display loading spinner while checking authentication
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ display: "flex" }}>
@@ -108,13 +146,19 @@ const App = () => {
               <MenuIcon />
             </IconButton>
           )}
-          <Typography variant="h6" noWrap component="div">
+          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             Music Manager
           </Typography>
+
+          {/* Conditionally render logout button if user is logged in */}
+          {user && (
+            <Button color="inherit" onClick={handleLogout}>
+              Logout
+            </Button>
+          )}
         </Toolbar>
       </AppBar>
 
-      {/* Sidebar for Desktop */}
       {!isMobile && (
         <Drawer
           variant="permanent"
@@ -131,7 +175,6 @@ const App = () => {
         </Drawer>
       )}
 
-      {/* Drawer for Mobile */}
       {isMobile && (
         <Drawer
           variant="temporary"
@@ -150,7 +193,6 @@ const App = () => {
         </Drawer>
       )}
 
-      {/* Main Content */}
       <Box
         component="main"
         sx={{
@@ -161,13 +203,14 @@ const App = () => {
       >
         <Toolbar />
         <Routes>
-          <Route path="/" element={<Form />} />
-          <Route path="/tag" element={<Tag />} />
-          <Route path="/suggestion" element={<SuggestionForm />} />
-          <Route path="/artist-form" element={<ArtistForm />} />
-          <Route path="/collection" element={<CollectionForm />} />
-          <Route path="/list-song" element={<SongList />} />
-          <Route path="/tirtankar" element={<Tirthankar/>} />
+          <Route path="/" element={user ? <Form /> : <Login />} />
+          <Route path="/tag" element={user ? <Tag /> : <Login />} />
+          <Route path="/suggestion" element={user ? <SuggestionForm /> : <Login />} />
+          <Route path="/artist-form" element={user ? <ArtistForm /> : <Login />} />
+          <Route path="/collection" element={user ? <CollectionForm /> : <Login />} />
+          <Route path="/list-song" element={user ? <SongList /> : <Login />} />
+          <Route path="/tirtankar" element={user ? <Tirthankar /> : <Login />} />
+          <Route path="/login" element={<Login />} />
         </Routes>
       </Box>
     </Box>
