@@ -1,4 +1,3 @@
-// App.js
 import React, { useState } from "react";
 import {
   Box,
@@ -7,80 +6,108 @@ import {
   AppBar,
   Toolbar,
   Typography,
+  IconButton,
   List,
   ListItem,
   ListItemIcon,
   ListItemText,
-  BottomNavigation,
-  BottomNavigationAction,
   useTheme,
   useMediaQuery,
+  Divider,
 } from "@mui/material";
 
-import EditIcon from "@mui/icons-material/Edit";
-import LabelIcon from "@mui/icons-material/Label";
-import MusicNoteIcon from "@mui/icons-material/MusicNote";
-import DashboardIcon from "@mui/icons-material/Dashboard";
-//import CollectionIcon from "@mui/icons-material/CollectionMusic";
-import ListIcon from "@mui/icons-material/List";
+import EditIcon from '@mui/icons-material/Edit';
+import MusicNoteIcon from '@mui/icons-material/MusicNote';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import LabelIcon from '@mui/icons-material/Label';
+import ListIcon from '@mui/icons-material/List';
+import LibraryMusicIcon from '@mui/icons-material/LibraryMusic';
+import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
+import EmojiObjectsIcon from '@mui/icons-material/EmojiObjects';
+import CollectionsIcon from '@mui/icons-material/Collections'; 
+import MenuIcon from "@mui/icons-material/Menu";
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 
 import Form from "./Form";
 import Tag from "./Tag";
 import ArtistForm from "./ArtistForm";
-import Catagory from "./Catagory";
 import CollectionForm from "./CollectionForm";
 import SongList from "./ListSong.js";
+import Tirthankar from "./Tirthankar.js";
+import SuggestionForm from "./Suggetion.js";
 
-const drawerWidth = 240;
+const drawerWidth = 245;
 
 const App = () => {
-  const [selectedTab, setSelectedTab] = useState(0);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-
-  const handleTabChange = (event, newValue) => {
-    setSelectedTab(newValue);
-  };
+  const navigate = useNavigate();
+  const location = useLocation(); // Get current location
 
   const navItems = [
-    { label: "Form", icon: <EditIcon /> },
-    { label: "Tag", icon: <LabelIcon /> },
-    { label: "Artist Form", icon: <MusicNoteIcon /> },
-    { label: "Category", icon: <DashboardIcon /> },
-    { label: "Collection", icon: <DashboardIcon /> },
-    { label: "List Song", icon: <ListIcon /> },
+    { label: "Form", icon: <EditIcon />, path: "/" }, // Form - Editing icon
+    { label: "Artist Form", icon: <MusicNoteIcon />, path: "/artist-form" }, // Music-related form
+    { label: "Collection", icon: <CollectionsIcon />, path: "/collection" }, // Collections icon
+    { label: "Tirtankar", icon: <LibraryMusicIcon />, path: "/tirtankar" }, // Sacred music collection
+    { label: "Tag", icon: <LabelIcon />, path: "/tag" }, // Tagging
+    { label: "Suggestion", icon: <EmojiObjectsIcon />, path: "/suggestion" }, // Suggestions
+    { label: "List Song", icon: <PlaylistAddCheckIcon />, path: "/list-song" }, // Playlist for song listing
   ];
 
-  const renderContent = () => {
-    switch (selectedTab) {
-      case 0:
-        return <Form />;
-      case 1:
-        return <Tag />;
-      case 2:
-        return <ArtistForm />;
-      case 3:
-        return <Catagory />;
-      case 4:
-        return <CollectionForm />;
-      case 5:
-        return <SongList />;
-      default:
-        return <Form />;
-    }
+  const handleDrawerToggle = () => {
+    setMobileOpen(!mobileOpen);
   };
+
+  const drawerContent = (
+    <Box sx={{ width: drawerWidth }}>
+      <Toolbar />
+      <Divider />
+      <List>
+        {navItems.map((item) => (
+          <ListItem
+            key={item.label}
+            onClick={() => {
+              navigate(item.path);
+              if (isMobile) {
+                setMobileOpen(false);
+              }
+            }}
+            sx={{
+              backgroundColor: location.pathname === item.path ? theme.palette.action.selected : 'transparent', // Change background color if selected
+              '&:hover': {
+                backgroundColor: theme.palette.action.hover, // Change background color on hover
+              }
+            }}
+          >
+            <ListItemIcon>{item.icon}</ListItemIcon>
+            <ListItemText primary={item.label} />
+          </ListItem>
+        ))}
+      </List>
+    </Box>
+  );
 
   return (
     <Box sx={{ display: "flex" }}>
       <CssBaseline />
-      {/* App Bar */}
       <AppBar
         position="fixed"
         sx={{
-          zIndex: (theme) => theme.zIndex.drawer + 1,
+          zIndex: theme.zIndex.drawer + 1,
         }}
       >
         <Toolbar>
+          {isMobile && (
+            <IconButton
+              color="inherit"
+              edge="start"
+              onClick={handleDrawerToggle}
+              sx={{ mr: 2 }}
+            >
+              <MenuIcon />
+            </IconButton>
+          )}
           <Typography variant="h6" noWrap component="div">
             Music Manager
           </Typography>
@@ -94,25 +121,32 @@ const App = () => {
           sx={{
             width: drawerWidth,
             flexShrink: 0,
-            [`& .MuiDrawer-paper`]: { width: drawerWidth, boxSizing: "border-box" },
+            [`& .MuiDrawer-paper`]: {
+              width: drawerWidth,
+              boxSizing: "border-box",
+            },
           }}
         >
-          <Toolbar />
-          <Box sx={{ overflow: "auto" }}>
-            <List>
-              {navItems.map((item, index) => (
-                <ListItem
-                  button
-                  key={item.label}
-                  selected={selectedTab === index}
-                  onClick={() => setSelectedTab(index)}
-                >
-                  <ListItemIcon>{item.icon}</ListItemIcon>
-                  <ListItemText primary={item.label} />
-                </ListItem>
-              ))}
-            </List>
-          </Box>
+          {drawerContent}
+        </Drawer>
+      )}
+
+      {/* Drawer for Mobile */}
+      {isMobile && (
+        <Drawer
+          variant="temporary"
+          open={mobileOpen}
+          onClose={handleDrawerToggle}
+          ModalProps={{
+            keepMounted: true,
+          }}
+          sx={{
+            [`& .MuiDrawer-paper`]: {
+              width: drawerWidth,
+            },
+          }}
+        >
+          {drawerContent}
         </Drawer>
       )}
 
@@ -126,34 +160,24 @@ const App = () => {
         }}
       >
         <Toolbar />
-        {renderContent()}
+        <Routes>
+          <Route path="/" element={<Form />} />
+          <Route path="/tag" element={<Tag />} />
+          <Route path="/suggestion" element={<SuggestionForm />} />
+          <Route path="/artist-form" element={<ArtistForm />} />
+          <Route path="/collection" element={<CollectionForm />} />
+          <Route path="/list-song" element={<SongList />} />
+          <Route path="/tirtankar" element={<Tirthankar/>} />
+        </Routes>
       </Box>
-
-      {/* Bottom Navigation for Mobile */}
-      {isMobile && (
-        <Box
-          sx={{
-            position: "fixed",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            borderTop: `1px solid ${theme.palette.divider}`,
-            backgroundColor: theme.palette.background.paper,
-          }}
-        >
-          <BottomNavigation value={selectedTab} onChange={handleTabChange} showLabels>
-            {navItems.map((item, index) => (
-              <BottomNavigationAction
-                key={item.label}
-                label={item.label}
-                icon={item.icon}
-              />
-            ))}
-          </BottomNavigation>
-        </Box>
-      )}
     </Box>
   );
 };
 
-export default App;
+const AppWrapper = () => (
+  <Router>
+    <App />
+  </Router>
+);
+
+export default AppWrapper;

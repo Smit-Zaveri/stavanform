@@ -16,17 +16,16 @@ import {
   DialogContent,
   DialogTitle,
 } from "@mui/material";
-import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from "@mui/icons-material/Edit";
 
 const ArtistForm = () => {
   const [name, setName] = useState("");
   const [pictureUrl, setPictureUrl] = useState("");
+  const [numbering, setNumber] = useState(""); // State for artist number
   const [artists, setArtists] = useState([]);
   const [error, setError] = useState(null);
-  const [editingArtistId, setEditingArtistId] = useState(null);
-  const [editingName, setEditingName] = useState("");
-  const [editingPictureUrl, setEditingPictureUrl] = useState("");
+  const [editingArtistId, setEditingArtistId] = useState(null); // State for tracking the artist being edited
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
@@ -37,7 +36,7 @@ const ArtistForm = () => {
 
   const fetchArtists = async () => {
     try {
-      const snapshot = await firestore.collection("artists").get();
+      const snapshot = await firestore.collection("artists").orderBy("numbering").get();
       const artistList = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
@@ -48,11 +47,12 @@ const ArtistForm = () => {
     }
   };
 
+  // Consolidated submit function to handle both add and edit
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      if (!name || !pictureUrl) {
+      if (!name || !pictureUrl || !numbering) {
         setError("Please fill in all fields.");
         return;
       }
@@ -60,15 +60,24 @@ const ArtistForm = () => {
       const artistData = {
         name,
         picture: pictureUrl,
+        numbering, // Save artist number
       };
 
-      await firestore.collection("artists").add(artistData);
-      setSnackbarMessage("Artist added successfully.");
+      if (editingArtistId) {
+        // If editing, update the artist
+        await firestore.collection("artists").doc(editingArtistId).update(artistData);
+        setSnackbarMessage("Artist updated successfully.");
+      } else {
+        // If not editing, add a new artist
+        await firestore.collection("artists").add(artistData);
+        setSnackbarMessage("Artist added successfully.");
+      }
+
       setSnackbarOpen(true);
       resetForm();
       fetchArtists();
     } catch (error) {
-      console.error("Error adding artist:", error);
+      console.error("Error adding/updating artist:", error);
     }
   };
 
@@ -90,42 +99,16 @@ const ArtistForm = () => {
 
   const handleEditArtist = (artist) => {
     setEditingArtistId(artist.id);
-    setEditingName(artist.name);
-    setEditingPictureUrl(artist.picture);
-  };
-
-  const handleSaveEdit = async () => {
-    try {
-      if (!editingName || !editingPictureUrl) {
-        setError("Please fill in all fields.");
-        return;
-      }
-
-      const artistData = {
-        name: editingName,
-        picture: editingPictureUrl,
-      };
-
-      await firestore.collection("artists").doc(editingArtistId).update(artistData);
-      setSnackbarMessage("Artist updated successfully.");
-      setSnackbarOpen(true);
-      resetEditForm();
-      fetchArtists();
-    } catch (error) {
-      console.error("Error updating artist:", error);
-    }
+    setName(artist.name);
+    setPictureUrl(artist.picture);
+    setNumber(artist.numbering); // Set number for editing
   };
 
   const resetForm = () => {
     setName("");
     setPictureUrl("");
-    setError(null);
-  };
-
-  const resetEditForm = () => {
-    setEditingArtistId(null);
-    setEditingName("");
-    setEditingPictureUrl("");
+    setNumber(""); // Reset the form inputs
+    setEditingArtistId(null); // Reset editing state
     setError(null);
   };
 
@@ -136,7 +119,7 @@ const ArtistForm = () => {
   return (
     <Box sx={{ p: 2 }}>
       <Typography variant="h5" gutterBottom>
-        Manage Artists
+        {editingArtistId ? "Edit Artist" : "Add Artist"}
       </Typography>
       <form onSubmit={handleSubmit}>
         <TextField
@@ -155,49 +138,39 @@ const ArtistForm = () => {
           value={pictureUrl}
           onChange={(e) => setPictureUrl(e.target.value)}
         />
+        <TextField
+          label="Number"
+          variant="outlined"
+          fullWidth
+          margin="normal"
+          value={numbering}
+          onChange={(e) => setNumber(e.target.value)}
+        />
         {error && <Typography color="error">{error}</Typography>}
         <Button variant="contained" color="primary" type="submit">
-          Submit
+          {editingArtistId ? "Update Artist" : "Submit"}
         </Button>
+        {editingArtistId && (
+          <Button onClick={resetForm} color="secondary" sx={{ ml: 2 }}>
+            Cancel Edit
+          </Button>
+        )}
       </form>
 
       <List>
         {artists.map((artist) => (
           <ListItem key={artist.id}>
-            {editingArtistId === artist.id ? (
-              <>
-                <TextField
-                  label="Name"
-                  variant="outlined"
-                  value={editingName}
-                  onChange={(e) => setEditingName(e.target.value)}
-                />
-                <TextField
-                  label="Picture URL"
-                  variant="outlined"
-                  value={editingPictureUrl}
-                  onChange={(e) => setEditingPictureUrl(e.target.value)}
-                />
-                <Button onClick={handleSaveEdit} color="primary">
-                  Save
-                </Button>
-                <Button onClick={resetEditForm} color="secondary">
-                  Cancel
-                </Button>
-              </>
-            ) : (
-              <>
-                <ListItemText primary={artist.name} />
-                <ListItemSecondaryAction>
-                  <IconButton onClick={() => handleEditArtist(artist)}>
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton onClick={() => handleDeleteArtist(artist.id)}>
-                    <DeleteIcon />
-                  </IconButton>
-                </ListItemSecondaryAction>
-              </>
-            )}
+            <ListItemText
+              primary={`#${artist.numbering} - ${artist.name}`} // Display artist number and name
+            />
+            <ListItemSecondaryAction>
+              <IconButton onClick={() => handleEditArtist(artist)}>
+                <EditIcon />
+              </IconButton>
+              <IconButton onClick={() => handleDeleteArtist(artist.id)}>
+                <DeleteIcon />
+              </IconButton>
+            </ListItemSecondaryAction>
           </ListItem>
         ))}
       </List>

@@ -19,7 +19,6 @@ import {
   Box,
 } from "@mui/material";
 import { Delete, Edit } from "@mui/icons-material";
-import "./SongList.css";
 
 const modalStyle = {
   display: "flex",
@@ -244,7 +243,7 @@ const SongList = () => {
       </MenuItem>
       {collectionList.map((collection) => (
         <MenuItem key={collection.id} value={collection.name}>
-          {collection.name}
+          {collection.name.charAt(0).toUpperCase() + collection.name.slice(1)}
         </MenuItem>
       ))}
     </Select>

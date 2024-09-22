@@ -16,19 +16,22 @@ import {
   DialogContent,
   DialogTitle,
 } from "@mui/material";
-import DeleteIcon from '@mui/icons-material/Delete';
+import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from "@mui/icons-material/Edit"; // Import Edit Icon
 
 const TagForm = () => {
   const [tags, setTags] = useState([]);
   const [tagName, setTagName] = useState("");
+  const [tagNumber, setTagNumber] = useState(""); // State for tag number
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [editingTagId, setEditingTagId] = useState(null); // State for editing tag
 
   useEffect(() => {
     const fetchTags = async () => {
       try {
-        const snapshot = await firestore.collection("tags").get();
+        const snapshot = await firestore.collection("tags").orderBy("numbering").get();
         const fetchedTags = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
@@ -42,29 +45,36 @@ const TagForm = () => {
     fetchTags();
   }, []);
 
+  // Handle both Add and Edit submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      if (!tagName) {
+      if (!tagName || !tagNumber) {
         console.log("Form fields are empty. Cannot submit.");
         return;
       }
-      const docRef = await firestore.collection("tags").add({
-        name: tagName.toLowerCase(),
-      });
-      console.log("Tag added successfully");
 
-      const updatedTags = [
-        ...tags,
-        { id: docRef.id, name: tagName.toLowerCase() },
-      ];
-      setTags(updatedTags);
-      setTagName("");
-      setSnackbarMessage("Tag added successfully!");
+      const tagData = {
+        name: tagName.toLowerCase(),
+        number: tagNumber, // Save number to tag data
+      };
+
+      if (editingTagId) {
+        // If editing, update the existing tag
+        await firestore.collection("tags").doc(editingTagId).update(tagData);
+        setSnackbarMessage("Tag updated successfully!");
+      } else {
+        // If adding a new tag
+        const docRef = await firestore.collection("tags").add(tagData);
+        setTags([...tags, { id: docRef.id, name: tagName.toLowerCase(), numbering: tagNumber }]);
+        setSnackbarMessage("Tag added successfully!");
+      }
+
       setSnackbarOpen(true);
+      resetForm();
     } catch (error) {
-      console.error("Error adding tag:", error);
+      console.error("Error adding/updating tag:", error);
     }
   };
 
@@ -87,6 +97,18 @@ const TagForm = () => {
     }
   };
 
+  const handleEdit = (tag) => {
+    setEditingTagId(tag.id); // Set the ID of the tag being edited
+    setTagName(tag.name); // Set the name for editing
+    setTagNumber(tag.numbering); // Set the number for editing
+  };
+
+  const resetForm = () => {
+    setTagName("");
+    setTagNumber("");
+    setEditingTagId(null); // Clear editing state
+  };
+
   const cancelDelete = () => {
     setConfirmDeleteId(null);
   };
@@ -98,7 +120,7 @@ const TagForm = () => {
   return (
     <Box sx={{ p: 2 }}>
       <Typography variant="h5" gutterBottom>
-        Manage Tags
+        {editingTagId ? "Edit Tag" : "Add Tag"}
       </Typography>
       <form onSubmit={handleSubmit}>
         <TextField
@@ -109,15 +131,33 @@ const TagForm = () => {
           value={tagName}
           onChange={(e) => setTagName(e.target.value)}
         />
+        <TextField
+          label="Tag Number"
+          variant="outlined"
+          fullWidth
+          margin="normal"
+          value={tagNumber}
+          onChange={(e) => setTagNumber(e.target.value)}
+        />
         <Button variant="contained" color="primary" type="submit">
-          Add Tag
+          {editingTagId ? "Update Tag" : "Add Tag"}
         </Button>
+        {editingTagId && (
+          <Button onClick={resetForm} color="secondary" sx={{ ml: 2 }}>
+            Cancel Edit
+          </Button>
+        )}
       </form>
+
       <List>
         {tags.map((tag) => (
           <ListItem key={tag.id}>
-            <ListItemText primary={tag.name} />
+            {/* Display the tag number along with the tag name */}
+            <ListItemText primary={`${tag.numbering} - ${tag.name}`} />
             <ListItemSecondaryAction>
+              <IconButton edge="end" onClick={() => handleEdit(tag)}>
+                <EditIcon />
+              </IconButton>
               <IconButton edge="end" onClick={() => handleDelete(tag.id)}>
                 <DeleteIcon />
               </IconButton>
@@ -125,11 +165,8 @@ const TagForm = () => {
           </ListItem>
         ))}
       </List>
-      
-      <Dialog
-        open={!!confirmDeleteId}
-        onClose={cancelDelete}
-      >
+
+      <Dialog open={!!confirmDeleteId} onClose={cancelDelete}>
         <DialogTitle>Confirm Deletion</DialogTitle>
         <DialogContent>
           <Typography>Are you sure you want to delete this tag?</Typography>
