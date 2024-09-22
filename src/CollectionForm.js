@@ -1,12 +1,25 @@
 import React, { useState, useEffect } from "react";
 import { firestore } from "./firebase";
-import "./CollectionForm.css";
+import {
+  Box,
+  Button,
+  TextField,
+  Typography,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction,
+  IconButton,
+  Snackbar,
+} from "@mui/material";
+import DeleteIcon from '@mui/icons-material/Delete';
 
 const CollectionForm = () => {
   const [name, setName] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [collections, setCollections] = useState([]);
   const [error, setError] = useState(null);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
 
   useEffect(() => {
     fetchCollections();
@@ -46,6 +59,7 @@ const CollectionForm = () => {
 
       await firestore.collection("collections").add(collectionData);
       console.log("Collection added successfully.");
+      setSnackbarOpen(true); // Show snackbar on success
 
       setName("");
       setDisplayName("");
@@ -62,7 +76,6 @@ const CollectionForm = () => {
       try {
         await firestore.collection("collections").doc(collectionId).delete();
         console.log("Collection deleted with ID:", collectionId);
-
         fetchCollections(); // Reload data after deletion
       } catch (error) {
         console.error("Error deleting collection:", error);
@@ -70,47 +83,66 @@ const CollectionForm = () => {
     }
   };
 
+  const handleSnackbarClose = () => {
+    setSnackbarOpen(false);
+  };
+
   return (
-    <div>
-      <form className="form" onSubmit={handleSubmit}>
-        <label className="form-label">Name:</label>
-        <input
-          type="text"
-          className="form-input"
-          placeholder="Name"
+    <Box sx={{ p: 2 }}>
+      <Typography variant="h5" gutterBottom>
+        Create New Collection
+      </Typography>
+
+      <form onSubmit={handleSubmit}>
+        <TextField
+          label="Name"
+          variant="outlined"
+          fullWidth
+          margin="normal"
           value={name}
           onChange={handleNameChange}
+          error={!!error}
+          helperText={error && "Please fill in this field."}
         />
-        <label className="form-label">Display Name:</label>
-        <input
-          type="text"
-          className="form-input"
-          placeholder="Display Name"
+        <TextField
+          label="Display Name"
+          variant="outlined"
+          fullWidth
+          margin="normal"
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
+          error={!!error}
+          helperText={error && "Please fill in this field."}
         />
 
-        {error && <p className="form-error">{error}</p>}
-
-        <button type="submit" className="form-button">
+        <Button variant="contained" color="primary" type="submit">
           Submit
-        </button>
+        </Button>
       </form>
 
-      <div className="collection-list">
-        <h2>Collections:</h2>
-        <ul>
-          {collections.map((collection) => (
-            <li key={collection.id}>
-              {collection.name} - {collection.displayName}{" "}
-              <button onClick={() => handleDeleteCollection(collection.id)}>
-                Delete
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
+      <Typography variant="h6" sx={{ mt: 4 }}>
+        Collections:
+      </Typography>
+      <List>
+        {collections.map((collection) => (
+          <ListItem key={collection.id}>
+            <ListItemText primary={collection.name} secondary={collection.displayName} />
+            <ListItemSecondaryAction>
+              <IconButton edge="end" onClick={() => handleDeleteCollection(collection.id)}>
+                <DeleteIcon />
+              </IconButton>
+            </ListItemSecondaryAction>
+          </ListItem>
+        ))}
+      </List>
+
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={handleSnackbarClose}
+        message="Collection added successfully!"
+      />
+    </Box>
   );
 };
 

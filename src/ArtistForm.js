@@ -1,6 +1,24 @@
 import React, { useState, useEffect } from "react";
-import { firestore } from "./firebase"; // Import the 'firestore' module from the Firebase SDK
-import "./ArtistForm.css";
+import { firestore } from "./firebase";
+import {
+  Box,
+  Button,
+  TextField,
+  Typography,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction,
+  IconButton,
+  Snackbar,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+} from "@mui/material";
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
+
 const ArtistForm = () => {
   const [name, setName] = useState("");
   const [pictureUrl, setPictureUrl] = useState("");
@@ -9,6 +27,9 @@ const ArtistForm = () => {
   const [editingArtistId, setEditingArtistId] = useState(null);
   const [editingName, setEditingName] = useState("");
   const [editingPictureUrl, setEditingPictureUrl] = useState("");
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
   useEffect(() => {
     fetchArtists();
@@ -27,16 +48,6 @@ const ArtistForm = () => {
     }
   };
 
-  const handleNameChange = (e) => {
-    setName(e.target.value);
-    setError(null);
-  };
-
-  const handlePictureUrlChange = (e) => {
-    setPictureUrl(e.target.value);
-    setError(null);
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -52,28 +63,28 @@ const ArtistForm = () => {
       };
 
       await firestore.collection("artists").add(artistData);
-      console.log("Artist added successfully.");
-
-      setName("");
-      setPictureUrl("");
-      setError(null);
-
-      fetchArtists(); // Reload data after submission
+      setSnackbarMessage("Artist added successfully.");
+      setSnackbarOpen(true);
+      resetForm();
+      fetchArtists();
     } catch (error) {
-      console.error("Error adding document:", error);
+      console.error("Error adding artist:", error);
     }
   };
 
-  const handleDeleteArtist = async (artistId) => {
-    if (window.confirm("Are you sure you want to delete this artist?")) {
-      try {
-        await firestore.collection("artists").doc(artistId).delete();
-        console.log("Artist deleted with ID:", artistId);
+  const handleDeleteArtist = (artistId) => {
+    setConfirmDeleteId(artistId);
+  };
 
-        fetchArtists(); // Reload data after deletion
-      } catch (error) {
-        console.error("Error deleting artist:", error);
-      }
+  const confirmDelete = async () => {
+    try {
+      await firestore.collection("artists").doc(confirmDeleteId).delete();
+      setSnackbarMessage("Artist deleted successfully.");
+      setSnackbarOpen(true);
+      setConfirmDeleteId(null);
+      fetchArtists();
+    } catch (error) {
+      console.error("Error deleting artist:", error);
     }
   };
 
@@ -95,111 +106,124 @@ const ArtistForm = () => {
         picture: editingPictureUrl,
       };
 
-      await firestore
-        .collection("artists")
-        .doc(editingArtistId)
-        .update(artistData);
-      console.log("Artist updated with ID:", editingArtistId);
-
-      setEditingArtistId(null);
-      setEditingName("");
-      setEditingPictureUrl("");
-      setError(null);
-
-      fetchArtists(); // Reload data after saving edit
+      await firestore.collection("artists").doc(editingArtistId).update(artistData);
+      setSnackbarMessage("Artist updated successfully.");
+      setSnackbarOpen(true);
+      resetEditForm();
+      fetchArtists();
     } catch (error) {
       console.error("Error updating artist:", error);
     }
   };
 
-  const handleCancelEdit = () => {
+  const resetForm = () => {
+    setName("");
+    setPictureUrl("");
+    setError(null);
+  };
+
+  const resetEditForm = () => {
     setEditingArtistId(null);
     setEditingName("");
     setEditingPictureUrl("");
     setError(null);
   };
 
+  const handleSnackbarClose = () => {
+    setSnackbarOpen(false);
+  };
+
   return (
-    <div className="artist-form-container">
-      <form className="form" onSubmit={handleSubmit}>
-        <label className="form-label">Name:</label>
-        <input
-          type="text"
-          className="form-input"
-          placeholder="Name"
+    <Box sx={{ p: 2 }}>
+      <Typography variant="h5" gutterBottom>
+        Manage Artists
+      </Typography>
+      <form onSubmit={handleSubmit}>
+        <TextField
+          label="Name"
+          variant="outlined"
+          fullWidth
+          margin="normal"
           value={name}
-          onChange={handleNameChange}
+          onChange={(e) => setName(e.target.value)}
         />
-
-        <label className="form-label">Picture URL:</label>
-        <input
-          type="text"
-          className="form-input"
-          placeholder="Picture URL"
+        <TextField
+          label="Picture URL"
+          variant="outlined"
+          fullWidth
+          margin="normal"
           value={pictureUrl}
-          onChange={handlePictureUrlChange}
+          onChange={(e) => setPictureUrl(e.target.value)}
         />
-
-        {error && <p className="form-error">{error}</p>}
-
-        <button type="submit" className="form-button">
+        {error && <Typography color="error">{error}</Typography>}
+        <Button variant="contained" color="primary" type="submit">
           Submit
-        </button>
+        </Button>
       </form>
 
-      <div className="artist-list">
-        <h2>Artists:</h2>
-        <ul>
-          {artists.map((artist) => (
-            <li key={artist.id} className="artist-item">
-              {editingArtistId === artist.id ? (
-                <>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Name"
-                    value={editingName}
-                    onChange={(e) => setEditingName(e.target.value)}
-                  />
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Picture URL"
-                    value={editingPictureUrl}
-                    onChange={(e) => setEditingPictureUrl(e.target.value)}
-                  />
-                  {error && <p className="form-error">{error}</p>}
-                  <button className="save-button" onClick={handleSaveEdit}>
-                    Save
-                  </button>
-                  <button className="cancel-button" onClick={handleCancelEdit}>
-                    Cancel
-                  </button>
-                </>
-              ) : (
-                <>
-                  <div className="artist-name">{artist.name}</div>
-                  <div className="artist-actions">
-                    <button
-                      className="edit-button"
-                      onClick={() => handleEditArtist(artist)}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="delete-button"
-                      onClick={() => handleDeleteArtist(artist.id)}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </>
-              )}
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
+      <List>
+        {artists.map((artist) => (
+          <ListItem key={artist.id}>
+            {editingArtistId === artist.id ? (
+              <>
+                <TextField
+                  label="Name"
+                  variant="outlined"
+                  value={editingName}
+                  onChange={(e) => setEditingName(e.target.value)}
+                />
+                <TextField
+                  label="Picture URL"
+                  variant="outlined"
+                  value={editingPictureUrl}
+                  onChange={(e) => setEditingPictureUrl(e.target.value)}
+                />
+                <Button onClick={handleSaveEdit} color="primary">
+                  Save
+                </Button>
+                <Button onClick={resetEditForm} color="secondary">
+                  Cancel
+                </Button>
+              </>
+            ) : (
+              <>
+                <ListItemText primary={artist.name} />
+                <ListItemSecondaryAction>
+                  <IconButton onClick={() => handleEditArtist(artist)}>
+                    <EditIcon />
+                  </IconButton>
+                  <IconButton onClick={() => handleDeleteArtist(artist.id)}>
+                    <DeleteIcon />
+                  </IconButton>
+                </ListItemSecondaryAction>
+              </>
+            )}
+          </ListItem>
+        ))}
+      </List>
+
+      <Dialog open={!!confirmDeleteId} onClose={() => setConfirmDeleteId(null)}>
+        <DialogTitle>Confirm Deletion</DialogTitle>
+        <DialogContent>
+          <Typography>Are you sure you want to delete this artist?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={confirmDelete} color="primary">
+            Confirm
+          </Button>
+          <Button onClick={() => setConfirmDeleteId(null)} color="secondary">
+            Cancel
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={handleSnackbarClose}
+        message={snackbarMessage}
+      />
+    </Box>
   );
 };
 

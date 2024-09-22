@@ -2,9 +2,19 @@ import { useState, useEffect } from "react";
 import { firestore } from "./firebase";
 import firebase from "firebase/compat/app";
 import "firebase/firestore";
+import {
+  Box,
+  Button,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  TextField,
+  Typography,
+} from "@mui/material";
 
 const Catagory = () => {
-  const [numbering, setNumbering] = useState(1); // Initial numbering value
+  const [numbering, setNumbering] = useState(1);
   const [title, setTitle] = useState("");
   const [artist, setArtist] = useState("");
   const [tags, setTags] = useState("");
@@ -15,7 +25,6 @@ const Catagory = () => {
   const [collectionList, setCollectionList] = useState([]);
 
   useEffect(() => {
-    // Fetch the artist options from the artist collection
     const fetchArtistOptions = async () => {
       try {
         const snapshot = await firestore.collection("artists").get();
@@ -33,7 +42,6 @@ const Catagory = () => {
   }, []);
 
   useEffect(() => {
-    // Fetch the collection list from the "collections" collection
     const fetchCollectionList = async () => {
       try {
         const snapshot = await firestore.collection("collections").get();
@@ -59,7 +67,7 @@ const Catagory = () => {
         return;
       }
 
-      const publishDate = firebase.firestore.Timestamp.now(); // Get the current timestamp
+      const publishDate = firebase.firestore.Timestamp.now();
 
       const collection = collectionList.find(
         (collection) => collection.id === selectedCollection
@@ -78,7 +86,7 @@ const Catagory = () => {
         artist,
         tags: tags.split(",").map((tag) => tag.trim().toLowerCase()),
         content,
-        youtube, // Add the youtubeLink field
+        youtube,
         publishDate,
       });
       console.log("Document written with ID:", docRef.id);
@@ -97,83 +105,104 @@ const Catagory = () => {
   };
 
   return (
-    <form className="form" onSubmit={handleSubmit}>
-      <label className="form-label">Select Collection:</label>
-      <select
-        className="form-input"
-        value={selectedCollection}
-        onChange={(e) => setSelectedCollection(e.target.value)}
-      >
-        <option value="">Select a collection</option>
-        {collectionList.map((collection) => (
-          <option key={collection.id} value={collection.id}>
-            {collection.name}
-          </option>
-        ))}
-      </select>
+    <Box
+      component="form"
+      onSubmit={handleSubmit}
+      sx={{ maxWidth: 600, mx: "auto", p: 2, display: "flex", flexDirection: "column", gap: 2 }}
+    >
+      <Typography variant="h5" gutterBottom>
+        Add New Entry
+      </Typography>
 
-      <label className="form-label">Numbering:</label>
-      <input
+      {/* Select Collection */}
+      <FormControl fullWidth>
+        <InputLabel>Select Collection</InputLabel>
+        <Select
+          value={selectedCollection}
+          onChange={(e) => setSelectedCollection(e.target.value)}
+        >
+          <MenuItem value="">
+            <em>Select a collection</em>
+          </MenuItem>
+          {collectionList.map((collection) => (
+            <MenuItem key={collection.id} value={collection.id}>
+              {collection.name}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+
+      {/* Numbering Field */}
+      <TextField
+        label="Numbering"
         type="number"
-        className="form-input"
-        placeholder="Numbering"
+        variant="outlined"
+        fullWidth
         value={numbering}
         onChange={(e) => setNumbering(parseInt(e.target.value))}
       />
 
-      <label className="form-label">Title:</label>
-      <input
-        type="text"
-        className="form-input"
-        placeholder="Title"
+      {/* Title Field */}
+      <TextField
+        label="Title"
+        variant="outlined"
+        fullWidth
         value={title}
         onChange={(e) => setTitle(e.target.value)}
       />
 
-      <label className="form-label">Artist:</label>
-      <select
-        className="form-input"
-        value={artist}
-        onChange={(e) => setArtist(e.target.value)}
-      >
-        <option value="">Select an artist</option>
-        {artistOptions.map((option) => (
-          <option key={option.id} value={option.name}>
-            {option.name}
-          </option>
-        ))}
-      </select>
+      {/* Artist Selection */}
+      <FormControl fullWidth>
+        <InputLabel>Artist</InputLabel>
+        <Select
+          value={artist}
+          onChange={(e) => setArtist(e.target.value)}
+        >
+          <MenuItem value="">
+            <em>Select an artist</em>
+          </MenuItem>
+          {artistOptions.map((option) => (
+            <MenuItem key={option.id} value={option.name}>
+              {option.name}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
 
-      <label className="form-label">Tags (comma-separated):</label>
-      <input
-        type="text"
-        className="form-input"
-        placeholder="Tags"
+      {/* Tags Field */}
+      <TextField
+        label="Tags (comma-separated)"
+        variant="outlined"
+        fullWidth
         value={tags}
         onChange={(e) => setTags(e.target.value)}
       />
 
-      <label className="form-label">YouTube Link:</label>
-      <input
-        type="text"
-        className="form-input"
-        placeholder="YouTube Link"
+      {/* YouTube Link */}
+      <TextField
+        label="YouTube Link"
+        variant="outlined"
+        fullWidth
         value={youtube}
         onChange={(e) => setYoutube(e.target.value)}
       />
 
-      <label className="form-label">Content:</label>
-      <textarea
-        className="form-textarea"
-        placeholder="Content"
+      {/* Content Field */}
+      <TextField
+        label="Content"
+        variant="outlined"
+        fullWidth
+        multiline
+        rows={4}
         value={content}
         onChange={(e) => setContent(e.target.value)}
       />
 
-      <button type="submit" className="form-button">
+      {/* Submit Button */}
+      <Button variant="contained" color="primary" type="submit">
         Submit
-      </button>
-    </form>
+      </Button>
+    </Box>
   );
 };
 

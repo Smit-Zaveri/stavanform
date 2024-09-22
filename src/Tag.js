@@ -1,11 +1,29 @@
 import React, { useState, useEffect } from "react";
 import { firestore } from "./firebase";
-import "./TagForm.css";
+import {
+  Box,
+  Button,
+  TextField,
+  Typography,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction,
+  IconButton,
+  Snackbar,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+} from "@mui/material";
+import DeleteIcon from '@mui/icons-material/Delete';
 
 const TagForm = () => {
   const [tags, setTags] = useState([]);
   const [tagName, setTagName] = useState("");
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
 
   useEffect(() => {
     const fetchTags = async () => {
@@ -43,12 +61,14 @@ const TagForm = () => {
       ];
       setTags(updatedTags);
       setTagName("");
+      setSnackbarMessage("Tag added successfully!");
+      setSnackbarOpen(true);
     } catch (error) {
       console.error("Error adding tag:", error);
     }
   };
 
-  const handleDelete = async (tagId) => {
+  const handleDelete = (tagId) => {
     setConfirmDeleteId(tagId);
   };
 
@@ -60,6 +80,8 @@ const TagForm = () => {
       const updatedTags = tags.filter((tag) => tag.id !== confirmDeleteId);
       setTags(updatedTags);
       setConfirmDeleteId(null);
+      setSnackbarMessage("Tag deleted successfully!");
+      setSnackbarOpen(true);
     } catch (error) {
       console.error("Error deleting tag:", error);
     }
@@ -69,40 +91,66 @@ const TagForm = () => {
     setConfirmDeleteId(null);
   };
 
+  const handleSnackbarClose = () => {
+    setSnackbarOpen(false);
+  };
+
   return (
-    <div className="tag-form-container">
-      <form onSubmit={handleSubmit} className="tag-form">
-        <input
-          type="text"
-          placeholder="Tag Name"
+    <Box sx={{ p: 2 }}>
+      <Typography variant="h5" gutterBottom>
+        Manage Tags
+      </Typography>
+      <form onSubmit={handleSubmit}>
+        <TextField
+          label="Tag Name"
+          variant="outlined"
+          fullWidth
+          margin="normal"
           value={tagName}
           onChange={(e) => setTagName(e.target.value)}
         />
-        <button type="submit">Add Tag</button>
+        <Button variant="contained" color="primary" type="submit">
+          Add Tag
+        </Button>
       </form>
-      <div className="tag-list">
+      <List>
         {tags.map((tag) => (
-          <div key={tag.id} className="tag-item">
-            <span>{tag.name}</span>
-            <button onClick={() => handleDelete(tag.id)}>Delete</button>
-          </div>
+          <ListItem key={tag.id}>
+            <ListItemText primary={tag.name} />
+            <ListItemSecondaryAction>
+              <IconButton edge="end" onClick={() => handleDelete(tag.id)}>
+                <DeleteIcon />
+              </IconButton>
+            </ListItemSecondaryAction>
+          </ListItem>
         ))}
-      </div>
-      {confirmDeleteId && (
-        <div className="confirm-dialog">
-          <p>Are you sure you want to delete this tag?</p>
-          <div>
-            <button
-              style={{ backgroundColor: "#007bff" }}
-              onClick={confirmDelete}
-            >
-              Confirm
-            </button>
-            <button onClick={cancelDelete}>Cancel</button>
-          </div>
-        </div>
-      )}
-    </div>
+      </List>
+      
+      <Dialog
+        open={!!confirmDeleteId}
+        onClose={cancelDelete}
+      >
+        <DialogTitle>Confirm Deletion</DialogTitle>
+        <DialogContent>
+          <Typography>Are you sure you want to delete this tag?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={confirmDelete} color="primary">
+            Confirm
+          </Button>
+          <Button onClick={cancelDelete} color="secondary">
+            Cancel
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={handleSnackbarClose}
+        message={snackbarMessage}
+      />
+    </Box>
   );
 };
 

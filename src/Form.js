@@ -2,6 +2,18 @@ import { useState, useEffect } from "react";
 import { firestore } from "./firebase";
 import firebase from "firebase/compat/app";
 import "firebase/firestore";
+import {
+  Box,
+  Button,
+  Checkbox,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  TextField,
+  Typography,
+  FormControlLabel,
+} from "@mui/material";
 
 const Form = () => {
   const [numbering, setNumbering] = useState(1); // Initial numbering value
@@ -60,6 +72,7 @@ const Form = () => {
       setArtist("");
       setTags("");
       setContent("");
+      setYoutube("");
       setNewFlag(false); // Reset newFlag to false after submission
     } catch (error) {
       console.error("Error adding document:", error);
@@ -67,76 +80,98 @@ const Form = () => {
   };
 
   return (
-    <form className="form" onSubmit={handleSubmit}>
-      <label className="form-label">Numbering:</label>
-      <input
+    <Box
+      component="form"
+      onSubmit={handleSubmit}
+      sx={{ maxWidth: 600, mx: "auto", p: 2, display: "flex", flexDirection: "column", gap: 2 }}
+    >
+      <Typography variant="h5" gutterBottom>
+        Add New Song
+      </Typography>
+
+      {/* Numbering Field */}
+      <TextField
+        label="Numbering"
         type="number"
-        className="form-input"
-        placeholder="Numbering"
+        variant="outlined"
+        fullWidth
         value={numbering}
         onChange={(e) => setNumbering(parseInt(e.target.value))}
       />
 
-      <label className="form-label">Title:</label>
-      <input
-        type="text"
-        className="form-input"
-        placeholder="Title"
+      {/* Title Field */}
+      <TextField
+        label="Title"
+        variant="outlined"
+        fullWidth
         value={title}
         onChange={(e) => setTitle(e.target.value)}
       />
 
-      <label className="form-label">Artist:</label>
-      <select
-        className="form-input"
-        value={artist}
-        onChange={(e) => setArtist(e.target.value)}
-      >
-        <option value="">Select an artist</option>
-        {artistOptions.map((option) => (
-          <option key={option.id} value={option.name}>
-            {option.name}
-          </option>
-        ))}
-      </select>
+      {/* Artist Selection */}
+      <FormControl fullWidth>
+        <InputLabel>Artist</InputLabel>
+        <Select
+          value={artist}
+          onChange={(e) => setArtist(e.target.value)}
+          label="Artist"
+        >
+          <MenuItem value="">
+            <em>Select an artist</em>
+          </MenuItem>
+          {artistOptions.map((option) => (
+            <MenuItem key={option.id} value={option.name}>
+              {option.name}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
 
-      <label className="form-label">Tags (comma-separated):</label>
-      <input
-        type="text"
-        className="form-input"
-        placeholder="Tags"
+      {/* Tags Field */}
+      <TextField
+        label="Tags (comma-separated)"
+        variant="outlined"
+        fullWidth
         value={tags}
         onChange={(e) => setTags(e.target.value)}
       />
 
-      <label className="form-label">YouTube Link:</label>
-      <input
-        type="text"
-        className="form-input"
-        placeholder="YouTube Link"
+      {/* YouTube Link */}
+      <TextField
+        label="YouTube Link"
+        variant="outlined"
+        fullWidth
         value={youtube}
         onChange={(e) => setYoutube(e.target.value)}
       />
 
-      <label className="form-label">Content:</label>
-      <textarea
-        className="form-textarea"
-        placeholder="Content"
+      {/* Content Field */}
+      <TextField
+        label="Content"
+        variant="outlined"
+        fullWidth
+        multiline
+        rows={4}
         value={content}
         onChange={(e) => setContent(e.target.value)}
       />
-      <label className="form-label">New:</label>
-      <input
-        type="checkbox"
-        className="form-checkbox"
-        checked={newFlag}
-        onChange={(e) => setNewFlag(e.target.checked)}
+
+      {/* New Flag */}
+      <FormControlLabel
+        control={
+          <Checkbox
+            checked={newFlag}
+            onChange={(e) => setNewFlag(e.target.checked)}
+          />
+        }
+        label="New"
       />
 
-      <button type="submit" className="form-button">
+      {/* Submit Button */}
+      <Button variant="contained" color="primary" type="submit">
         Submit
-      </button>
-    </form>
+      </Button>
+    </Box>
   );
 };
 

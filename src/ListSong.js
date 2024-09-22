@@ -1,6 +1,48 @@
 import React, { useState, useEffect } from "react";
 import { firestore } from "./firebase";
+import {
+  Container,
+  Grid,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  Button,
+  Typography,
+  InputLabel,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction,
+  IconButton,
+  Modal,
+  Box,
+} from "@mui/material";
+import { Delete, Edit } from "@mui/icons-material";
 import "./SongList.css";
+
+const modalStyle = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  position: "fixed",
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  bgcolor: "rgba(0, 0, 0, 0.5)",
+};
+
+const contentStyle = {
+  bgcolor: "background.paper",
+  boxShadow: 24,
+  p: 4,
+  borderRadius: 2,
+  width: "90%", // Width can be adjusted based on device
+  maxWidth: 600,
+  maxHeight: "80%", // Fixed height to allow scrolling
+  overflowY: "auto", // Enable vertical scrolling
+};
 
 const SongList = () => {
   const [songs, setSongs] = useState([]);
@@ -13,12 +55,13 @@ const SongList = () => {
   const [editYoutubeLink, setEditYoutubeLink] = useState("");
   const [editContent, setEditContent] = useState("");
   const [searchInput, setSearchInput] = useState("");
-  const [collectionList, setCollectionList] = useState([]);
-
   const [searchResults, setSearchResults] = useState([]);
   const [reports, setReports] = useState([]);
-  const [selectedCollection, setSelectedCollection] = useState("");
+  const [selectedCollection, setSelectedCollection] = useState('lyrics');
+  const [collectionList, setCollectionList] = useState([]);
+  const [openModal, setOpenModal] = useState(false);
 
+  // Fetch songs and reports
   useEffect(() => {
     const fetchReports = async () => {
       try {
@@ -36,18 +79,10 @@ const SongList = () => {
     fetchReports();
   }, []);
 
-  const handleResolve = async (id) => {
-    try {
-      await firestore.collection("reports").doc(id).delete();
-      setReports(reports.filter((report) => report.id !== id));
-      console.log("Report resolved and deleted with ID:", id);
-    } catch (error) {
-      console.error("Error deleting report:", error);
-    }
-  };
-
+  // Fetch songs from selected collection
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchSongs = async () => {
+      if (!selectedCollection) return;
       try {
         const snapshot = await firestore.collection(selectedCollection).get();
         const songsData = snapshot.docs.map((doc) => ({
@@ -60,9 +95,10 @@ const SongList = () => {
       }
     };
 
-    fetchData();
+    fetchSongs();
   }, [selectedCollection]);
 
+  // Fetch artist options
   useEffect(() => {
     const fetchArtistOptions = async () => {
       try {
@@ -80,8 +116,8 @@ const SongList = () => {
     fetchArtistOptions();
   }, []);
 
+  // Fetch collection list
   useEffect(() => {
-    // Fetch the collection list from the "collections" collection
     const fetchCollectionList = async () => {
       try {
         const snapshot = await firestore.collection("collections").get();
@@ -98,12 +134,13 @@ const SongList = () => {
     fetchCollectionList();
   }, []);
 
+  // Perform search
   useEffect(() => {
     const performSearch = () => {
       const searchTerm = searchInput.toLowerCase();
       const filteredSongs = songs.filter((song) => {
         const { title, numbering, tags } = song;
-        const lowercaseNumbering = String(numbering).toLowerCase(); // Convert numbering to string before calling toLowerCase
+        const lowercaseNumbering = String(numbering).toLowerCase();
         return (
           title.toLowerCase().includes(searchTerm) ||
           lowercaseNumbering.includes(searchTerm) ||
@@ -116,6 +153,7 @@ const SongList = () => {
     performSearch();
   }, [searchInput, songs]);
 
+  // Delete song
   const handleDelete = async (id) => {
     try {
       const confirmation = window.confirm(
@@ -131,6 +169,29 @@ const SongList = () => {
     }
   };
 
+  const handleEditClick = (song) => {
+    setEditId(song.id);
+    setEditTitle(song.title);
+    setEditNumbering(song.numbering);
+    setEditArtist(song.artist);
+    setEditTags(song.tags.join(", "));
+    setEditYoutubeLink(song.youtube);
+    setEditContent(song.content);
+    setOpenModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setOpenModal(false);
+    setEditId("");
+    setEditTitle("");
+    setEditNumbering("");
+    setEditArtist("");
+    setEditTags("");
+    setEditYoutubeLink("");
+    setEditContent("");
+  };
+
+  // Edit song
   const handleEdit = async (id) => {
     try {
       if (!editTitle || !editNumbering || !editTags || !editContent) {
@@ -146,17 +207,11 @@ const SongList = () => {
           artist: editArtist,
           tags: editTags.split(",").map((tag) => tag.trim().toLowerCase()),
           content: editContent,
-          youtube: editYoutubeLink, // Add the youtubeLink field
+          youtube: editYoutubeLink,
         });
 
       console.log("Document updated with ID:", id);
-      setEditId("");
-      setEditTitle("");
-      setEditNumbering("");
-      setEditArtist("");
-      setEditTags("");
-      setEditYoutubeLink("");
-      setEditContent("");
+      handleCloseModal();
 
       // Refresh the data
       const snapshot = await firestore.collection(selectedCollection).get();
@@ -170,180 +225,163 @@ const SongList = () => {
     }
   };
 
-  const handleEditClick = (song) => {
-    setEditId(song.id);
-    setEditTitle(song.title);
-    setEditNumbering(song.numbering);
-    setEditArtist(song.artist);
-    setEditTags(song.tags.join(", "));
-    setEditYoutubeLink(song.youtube);
-    setEditContent(song.content);
-  };
-
   return (
-    <div className="song-list-container">
-      <h2>Song List</h2>
-      <div className="collection-select">
-        <label>Select Collection:</label>
-        <select
-          className="form-input"
-          value={selectedCollection}
-          onChange={(e) => setSelectedCollection(e.target.value)}
-        >
-          <option value="">Select a collection</option>
-          <option selected value="lyrics">
-            {" "}
-            lyrics
-          </option>
-          {collectionList.map((collection) => (
-            <option key={collection.id} value={collection.name}>
-              {collection.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className="search-container">
-        <input
-          type="text"
-          className="search-input"
-          placeholder="Search by title, numbering, or tag"
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-        />
-      </div>
-      <ul className="song-list">
-        {[
-          ...searchResults.filter((song) =>
-            reports.some(
-              (report) =>
-                report.lyricsId === song.id && report.lyricsTitle === song.title
-            )
-          ),
-          ...searchResults.filter(
-            (song) =>
-              !reports.some(
+    <Container maxWidth="md" sx={{ marginTop: 4 }}>
+      <Typography variant="h4" gutterBottom>
+        Song List
+      </Typography>
+      <Grid container spacing={2} alignItems="center">
+        <Grid item xs={12} sm={6}>
+          <FormControl fullWidth>
+            <InputLabel>Select Collection</InputLabel>
+            <Select
+      value={selectedCollection}
+      onChange={(e) => setSelectedCollection(e.target.value)}
+      label="Select Collection"
+    >
+      <MenuItem value="lyrics">
+        <em>Lyrics</em>
+      </MenuItem>
+      {collectionList.map((collection) => (
+        <MenuItem key={collection.id} value={collection.name}>
+          {collection.name}
+        </MenuItem>
+      ))}
+    </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <TextField
+            fullWidth
+            label="Search Songs"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            margin="normal"
+          />
+        </Grid>
+      </Grid>
+      <List sx={{ marginTop: 3 }}>
+        {searchResults.map((song) => (
+          <ListItem
+            key={song.id}
+            sx={{
+              bgcolor: reports.some(
                 (report) =>
                   report.lyricsId === song.id &&
                   report.lyricsTitle === song.title
               )
-          ),
-        ].map((song) => {
-          const hasReport = reports.some(
-            (report) =>
-              report.lyricsId === song.id && report.lyricsTitle === song.title
-          );
-          return (
-            <li
-              key={song.id}
-              className={`song-item ${hasReport ? "has-report" : ""}`}
-            >
-              <div className="song-id">ID: {song.id}</div>
-              {editId === song.id ? (
-                <div>
-                  <label>Title:</label>
-                  <input
-                    type="text"
-                    className="edit-input"
-                    value={editTitle}
-                    onChange={(e) => setEditTitle(e.target.value)}
-                  />
-                  <label>Numbering:</label>
-                  <input
-                    type="text"
-                    className="edit-input"
-                    value={editNumbering}
-                    onChange={(e) => setEditNumbering(e.target.value)}
-                  />
-                  <label>Artist:</label>
-                  <label>Artist:</label>
-                  <select
-                    className="edit-input"
-                    value={editArtist}
-                    onChange={(e) => setEditArtist(e.target.value)}
-                  >
-                    <option value="">Select an artist</option>
-                    {artistOptions.map((option) => (
-                      <option key={option.id} value={option.name}>
-                        {option.name}
-                      </option>
-                    ))}
-                  </select>
-
-                  <label>Tags:</label>
-                  <input
-                    type="text"
-                    className="edit-input"
-                    value={editTags}
-                    onChange={(e) => setEditTags(e.target.value)}
-                  />
-                  <label>YouTube Link:</label>
-                  <input
-                    type="text"
-                    className="edit-input"
-                    value={editYoutubeLink}
-                    onChange={(e) => setEditYoutubeLink(e.target.value)}
-                  />
-
-                  <label>Content:</label>
-                  <textarea
-                    className="edit-textarea"
-                    value={editContent}
-                    onChange={(e) => setEditContent(e.target.value)}
-                  />
-                  <button
-                    className="save-button"
-                    onClick={() => handleEdit(song.id)}
-                  >
-                    Save
-                  </button>
-                </div>
-              ) : (
-                <div>
-                  <div className="song-title">Title: {song.title}</div>
-                  <div className="song-numbering">
-                    Numbering: {song.numbering}
-                  </div>
-                  <div className="song-artist">Artist: {song.artist}</div>
-                  <div className="song-tags">Tags: {song.tags.join(", ")}</div>
-                  <button
-                    className="edit-button"
-                    onClick={() => handleEditClick(song)}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    className="delete-button"
-                    onClick={() => handleDelete(song.id)}
-                  >
-                    Delete
-                  </button>
-                </div>
-              )}{" "}
-              {reports.map((report) => {
-                if (
+                ? "rgba(255, 0, 0, 0.1)"
+                : "transparent",
+              marginBottom: 2,
+              border: reports.some(
+                (report) =>
                   report.lyricsId === song.id &&
                   report.lyricsTitle === song.title
-                ) {
-                  return (
-                    <div key={report.id} className="report-item">
-                      <div className="report-text">{report.reportText}</div>
-                      <button
-                        className="resolve-button"
-                        onClick={() => handleResolve(report.id)}
-                      >
-                        Resolve
-                      </button>
-                    </div>
-                  );
-                }
-                return null;
-              })}
-            </li>
-          );
-        })}
-      </ul>
-    </div>
+              )
+                ? "1px solid red"
+                : "none",
+              "&:hover": {
+                bgcolor: "rgba(0, 0, 0, 0.05)", // Hover effect
+              },
+            }}
+          >
+            <ListItemText
+              primary={`Title: ${song.title}`}
+              secondary={`Numbering: ${song.numbering} | Artist: ${
+                song.artist
+              } | Tags: ${song.tags.join(", ")}`}
+            />
+            <ListItemSecondaryAction>
+              <IconButton
+                edge="end"
+                aria-label="edit"
+                onClick={() => handleEditClick(song)}
+              >
+                <Edit />
+              </IconButton>
+              <IconButton
+                edge="end"
+                aria-label="delete"
+                onClick={() => handleDelete(song.id)}
+              >
+                <Delete />
+              </IconButton>
+            </ListItemSecondaryAction>
+          </ListItem>
+        ))}
+      </List>
+
+      {/* Edit Modal */}
+      <Modal sx={modalStyle} open={openModal} onClose={handleCloseModal}>
+        <Box sx={contentStyle}>
+          <Typography variant="h6" component="h2">
+            Edit Song
+          </Typography>
+          <TextField
+            fullWidth
+            label="Title"
+            value={editTitle}
+            onChange={(e) => setEditTitle(e.target.value)}
+            margin="normal"
+          />
+          <TextField
+            fullWidth
+            label="Numbering"
+            value={editNumbering}
+            onChange={(e) => setEditNumbering(e.target.value)}
+            margin="normal"
+          />
+
+          {/* Artist Selection */}
+          <FormControl fullWidth margin="normal">
+            <InputLabel>Select Artist</InputLabel>
+            <Select
+              value={editArtist}
+              onChange={(e) => setEditArtist(e.target.value)}
+              label="Select Artist"
+            >
+              {artistOptions.map((artist) => (
+                <MenuItem key={artist.id} value={artist.name}>
+                  {artist.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <TextField
+            fullWidth
+            label="Tags (comma separated)"
+            value={editTags}
+            onChange={(e) => setEditTags(e.target.value)}
+            margin="normal"
+          />
+          <TextField
+            fullWidth
+            label="YouTube Link"
+            value={editYoutubeLink}
+            onChange={(e) => setEditYoutubeLink(e.target.value)}
+            margin="normal"
+          />
+          <TextField
+            fullWidth
+            label="Content"
+            value={editContent}
+            onChange={(e) => setEditContent(e.target.value)}
+            multiline
+            minRows={3}
+            margin="normal"
+          />
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => handleEdit(editId)}
+            sx={{ mt: 2 }}
+          >
+            Save Changes
+          </Button>
+        </Box>
+      </Modal>
+    </Container>
   );
 };
 

@@ -1,38 +1,58 @@
-.App {
-  text-align: center;
+/* Container for the app content */
+.app-container {
+  padding-bottom: 56px; /* Ensure the content is not hidden behind the navbar */
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+/* Styles for the Bottom Navigation */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background-color: white;
+  box-shadow: 0 -1px 5px rgba(0, 0, 0, 0.1);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
+/* Style the BottomNavigationAction labels */
+.MuiBottomNavigationAction-label {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .MuiBottomNavigation-root {
+    justify-content: space-between;
+  }
+
+  .MuiBottomNavigationAction-root {
+    min-width: auto;
+    padding: 6px 12px;
+  }
+
+  .MuiBottomNavigationAction-label {
+    display: none; /* Hide labels on smaller screens to save space */
   }
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
-}
-
-.App-link {
-  color: #61dafb;
-}
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
+@media (min-width: 601px) and (max-width: 960px) {
+  .MuiBottomNavigationAction-root {
+    min-width: 80px;
+    padding: 6px 16px;
   }
-  to {
-    transform: rotate(360deg);
+
+  .MuiBottomNavigationAction-label {
+    font-size: 10px;
+  }
+}
+
+@media (min-width: 961px) {
+  .MuiBottomNavigationAction-label {
+    font-size: 14px;
+  }
+
+  .bottom-nav {
+    background-color: #f8f9fa;
   }
 }
