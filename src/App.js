@@ -1,40 +1,44 @@
-import React, { useState, useEffect } from "react";
 import {
-  Box,
-  CssBaseline,
-  Drawer,
   AppBar,
-  Toolbar,
-  Typography,
-  IconButton,
+  Box,
   Button,
+  CircularProgress,
+  CssBaseline,
+  Divider,
+  Drawer,
+  IconButton,
   List,
   ListItem,
   ListItemIcon,
   ListItemText,
-  useTheme,
+  Toolbar,
+  Typography,
   useMediaQuery,
-  Divider,
-  CircularProgress,
+  useTheme,
 } from "@mui/material";
+import React, { useEffect, useState } from "react";
 
-import { auth } from "./firebase";  // Import Firebase auth
-import { onAuthStateChanged } from "firebase/auth";  
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "./firebase"; // Import Firebase auth
 
+import CollectionsIcon from '@mui/icons-material/Collections';
 import EditIcon from '@mui/icons-material/Edit';
-import MusicNoteIcon from '@mui/icons-material/MusicNote';
-import CollectionsIcon from '@mui/icons-material/Collections'; 
+import EmojiObjectsIcon from '@mui/icons-material/EmojiObjects';
+import LabelIcon from '@mui/icons-material/Label';
+import LibraryMusicIcon from '@mui/icons-material/LibraryMusic';
 import MenuIcon from "@mui/icons-material/Menu";
-import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import MusicNoteIcon from '@mui/icons-material/MusicNote';
+import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
+import { Route, BrowserRouter as Router, Routes, useLocation, useNavigate } from 'react-router-dom';
 
-import Form from "./Form";
-import Tag from "./Tag";
 import ArtistForm from "./ArtistForm";
 import CollectionForm from "./CollectionForm";
+import Form from "./Form";
 import SongList from "./ListSong.js";
-import Tirthankar from "./Tirthankar.js";
-import SuggestionForm from "./Suggestion.js";
 import Login from "./Login.js";
+import SuggestionForm from "./Suggestion.js";
+import Tag from "./Tag";
+import Tirthankar from "./Tirthankar.js";
 
 const drawerWidth = 245;
 
@@ -76,12 +80,12 @@ const App = () => {
 
   const navItems = [
     { label: "Form", icon: <EditIcon />, path: "/" }, // Form - Editing icon
-    { label: "Artist Form", icon: <MusicNoteIcon />, path: "/artist-form" },
-    { label: "Collection", icon: <CollectionsIcon />, path: "/collection" }, 
-    { label: "Tirtankar", icon: <MusicNoteIcon />, path: "/tirtankar" },
-    { label: "Tag", icon: <EditIcon />, path: "/tag" },
-    { label: "Suggestion", icon: <EditIcon />, path: "/suggestion" },
-    { label: "List Song", icon: <EditIcon />, path: "/list-song" },
+    { label: "Artist Form", icon: <MusicNoteIcon />, path: "/artist-form" }, // Music-related form
+    { label: "Collection", icon: <CollectionsIcon />, path: "/collection" }, // Collections icon
+    { label: "Tirtankar", icon: <LibraryMusicIcon />, path: "/tirtankar" }, // Sacred music collection
+    { label: "Tag", icon: <LabelIcon />, path: "/tag" }, // Tagging
+    { label: "Suggestion", icon: <EmojiObjectsIcon />, path: "/suggestion" }, // Suggestions
+    { label: "List Song", icon: <PlaylistAddCheckIcon />, path: "/list-song" }, // Playlist for song listing
   ];
 
   const handleDrawerToggle = () => {
