@@ -14,7 +14,7 @@ import {
   CardActions,
   Modal,
   Box,
-  useTheme, // Import useTheme
+  useTheme,
 } from "@mui/material";
 import { Delete, Edit } from "@mui/icons-material";
 
@@ -42,7 +42,7 @@ const contentStyle = {
 };
 
 const SongList = () => {
-  const theme = useTheme(); // Get the current theme
+  const theme = useTheme();
   const [songs, setSongs] = useState([]);
   const [editId, setEditId] = useState("");
   const [editTitle, setEditTitle] = useState("");
@@ -117,6 +117,24 @@ const SongList = () => {
 
     performSearch();
   }, [searchInput, songs]);
+
+  // Sorting function to place songs with reports at the top
+  const sortSongsByReport = (songs, reports) => {
+    return songs.sort((a, b) => {
+      const aHasReport = reports.some((report) => report.lyricsId === a.id);
+      const bHasReport = reports.some((report) => report.lyricsId === b.id);
+
+      // Songs with reports should appear first
+      if (aHasReport && !bHasReport) return -1;
+      if (!aHasReport && bHasReport) return 1;
+      return 0; // Keep the rest of the order the same
+    });
+  };
+
+  const sortedSongs = sortSongsByReport(
+    searchResults.length > 0 ? searchResults : songs,
+    reports
+  );
 
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this song?")) {
@@ -213,7 +231,7 @@ const SongList = () => {
               displayEmpty
               inputProps={{ "aria-label": "Select Collection" }}
               sx={{
-                bgcolor: theme.palette.background.paper, // Use theme colors
+                bgcolor: theme.palette.background.paper,
                 borderRadius: 1,
                 boxShadow: 1,
               }}
@@ -238,7 +256,7 @@ const SongList = () => {
             onChange={(e) => setSearchInput(e.target.value)}
             margin="normal"
             sx={{
-              bgcolor: theme.palette.background.paper, // Use theme colors
+              bgcolor: theme.palette.background.paper,
               borderRadius: 1,
               boxShadow: 1,
             }}
@@ -246,7 +264,7 @@ const SongList = () => {
         </Grid>
       </Grid>
       <Grid container spacing={2} sx={{ marginTop: 3 }}>
-        {(searchResults.length > 0 ? searchResults : songs).map((song) => {
+        {sortedSongs.map((song) => {
           const report = reports.find(
             (report) =>
               report.lyricsId === song.id && report.lyricsTitle === song.title
@@ -256,8 +274,12 @@ const SongList = () => {
             <Grid item xs={12} sm={6} md={4} key={song.id}>
               <Card
                 sx={{
-                  bgcolor: report ? "rgba(255, 0, 0, 0.1)" : theme.palette.background.paper, // Use theme colors
-                  border: report ? "1px solid red" : "1px solid rgba(0, 0, 0, 0.1)",
+                  bgcolor: report
+                    ? "rgba(255, 0, 0, 0.1)"
+                    : theme.palette.background.paper,
+                  border: report
+                    ? "1px solid red"
+                    : "1px solid rgba(0, 0, 0, 0.1)",
                   borderRadius: 2,
                   boxShadow: 3,
                   transition: "transform 0.2s",
@@ -295,12 +317,12 @@ const SongList = () => {
                   <Button
                     size="small"
                     sx={{
-                      color: '#fff',
-                      backgroundColor: theme.palette.error.main, // Use theme colors
-                      '&:hover': {
-                        backgroundColor: theme.palette.error.dark, // Use theme colors
+                      color: "#fff",
+                      backgroundColor: theme.palette.error.main,
+                      "&:hover": {
+                        backgroundColor: theme.palette.error.dark,
                       },
-                    }} 
+                    }}
                     onClick={() => handleDelete(song.id)}
                     startIcon={<Delete />}
                   >
@@ -310,13 +332,13 @@ const SongList = () => {
                     <Button
                       size="small"
                       sx={{
-                        color: '#fff',
-                        backgroundColor: theme.palette.success.main, // Use theme colors
-                        '&:hover': {
-                          backgroundColor: theme.palette.success.dark, // Use theme colors
+                        color: "#fff",
+                        backgroundColor: theme.palette.success.main,
+                        "&:hover": {
+                          backgroundColor: theme.palette.success.dark,
                         },
-                      }}                
-                      onClick={() => handleResolveReport(report.id)} // Assuming report has an id
+                      }}
+                      onClick={() => handleResolveReport(report.id)}
                     >
                       Resolve
                     </Button>
@@ -380,7 +402,7 @@ const SongList = () => {
               rows={4}
               margin="normal"
               sx={{
-                bgcolor: theme.palette.background.paper, // Use theme colors
+                bgcolor: theme.palette.background.paper,
                 borderRadius: 1,
                 boxShadow: 1,
               }}
