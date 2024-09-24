@@ -29,6 +29,7 @@ const Form = () => {
   const [selectedCollection, setSelectedCollection] = useState("");
   const [collectionList, setCollectionList] = useState([]);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [openSnackbar, setOpenSnackbar] = useState(false);
 
   useEffect(() => {
@@ -71,23 +72,35 @@ const Form = () => {
     // Validation
     if (!selectedCollection || !title || !content) {
       setError("Please fill in all required fields.");
+      setSuccessMessage("");
       setOpenSnackbar(true);
       return;
     }
 
     try {
       const publishDate = firebase.firestore.Timestamp.now();
-      const collection = collectionList.find(
-        (collection) => collection.id === selectedCollection
-      );
 
-      if (!collection) {
-        console.log("Invalid collection selected. Cannot submit.");
-        return;
+      // Conditional logic to set the correct collection reference
+      let collectionRef;
+
+      // Check if the selected collection is "lyrics"
+      if (selectedCollection === "lyrics") {
+        collectionRef = firestore.collection("lyrics"); // Use the lyrics collection directly
+      } else {
+        // Find the collection object by ID from collectionList
+        const collection = collectionList.find(
+          (collection) => collection.id === selectedCollection
+        );
+
+        if (!collection) {
+          console.log("Invalid collection selected. Cannot submit.");
+          return;
+        }
+
+        collectionRef = firestore.collection(collection.name); // Use other collections
       }
 
-      const collectionRef = firestore.collection(collection.name);
-
+      // Add the document to the selected collection
       const docRef = await collectionRef.add({
         title,
         artist,
@@ -108,15 +121,20 @@ const Form = () => {
       setSelectedCollection("");
       setNewFlag(false);
       setError("");
+      setSuccessMessage("Song added successfully!");
+      setOpenSnackbar(true);
     } catch (error) {
       console.error("Error adding document:", error);
       setError("Failed to submit the form.");
+      setSuccessMessage("");
       setOpenSnackbar(true);
     }
   };
 
   const handleCloseSnackbar = () => {
     setOpenSnackbar(false);
+    setError("");
+    setSuccessMessage("");
   };
 
   return (
@@ -129,18 +147,20 @@ const Form = () => {
         Add New Entry
       </Typography>
 
-      {/* Error Message */}
-      {error && (
-        <Snackbar
-          open={openSnackbar}
-          autoHideDuration={6000}
+      {/* Snackbar for Messages */}
+      <Snackbar
+        open={openSnackbar}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+      >
+        <Alert
           onClose={handleCloseSnackbar}
+          severity={error ? "error" : "success"}
+          sx={{ width: "100%" }}
         >
-          <Alert onClose={handleCloseSnackbar} severity="error" sx={{ width: '100%' }}>
-            {error}
-          </Alert>
-        </Snackbar>
-      )}
+          {error || successMessage}
+        </Alert>
+      </Snackbar>
 
       <Grid container spacing={2}>
         {/* Left Column */}
@@ -161,7 +181,8 @@ const Form = () => {
               </MenuItem>
               {collectionList.map((collection) => (
                 <MenuItem key={collection.id} value={collection.id}>
-                  {collection.name.charAt(0).toUpperCase() + collection.name.slice(1)}
+                  {collection.name.charAt(0).toUpperCase() +
+                    collection.name.slice(1)}
                 </MenuItem>
               ))}
             </Select>
@@ -197,10 +218,22 @@ const Form = () => {
               ))}
             </Select>
           </FormControl>
+
+          {/* New Flag */}
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={newFlag}
+                onChange={(e) => setNewFlag(e.target.checked)}
+              />
+            }
+            label="New"
+            sx={{ mt: 2 }}
+          />
         </Grid>
 
         {/* Right Column */}
-        <Grid item xs={12} sm={6} sx={{ mt: -2}}>
+        <Grid item xs={12} sm={6} sx={{ mt: -2 }}>
           {/* Tags Field */}
           <TextField
             label="Tags (comma-separated)"
@@ -233,18 +266,6 @@ const Form = () => {
             sx={{ mt: 2 }}
             required
             error={!content && error}
-          />
-
-          {/* New Flag */}
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={newFlag}
-                onChange={(e) => setNewFlag(e.target.checked)}
-              />
-            }
-            label="New"
-            sx={{ mt: 2 }}
           />
         </Grid>
       </Grid>

@@ -1,3 +1,4 @@
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import {
   AppBar,
   Box,
@@ -16,115 +17,117 @@ import {
   useMediaQuery,
   useTheme,
 } from "@mui/material";
-import React, { useEffect, useState } from "react";
-
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./firebase"; // Import Firebase auth
-
-import CollectionsIcon from '@mui/icons-material/Collections';
-import EditIcon from '@mui/icons-material/Edit';
-import EmojiObjectsIcon from '@mui/icons-material/EmojiObjects';
-import LabelIcon from '@mui/icons-material/Label';
-import LibraryMusicIcon from '@mui/icons-material/LibraryMusic';
+import CollectionsIcon from "@mui/icons-material/Collections";
+import EditIcon from "@mui/icons-material/Edit";
+import EmojiObjectsIcon from "@mui/icons-material/EmojiObjects";
+import LabelIcon from "@mui/icons-material/Label";
+import LibraryMusicIcon from "@mui/icons-material/LibraryMusic";
 import MenuIcon from "@mui/icons-material/Menu";
-import MusicNoteIcon from '@mui/icons-material/MusicNote';
-import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
-import { Route, BrowserRouter as Router, Routes, useLocation, useNavigate } from 'react-router-dom';
+import MusicNoteIcon from "@mui/icons-material/MusicNote";
+import PlaylistAddCheckIcon from "@mui/icons-material/PlaylistAddCheck";
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 
 import ArtistForm from "./ArtistForm";
 import CollectionForm from "./CollectionForm";
 import Form from "./Form";
-import SongList from "./ListSong.js";
-import Login from "./Login.js";
-import SuggestionForm from "./Suggestion.js";
+import SongList from "./ListSong";
+import Login from "./Login";
+import SuggestionForm from "./Suggestion";
 import Tag from "./Tag";
-import Tirthankar from "./Tirthankar.js";
+import Tirthankar from "./Tirthankar";
+import ResetPassword from "./ResetPassword";
 
 const drawerWidth = 245;
 
 const App = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [user, setUser] = useState(null); // User state
-  const [loading, setLoading] = useState(true); // Loading state
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const navigate = useNavigate();
-  const location = useLocation(); // Get current location
+  const location = useLocation();
 
   // Function to handle logout
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     try {
       await auth.signOut();
-      setUser(null); // Reset user state
-      navigate("/login");  // Redirect to login page after logout
+      setUser(null);
+      navigate("/login");
     } catch (error) {
       console.error("Failed to log out", error);
     }
-  };
+  }, [navigate]);
 
   // Authentication check (useEffect)
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);  // Set authenticated user
-        setLoading(false);  // Remove loading state
-      } else {
-        setUser(null);  // Reset user state if not logged in
-        setLoading(false);  // Remove loading state
-        navigate("/login");  // Redirect to login if not authenticated
+      setUser(currentUser);
+      setLoading(false);
+
+      // Only redirect to login if the user is not logged in AND they are trying to access a protected route
+      const publicRoutes = ["/login", "/reset-password"];
+      if (!currentUser && !publicRoutes.includes(location.pathname)) {
+        navigate("/login");
       }
     });
 
-    return () => unsubscribe();  // Cleanup subscription on unmount
-  }, [navigate]);
+    return () => unsubscribe();
+  }, [navigate, location.pathname]);
 
-  const navItems = [
-    { label: "Form", icon: <EditIcon />, path: "/" }, // Form - Editing icon
-    { label: "Artist Form", icon: <MusicNoteIcon />, path: "/artist-form" }, // Music-related form
-    { label: "Collection", icon: <CollectionsIcon />, path: "/collection" }, // Collections icon
-    { label: "Tirtankar", icon: <LibraryMusicIcon />, path: "/tirtankar" }, // Sacred music collection
-    { label: "Tag", icon: <LabelIcon />, path: "/tag" }, // Tagging
-    { label: "Suggestion", icon: <EmojiObjectsIcon />, path: "/suggestion" }, // Suggestions
-    { label: "List Song", icon: <PlaylistAddCheckIcon />, path: "/list-song" }, // Playlist for song listing
-  ];
+  const navItems = useMemo(
+    () => [
+      { label: "Form", icon: <EditIcon />, path: "/" },
+      { label: "Artist Form", icon: <MusicNoteIcon />, path: "/artist-form" },
+      { label: "Collection", icon: <CollectionsIcon />, path: "/collection" },
+      { label: "Tirtankar", icon: <LibraryMusicIcon />, path: "/tirtankar" },
+      { label: "Tag", icon: <LabelIcon />, path: "/tag" },
+      { label: "Suggestion", icon: <EmojiObjectsIcon />, path: "/suggestion" },
+      { label: "List Song", icon: <PlaylistAddCheckIcon />, path: "/list-song" },
+    ],
+    []
+  );
 
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
-  };
+  const handleDrawerToggle = useCallback(() => setMobileOpen((prev) => !prev), []);
 
-  const drawerContent = (
-    <Box sx={{ width: drawerWidth }}>
-      <Toolbar />
-      <Divider />
-      <List>
-        {navItems.map((item) => (
-          <ListItem
-            key={item.label}
-            onClick={() => {
-              navigate(item.path);
-              if (isMobile) {
-                setMobileOpen(false);
-              }
-            }}
-            sx={{
-              backgroundColor: location.pathname === item.path ? theme.palette.action.selected : 'transparent',
-              '&:hover': {
-                backgroundColor: theme.palette.action.hover,
-              },
-            }}
-          >
-            <ListItemIcon>{item.icon}</ListItemIcon>
-            <ListItemText primary={item.label} />
-          </ListItem>
-        ))}
-      </List>
-    </Box>
+  const drawerContent = useMemo(
+    () => (
+      <Box sx={{ width: drawerWidth }}>
+        <Toolbar />
+        <Divider />
+        <List>
+          {navItems.map((item) => (
+            <ListItem
+              key={item.label}
+              onClick={() => {
+                navigate(item.path);
+                if (isMobile) setMobileOpen(false);
+              }}
+              sx={{
+                backgroundColor:
+                  location.pathname === item.path
+                    ? theme.palette.action.selected
+                    : "transparent",
+                "&:hover": {
+                  backgroundColor: theme.palette.action.hover,
+                },
+              }}
+            >
+              <ListItemIcon>{item.icon}</ListItemIcon>
+              <ListItemText primary={item.label} />
+            </ListItem>
+          ))}
+        </List>
+      </Box>
+    ),
+    [isMobile, location.pathname, navItems, navigate, theme]
   );
 
   if (loading) {
-    // Display loading spinner while checking authentication
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
         <CircularProgress />
       </Box>
     );
@@ -133,28 +136,16 @@ const App = () => {
   return (
     <Box sx={{ display: "flex" }}>
       <CssBaseline />
-      <AppBar
-        position="fixed"
-        sx={{
-          zIndex: theme.zIndex.drawer + 1,
-        }}
-      >
+      <AppBar position="fixed" sx={{ zIndex: theme.zIndex.drawer + 1 }}>
         <Toolbar>
-          {isMobile && (
-            <IconButton
-              color="inherit"
-              edge="start"
-              onClick={handleDrawerToggle}
-              sx={{ mr: 2 }}
-            >
+          {isMobile && user && (
+            <IconButton color="inherit" edge="start" onClick={handleDrawerToggle} sx={{ mr: 2 }}>
               <MenuIcon />
             </IconButton>
           )}
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+          <Typography variant="h6" noWrap sx={{ flexGrow: 1 }}>
             Music Manager
           </Typography>
-
-          {/* Conditionally render logout button if user is logged in */}
           {user && (
             <Button color="inherit" onClick={handleLogout}>
               Logout
@@ -163,34 +154,27 @@ const App = () => {
         </Toolbar>
       </AppBar>
 
-      {!isMobile && (
+      {user && !isMobile && (
         <Drawer
           variant="permanent"
           sx={{
             width: drawerWidth,
             flexShrink: 0,
-            [`& .MuiDrawer-paper`]: {
-              width: drawerWidth,
-              boxSizing: "border-box",
-            },
+            "& .MuiDrawer-paper": { width: drawerWidth, boxSizing: "border-box" },
           }}
         >
           {drawerContent}
         </Drawer>
       )}
 
-      {isMobile && (
+      {user && isMobile && (
         <Drawer
           variant="temporary"
           open={mobileOpen}
           onClose={handleDrawerToggle}
-          ModalProps={{
-            keepMounted: true,
-          }}
+          ModalProps={{ keepMounted: true }}
           sx={{
-            [`& .MuiDrawer-paper`]: {
-              width: drawerWidth,
-            },
+            "& .MuiDrawer-paper": { width: drawerWidth },
           }}
         >
           {drawerContent}
@@ -215,6 +199,7 @@ const App = () => {
           <Route path="/list-song" element={user ? <SongList /> : <Login />} />
           <Route path="/tirtankar" element={user ? <Tirthankar /> : <Login />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
         </Routes>
       </Box>
     </Box>

@@ -57,7 +57,7 @@ const TagForm = () => {
 
       const tagData = {
         name: tagName.toLowerCase(),
-        number: tagNumber, // Save number to tag data
+        numbering: tagNumber, // Save number to tag data
       };
 
       if (editingTagId) {
