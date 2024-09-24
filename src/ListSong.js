@@ -14,6 +14,7 @@ import {
   CardActions,
   Modal,
   Box,
+  useTheme, // Import useTheme
 } from "@mui/material";
 import { Delete, Edit } from "@mui/icons-material";
 
@@ -41,6 +42,7 @@ const contentStyle = {
 };
 
 const SongList = () => {
+  const theme = useTheme(); // Get the current theme
   const [songs, setSongs] = useState([]);
   const [editId, setEditId] = useState("");
   const [editTitle, setEditTitle] = useState("");
@@ -155,10 +157,8 @@ const SongList = () => {
   const handleResolveReport = async (reportId) => {
     if (window.confirm("Are you sure you want to resolve this report?")) {
       try {
-        // Delete the report from Firestore
         await firestore.collection("reports").doc(reportId).delete();
         
-        // Optionally refresh the reports state
         const reportSnapshot = await firestore.collection("reports").get();
         const reportList = reportSnapshot.docs.map((doc) => ({
           id: doc.id,
@@ -172,7 +172,6 @@ const SongList = () => {
       }
     }
   };
-  
 
   const handleEdit = async (id) => {
     if (!editTitle || !editContent) {
@@ -189,7 +188,6 @@ const SongList = () => {
       });
       console.log("Document updated with ID:", id);
       handleCloseModal();
-      // Refresh the data
       const snapshot = await firestore.collection(selectedCollection).get();
       const songsData = snapshot.docs.map((doc) => ({
         id: doc.id,
@@ -202,7 +200,7 @@ const SongList = () => {
   };
 
   return (
-    <Container maxWidth="m" sx={{ marginTop: 4 }}>
+    <Container maxWidth="md" sx={{ marginTop: 4 }}>
       <Typography variant="h4" gutterBottom>
         Song List
       </Typography>
@@ -215,7 +213,7 @@ const SongList = () => {
               displayEmpty
               inputProps={{ "aria-label": "Select Collection" }}
               sx={{
-                bgcolor: "background.paper",
+                bgcolor: theme.palette.background.paper, // Use theme colors
                 borderRadius: 1,
                 boxShadow: 1,
               }}
@@ -240,7 +238,7 @@ const SongList = () => {
             onChange={(e) => setSearchInput(e.target.value)}
             margin="normal"
             sx={{
-              bgcolor: "background.paper",
+              bgcolor: theme.palette.background.paper, // Use theme colors
               borderRadius: 1,
               boxShadow: 1,
             }}
@@ -248,89 +246,87 @@ const SongList = () => {
         </Grid>
       </Grid>
       <Grid container spacing={2} sx={{ marginTop: 3 }}>
-  {(searchResults.length > 0 ? searchResults : songs).map((song) => {
-    // Find the report associated with the current song
-    const report = reports.find(
-      (report) =>
-        report.lyricsId === song.id && report.lyricsTitle === song.title
-    );
+        {(searchResults.length > 0 ? searchResults : songs).map((song) => {
+          const report = reports.find(
+            (report) =>
+              report.lyricsId === song.id && report.lyricsTitle === song.title
+          );
 
-    return (
-      <Grid item xs={12} sm={6} md={4} key={song.id}>
-        <Card
-          sx={{
-            bgcolor: report ? "rgba(255, 0, 0, 0.1)" : "white",
-            border: report ? "1px solid red" : "1px solid rgba(0, 0, 0, 0.1)",
-            borderRadius: 2,
-            boxShadow: 3,
-            transition: "transform 0.2s",
-            "&:hover": {
-              transform: "scale(1.02)",
-            },
-          }}
-        >
-          <CardContent>
-            <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1 }}>
-              {song.title}
-            </Typography>
-            <Typography variant="body2" color="textSecondary">
-              {`Artist: ${song.artist} | Tags: ${song.tags.join(", ")}`}
-            </Typography>
-            {report && (
-              <Typography
-                variant="body2"
-                color="error"
-                sx={{ mt: 1 }}
-              >
-                {`Report: ${report.reportText}`}
-              </Typography>
-            )}
-          </CardContent>
-          <CardActions>
-            <Button
-              size="small"
-              color="primary"
-              onClick={() => handleEditClick(song)}
-              startIcon={<Edit />}
-            >
-              Edit
-            </Button>
-            <Button
-              size="small"
-              sx={{
-                color: '#fff',
-                backgroundColor:'#FF0033',
-                '&:hover': {
-                  backgroundColor: '#FF0033', // replace with your desired color
-                },
-              }} 
-              onClick={() => handleDelete(song.id)}
-              startIcon={<Delete />}
-            >
-              Delete
-            </Button>
-            {report && (
-              <Button
-                size="small"
+          return (
+            <Grid item xs={12} sm={6} md={4} key={song.id}>
+              <Card
                 sx={{
-                  color: '#fff',
-                  backgroundColor:'#4BB543',
-                  '&:hover': {
-                    backgroundColor: '#4BB543', // replace with your desired color
+                  bgcolor: report ? "rgba(255, 0, 0, 0.1)" : theme.palette.background.paper, // Use theme colors
+                  border: report ? "1px solid red" : "1px solid rgba(0, 0, 0, 0.1)",
+                  borderRadius: 2,
+                  boxShadow: 3,
+                  transition: "transform 0.2s",
+                  "&:hover": {
+                    transform: "scale(1.02)",
                   },
-                }}                
-                onClick={() => handleResolveReport(report.id)} // Assuming report has an id
+                }}
               >
-                Resolve
-              </Button>
-            )}
-          </CardActions>
-        </Card>
+                <CardContent>
+                  <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1 }}>
+                    {song.title}
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary">
+                    {`Artist: ${song.artist} | Tags: ${song.tags.join(", ")}`}
+                  </Typography>
+                  {report && (
+                    <Typography
+                      variant="body2"
+                      color="error"
+                      sx={{ mt: 1 }}
+                    >
+                      {`Report: ${report.reportText}`}
+                    </Typography>
+                  )}
+                </CardContent>
+                <CardActions>
+                  <Button
+                    size="small"
+                    color="primary"
+                    onClick={() => handleEditClick(song)}
+                    startIcon={<Edit />}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    size="small"
+                    sx={{
+                      color: '#fff',
+                      backgroundColor: theme.palette.error.main, // Use theme colors
+                      '&:hover': {
+                        backgroundColor: theme.palette.error.dark, // Use theme colors
+                      },
+                    }} 
+                    onClick={() => handleDelete(song.id)}
+                    startIcon={<Delete />}
+                  >
+                    Delete
+                  </Button>
+                  {report && (
+                    <Button
+                      size="small"
+                      sx={{
+                        color: '#fff',
+                        backgroundColor: theme.palette.success.main, // Use theme colors
+                        '&:hover': {
+                          backgroundColor: theme.palette.success.dark, // Use theme colors
+                        },
+                      }}                
+                      onClick={() => handleResolveReport(report.id)} // Assuming report has an id
+                    >
+                      Resolve
+                    </Button>
+                  )}
+                </CardActions>
+              </Card>
+            </Grid>
+          );
+        })}
       </Grid>
-    );
-  })}
-</Grid>
-
 
       <Modal open={openModal} onClose={handleCloseModal}>
         <Box sx={modalStyle}>
@@ -376,34 +372,34 @@ const SongList = () => {
               margin="normal"
             />
             <TextField
-            fullWidth
-            label="Content"
-            value={editContent}
-            onChange={(e) => setEditContent(e.target.value)}
-            multiline
-            rows={4}
-            margin="normal"
-            sx={{
-              bgcolor: "background.paper",
-              borderRadius: 1,
-              boxShadow: 1,
-            }}
-          />
+              fullWidth
+              label="Content"
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              multiline
+              rows={4}
+              margin="normal"
+              sx={{
+                bgcolor: theme.palette.background.paper, // Use theme colors
+                borderRadius: 1,
+                boxShadow: 1,
+              }}
+            />
             <Button
               variant="contained"
               color="primary"
               onClick={() => handleEdit(editId)}
-              sx={{  mr: 2, mt: 2 }}
+              sx={{ mr: 2, mt: 2 }}
             >
               Save Changes
             </Button>
             <Button
               variant="contained"
               color="primary"
-              onClick={() => handleCloseModal()}
+              onClick={handleCloseModal}
               sx={{ mt: 2 }}
             >
-              Close Model
+              Close Modal
             </Button>
           </Box>
         </Box>

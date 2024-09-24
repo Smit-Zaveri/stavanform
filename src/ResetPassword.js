@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { auth } from "./firebase";
+import React, { useState, useEffect } from "react";
+import { auth } from "./firebase"; // Adjust this import based on your project structure
 import {
   Box,
   TextField,
@@ -8,6 +8,7 @@ import {
   Card,
   CardContent,
   Alert,
+  useTheme,
   CircularProgress,
 } from "@mui/material";
 import { useNavigate } from 'react-router-dom';
@@ -17,12 +18,20 @@ const ResetPassword = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+  const theme = useTheme(); 
   const navigate = useNavigate();
 
   const handlePasswordReset = async () => {
     setLoading(true);  // Start loading
     setError("");  // Clear previous errors
     setSuccess("");  // Clear previous success messages
+
+    // Validate email format
+    if (!isValidEmail(email)) {
+      setError("Please enter a valid email address.");
+      setLoading(false);
+      return;
+    }
 
     try {
       await auth.sendPasswordResetEmail(email);
@@ -34,6 +43,22 @@ const ResetPassword = () => {
     }
   };
 
+  // Email validation function
+  const isValidEmail = (email) => {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(email);
+  };
+
+  // Redirect to login after success
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => {
+        navigate("/login");
+      }, 5000); // Redirect after 5 seconds
+      return () => clearTimeout(timer); // Cleanup the timer
+    }
+  }, [success, navigate]);
+
   return (
     <Box
       sx={{
@@ -41,7 +66,7 @@ const ResetPassword = () => {
         justifyContent: "center",
         alignItems: "center",
         height: "100vh",
-        backgroundColor: "#f5f5f5",  // Light background color
+        backgroundColor: theme.palette.background.default,  // Light background color
       }}
     >
       <Card sx={{ maxWidth: 400, width: '100%', p: 2, boxShadow: 3 }}>
@@ -51,10 +76,18 @@ const ResetPassword = () => {
           </Typography>
 
           {/* Display success message */}
-          {success && <Alert severity="success" sx={{ mt: 2 }}>{success}</Alert>}
+          {success && (
+            <Alert severity="success" sx={{ mt: 2 }} aria-live="polite">
+              {success}
+            </Alert>
+          )}
 
           {/* Display error message */}
-          {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
+          {error && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {error}
+            </Alert>
+          )}
 
           <TextField
             label="Email"
@@ -72,7 +105,7 @@ const ResetPassword = () => {
             fullWidth
             onClick={handlePasswordReset}
             sx={{ mt: 3, py: 1.5 }}
-            disabled={loading}
+            disabled={loading || !isValidEmail(email)} // Disable if loading or invalid email
           >
             {loading ? <CircularProgress size={24} color="inherit" /> : "Send Reset Link"}
           </Button>

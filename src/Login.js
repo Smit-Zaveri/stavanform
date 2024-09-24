@@ -9,6 +9,7 @@ import {
   CardContent,
   CircularProgress,
   Alert,
+  useTheme, // Import useTheme
 } from "@mui/material";
 import { useNavigate } from 'react-router-dom';
 
@@ -16,20 +17,21 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);  // Loading state for feedback
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const theme = useTheme(); // Access the theme
 
   const handleLogin = async () => {
-    setLoading(true);  // Start loading
-    setError("");  // Clear previous error
+    setLoading(true);
+    setError("");
 
     try {
       await auth.signInWithEmailAndPassword(email, password);
-      navigate("/");  // Redirect to home page after login
+      navigate("/"); // Redirect to home page after login
     } catch (err) {
       setError("Failed to log in. Please check your credentials.");
     } finally {
-      setLoading(false);  // Stop loading
+      setLoading(false);
     }
   };
 
@@ -40,7 +42,7 @@ const Login = () => {
         justifyContent: "center",
         alignItems: "center",
         height: "83.5vh",
-        backgroundColor: "#f5f5f5",  // Light background color
+        backgroundColor: theme.palette.background.default, // Use theme background color
       }}
     >
       <Card sx={{ maxWidth: 400, width: '100%', p: 2, boxShadow: 3 }}>

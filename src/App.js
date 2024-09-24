@@ -16,6 +16,8 @@ import {
   Typography,
   useMediaQuery,
   useTheme,
+  createTheme,
+  ThemeProvider, // Import ThemeProvider
 } from "@mui/material";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./firebase"; // Import Firebase auth
@@ -27,7 +29,13 @@ import LibraryMusicIcon from "@mui/icons-material/LibraryMusic";
 import MenuIcon from "@mui/icons-material/Menu";
 import MusicNoteIcon from "@mui/icons-material/MusicNote";
 import PlaylistAddCheckIcon from "@mui/icons-material/PlaylistAddCheck";
-import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 
 import ArtistForm from "./ArtistForm";
 import CollectionForm from "./CollectionForm";
@@ -41,7 +49,7 @@ import ResetPassword from "./ResetPassword";
 
 const drawerWidth = 245;
 
-const App = () => {
+const App = ({ darkMode, toggleTheme }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -85,12 +93,19 @@ const App = () => {
       { label: "Tirtankar", icon: <LibraryMusicIcon />, path: "/tirtankar" },
       { label: "Tag", icon: <LabelIcon />, path: "/tag" },
       { label: "Suggestion", icon: <EmojiObjectsIcon />, path: "/suggestion" },
-      { label: "List Song", icon: <PlaylistAddCheckIcon />, path: "/list-song" },
+      {
+        label: "List Song",
+        icon: <PlaylistAddCheckIcon />,
+        path: "/list-song",
+      },
     ],
     []
   );
 
-  const handleDrawerToggle = useCallback(() => setMobileOpen((prev) => !prev), []);
+  const handleDrawerToggle = useCallback(
+    () => setMobileOpen((prev) => !prev),
+    []
+  );
 
   const drawerContent = useMemo(
     () => (
@@ -127,25 +142,41 @@ const App = () => {
 
   if (loading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
-        <CircularProgress />
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+          background: theme.palette.background.default,
+        }}
+      >
+        <CircularProgress  sx={{ background: theme.palette.background.default }}/>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ display: "flex" }}>
+    <Box sx={{ display: "flex", background: theme.palette.background.default, }}>
       <CssBaseline />
       <AppBar position="fixed" sx={{ zIndex: theme.zIndex.drawer + 1 }}>
         <Toolbar>
           {isMobile && user && (
-            <IconButton color="inherit" edge="start" onClick={handleDrawerToggle} sx={{ mr: 2 }}>
+            <IconButton
+              color="inherit"
+              edge="start"
+              onClick={handleDrawerToggle}
+              sx={{ mr: 2 }}
+            >
               <MenuIcon />
             </IconButton>
           )}
           <Typography variant="h6" noWrap sx={{ flexGrow: 1 }}>
-            Music Manager
+            DashBoard{" "}
           </Typography>
+          <Button color="inherit" onClick={toggleTheme}>
+            {darkMode ? "Light Mode" : "Dark Mode"}
+          </Button>
           {user && (
             <Button color="inherit" onClick={handleLogout}>
               Logout
@@ -158,9 +189,9 @@ const App = () => {
         <Drawer
           variant="permanent"
           sx={{
-            width: drawerWidth,
+            width: 250,
             flexShrink: 0,
-            "& .MuiDrawer-paper": { width: drawerWidth, boxSizing: "border-box" },
+            "& .MuiDrawer-paper": { width: 250, boxSizing: "border-box" },
           }}
         >
           {drawerContent}
@@ -193,11 +224,23 @@ const App = () => {
         <Routes>
           <Route path="/" element={user ? <Form /> : <Login />} />
           <Route path="/tag" element={user ? <Tag /> : <Login />} />
-          <Route path="/suggestion" element={user ? <SuggestionForm /> : <Login />} />
-          <Route path="/artist-form" element={user ? <ArtistForm /> : <Login />} />
-          <Route path="/collection" element={user ? <CollectionForm /> : <Login />} />
+          <Route
+            path="/suggestion"
+            element={user ? <SuggestionForm /> : <Login />}
+          />
+          <Route
+            path="/artist-form"
+            element={user ? <ArtistForm /> : <Login />}
+          />
+          <Route
+            path="/collection"
+            element={user ? <CollectionForm /> : <Login />}
+          />
           <Route path="/list-song" element={user ? <SongList /> : <Login />} />
-          <Route path="/tirtankar" element={user ? <Tirthankar /> : <Login />} />
+          <Route
+            path="/tirtankar"
+            element={user ? <Tirthankar /> : <Login />}
+          />
           <Route path="/login" element={<Login />} />
           <Route path="/reset-password" element={<ResetPassword />} />
         </Routes>
@@ -206,10 +249,4 @@ const App = () => {
   );
 };
 
-const AppWrapper = () => (
-  <Router>
-    <App />
-  </Router>
-);
-
-export default AppWrapper;
+export default App;
