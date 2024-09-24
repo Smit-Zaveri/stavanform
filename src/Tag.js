@@ -1,23 +1,23 @@
-import React, { useState, useEffect } from "react";
-import { firestore } from "./firebase";
+import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from "@mui/icons-material/Edit"; // Import Edit Icon
 import {
   Box,
   Button,
-  TextField,
-  Typography,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-  IconButton,
-  Snackbar,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
+  List,
+  ListItem,
+  ListItemSecondaryAction,
+  ListItemText,
+  Snackbar,
+  TextField,
+  Typography,
 } from "@mui/material";
-import DeleteIcon from "@mui/icons-material/Delete";
-import EditIcon from "@mui/icons-material/Edit"; // Import Edit Icon
+import React, { useEffect, useState } from "react";
+import { firestore } from "./firebase";
 
 const TagForm = () => {
   const [tags, setTags] = useState([]);

@@ -1,17 +1,17 @@
-import React, { useState } from "react";
-import { auth } from "./firebase";
 import {
+  Alert,
   Box,
-  TextField,
   Button,
-  Typography,
   Card,
   CardContent,
   CircularProgress,
-  Alert,
+  TextField,
+  Typography,
   useTheme, // Import useTheme
 } from "@mui/material";
+import React, { useState } from "react";
 import { useNavigate } from 'react-router-dom';
+import { auth } from "./firebase";
 
 const Login = () => {
   const [email, setEmail] = useState("");

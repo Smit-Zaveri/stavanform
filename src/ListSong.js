@@ -1,22 +1,22 @@
-import React, { useState, useEffect } from "react";
-import { firestore } from "./firebase";
+import { Delete, Edit } from "@mui/icons-material";
 import {
-  Container,
-  Grid,
-  TextField,
-  Select,
-  MenuItem,
-  FormControl,
-  Button,
-  Typography,
-  Card,
-  CardContent,
-  CardActions,
-  Modal,
   Box,
+  Button,
+  Card,
+  CardActions,
+  CardContent,
+  Container,
+  FormControl,
+  Grid,
+  MenuItem,
+  Modal,
+  Select,
+  TextField,
+  Typography,
   useTheme,
 } from "@mui/material";
-import { Delete, Edit } from "@mui/icons-material";
+import React, { useEffect, useState } from "react";
+import { firestore } from "./firebase";
 
 const modalStyle = {
   display: "flex",

@@ -1,17 +1,17 @@
-import React, { useState, useEffect } from "react";
-import { auth } from "./firebase"; // Adjust this import based on your project structure
 import {
+  Alert,
   Box,
-  TextField,
   Button,
-  Typography,
   Card,
   CardContent,
-  Alert,
-  useTheme,
   CircularProgress,
+  TextField,
+  Typography,
+  useTheme,
 } from "@mui/material";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom';
+import { auth } from "./firebase"; // Adjust this import based on your project structure
 
 const ResetPassword = () => {
   const [email, setEmail] = useState("");

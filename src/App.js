@@ -1,4 +1,11 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import CollectionsIcon from "@mui/icons-material/Collections";
+import EditIcon from "@mui/icons-material/Edit";
+import EmojiObjectsIcon from "@mui/icons-material/EmojiObjects";
+import LabelIcon from "@mui/icons-material/Label";
+import LibraryMusicIcon from "@mui/icons-material/LibraryMusic";
+import MenuIcon from "@mui/icons-material/Menu";
+import MusicNoteIcon from "@mui/icons-material/MusicNote";
+import PlaylistAddCheckIcon from "@mui/icons-material/PlaylistAddCheck";
 import {
   AppBar,
   Box,
@@ -15,37 +22,27 @@ import {
   Toolbar,
   Typography,
   useMediaQuery,
-  useTheme,
-  createTheme,
-  ThemeProvider, // Import ThemeProvider
+  useTheme
 } from "@mui/material";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "./firebase"; // Import Firebase auth
-import CollectionsIcon from "@mui/icons-material/Collections";
-import EditIcon from "@mui/icons-material/Edit";
-import EmojiObjectsIcon from "@mui/icons-material/EmojiObjects";
-import LabelIcon from "@mui/icons-material/Label";
-import LibraryMusicIcon from "@mui/icons-material/LibraryMusic";
-import MenuIcon from "@mui/icons-material/Menu";
-import MusicNoteIcon from "@mui/icons-material/MusicNote";
-import PlaylistAddCheckIcon from "@mui/icons-material/PlaylistAddCheck";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  BrowserRouter as Router,
-  Routes,
   Route,
+  Routes,
   useLocation,
-  useNavigate,
+  useNavigate
 } from "react-router-dom";
+import { auth } from "./firebase"; // Import Firebase auth
 
 import ArtistForm from "./ArtistForm";
 import CollectionForm from "./CollectionForm";
 import Form from "./Form";
 import SongList from "./ListSong";
 import Login from "./Login";
+import ResetPassword from "./ResetPassword";
 import SuggestionForm from "./Suggestion";
 import Tag from "./Tag";
 import Tirthankar from "./Tirthankar";
-import ResetPassword from "./ResetPassword";
 
 const drawerWidth = 245;
 
