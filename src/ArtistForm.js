@@ -52,7 +52,7 @@ const ArtistForm = () => {
     e.preventDefault();
 
     try {
-      if (!name || !pictureUrl || !numbering) {
+      if (!name || !numbering) {
         setError("Please fill in all fields.");
         return;
       }
