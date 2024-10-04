@@ -5,14 +5,20 @@ import {
   Checkbox,
   FormControl,
   FormControlLabel,
-  Grid,
   InputLabel,
   MenuItem,
   Select,
+  Grid,
   Snackbar,
   TextField,
   Typography,
+  Autocomplete,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
 } from "@mui/material";
+import { useNavigate } from "react-router-dom"; // for redirection
 import firebase from "firebase/compat/app";
 import "firebase/firestore";
 import React, { useEffect, useState } from "react";
@@ -31,6 +37,9 @@ const Form = () => {
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [openDialog, setOpenDialog] = useState(false); // for confirmation dialog
+  const [newArtist, setNewArtist] = useState(""); // store new artist name
+  const navigate = useNavigate(); // for redirection
 
   useEffect(() => {
     const fetchArtistOptions = async () => {
@@ -80,14 +89,10 @@ const Form = () => {
     try {
       const publishDate = firebase.firestore.Timestamp.now();
 
-      // Conditional logic to set the correct collection reference
       let collectionRef;
-
-      // Check if the selected collection is "lyrics"
       if (selectedCollection === "lyrics") {
-        collectionRef = firestore.collection("lyrics"); // Use the lyrics collection directly
+        collectionRef = firestore.collection("lyrics");
       } else {
-        // Find the collection object by ID from collectionList
         const collection = collectionList.find(
           (collection) => collection.id === selectedCollection
         );
@@ -97,10 +102,9 @@ const Form = () => {
           return;
         }
 
-        collectionRef = firestore.collection(collection.name); // Use other collections
+        collectionRef = firestore.collection(collection.name);
       }
 
-      // Add the document to the selected collection
       const docRef = await collectionRef.add({
         title,
         artist,
@@ -112,7 +116,6 @@ const Form = () => {
       });
       console.log("Document written with ID:", docRef.id);
 
-      // Reset form fields
       setTitle("");
       setArtist("");
       setTags("");
@@ -137,6 +140,19 @@ const Form = () => {
     setSuccessMessage("");
   };
 
+  const handleArtistInputBlur = () => {
+    // Check if the artist doesn't exist in the options
+    if (artist && !artistOptions.some((option) => option.name === artist)) {
+      setNewArtist(artist);
+      setOpenDialog(true); // Open confirmation dialog
+    }
+  };
+
+  const handleConfirmNewArtist = () => {
+    setOpenDialog(false);
+    navigate(`/artist-form`, { state: { name: newArtist } }); // Redirect to ArtistForm with prefilled name
+  };
+
   return (
     <Box
       component="form"
@@ -147,7 +163,6 @@ const Form = () => {
         Add New Entry
       </Typography>
 
-      {/* Snackbar for Messages */}
       <Snackbar
         open={openSnackbar}
         autoHideDuration={6000}
@@ -163,9 +178,7 @@ const Form = () => {
       </Snackbar>
 
       <Grid container spacing={2}>
-        {/* Left Column */}
         <Grid item xs={12} sm={6}>
-          {/* Select Collection */}
           <FormControl fullWidth required error={!selectedCollection && error}>
             <InputLabel>Select Collection</InputLabel>
             <Select
@@ -188,7 +201,6 @@ const Form = () => {
             </Select>
           </FormControl>
 
-          {/* Title Field */}
           <TextField
             label="Title"
             variant="outlined"
@@ -200,26 +212,18 @@ const Form = () => {
             error={!title && error}
           />
 
-          {/* Artist Selection */}
-          <FormControl fullWidth sx={{ mt: 2 }}>
-            <InputLabel>Artist</InputLabel>
-            <Select
-              value={artist}
-              onChange={(e) => setArtist(e.target.value)}
-              label="Artist"
-            >
-              <MenuItem value="">
-                <em>Select an artist</em>
-              </MenuItem>
-              {artistOptions.map((option) => (
-                <MenuItem key={option.id} value={option.name}>
-                  {option.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          {/* Artist Autocomplete with Text Box */}
+          <Autocomplete
+            freeSolo
+            options={artistOptions.map((option) => option.name)}
+            value={artist}
+            onInputChange={(event, newValue) => setArtist(newValue)}
+            onBlur={handleArtistInputBlur}
+            renderInput={(params) => (
+              <TextField {...params} label="Artist" variant="outlined" fullWidth sx={{ mt: 2 }} />
+            )}
+          />
 
-          {/* New Flag */}
           <FormControlLabel
             control={
               <Checkbox
@@ -232,9 +236,7 @@ const Form = () => {
           />
         </Grid>
 
-        {/* Right Column */}
         <Grid item xs={12} sm={6} sx={{ mt: -2 }}>
-          {/* Tags Field */}
           <TextField
             label="Tags (comma-separated)"
             variant="outlined"
@@ -244,7 +246,6 @@ const Form = () => {
             sx={{ mt: 2 }}
           />
 
-          {/* YouTube Link */}
           <TextField
             label="YouTube Link"
             variant="outlined"
@@ -254,7 +255,6 @@ const Form = () => {
             sx={{ mt: 2 }}
           />
 
-          {/* Content Field */}
           <TextField
             label="Content"
             variant="outlined"
@@ -270,7 +270,6 @@ const Form = () => {
         </Grid>
       </Grid>
 
-      {/* Submit Button */}
       <Button
         variant="contained"
         color="primary"
@@ -280,6 +279,25 @@ const Form = () => {
       >
         Submit
       </Button>
+
+      {/* Dialog for new artist confirmation */}
+      <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+        <DialogTitle>Create New Artist</DialogTitle>
+        <DialogContent>
+          <Typography>
+            The artist "{newArtist}" does not exist. Would you like to create a
+            new artist entry?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDialog(false)} color="secondary">
+            Cancel
+          </Button>
+          <Button onClick={handleConfirmNewArtist} color="primary">
+            Yes, Create Artist
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

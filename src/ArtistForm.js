@@ -18,6 +18,7 @@ import {
 } from "@mui/material";
 import React, { useEffect, useState } from "react";
 import { firestore } from "./firebase";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const ArtistForm = () => {
   const [name, setName] = useState("");
@@ -29,6 +30,15 @@ const ArtistForm = () => {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Prefill the artist name if passed through state (from previous form)
+    if (location.state && location.state.name) {
+      setName(location.state.name);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     fetchArtists();
@@ -52,7 +62,7 @@ const ArtistForm = () => {
     e.preventDefault();
 
     try {
-      if (!name || !pictureUrl || !numbering) {
+      if (!name || !numbering) {
         setError("Please fill in all fields.");
         return;
       }
@@ -76,6 +86,9 @@ const ArtistForm = () => {
       setSnackbarOpen(true);
       resetForm();
       fetchArtists();
+      setTimeout(() => {
+        navigate(-1); // Go back to the previous page
+      }, 2000);
     } catch (error) {
       console.error("Error adding/updating artist:", error);
     }
