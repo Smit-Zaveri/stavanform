@@ -57,7 +57,7 @@ const SuggestionForm = () => {
 
       const suggestionData = {
         name: suggestionName.toLowerCase(),
-        number: suggestionNumber, // Save number to suggestion data
+        numbering: suggestionNumber, // Save number to suggestion data
       };
 
       if (editingsuggestionId) {

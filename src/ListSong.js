@@ -421,7 +421,7 @@ const SongList = () => {
               onClick={handleCloseModal}
               sx={{ mt: 2 }}
             >
-              Close Modal
+              Close
             </Button>
           </Box>
         </Box>
