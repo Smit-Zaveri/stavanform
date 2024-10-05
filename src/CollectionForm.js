@@ -138,6 +138,7 @@ const CollectionForm = () => {
         <TextField
           label="Number"
           variant="outlined"
+          type='number'
           fullWidth
           margin="normal"
           value={numbering}

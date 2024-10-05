@@ -43,6 +43,7 @@ import ResetPassword from "./ResetPassword";
 import SuggestionForm from "./Suggestion";
 import Tag from "./Tag";
 import Tirthankar from "./Tirthankar";
+import SuggestedSongs from "./SuggestedSongs";
 
 const drawerWidth = 245;
 
@@ -94,6 +95,11 @@ const App = ({ darkMode, toggleTheme }) => {
         label: "List Song",
         icon: <PlaylistAddCheckIcon />,
         path: "/list-song",
+      },
+      {
+        label: "Suggested Song",
+        icon: <PlaylistAddCheckIcon />,
+        path: "/suggestedsongs",
       },
     ],
     []
@@ -237,6 +243,10 @@ const App = ({ darkMode, toggleTheme }) => {
           <Route
             path="/tirtankar"
             element={user ? <Tirthankar /> : <Login />}
+          />
+          <Route
+            path="/suggestedsongs"
+            element={user ? <SuggestedSongs /> : <Login />}
           />
           <Route path="/login" element={<Login />} />
           <Route path="/reset-password" element={<ResetPassword />} />

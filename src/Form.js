@@ -18,13 +18,18 @@ import {
   DialogContent,
   DialogTitle,
 } from "@mui/material";
-import { useNavigate } from "react-router-dom"; // for redirection
+import { useNavigate, useLocation  } from "react-router-dom"; // for redirection
 import firebase from "firebase/compat/app";
 import "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import { firestore } from "./firebase";
 
+
 const Form = () => {
+  const location = useLocation();
+const suggestion = location.state?.suggestion;
+
+
   const [title, setTitle] = useState("");
   const [artist, setArtist] = useState("");
   const [tags, setTags] = useState("");
@@ -34,6 +39,8 @@ const Form = () => {
   const [artistOptions, setArtistOptions] = useState([]);
   const [selectedCollection, setSelectedCollection] = useState("");
   const [collectionList, setCollectionList] = useState([]);
+  const [tirthankarList, setTirthankarList] = useState([]); // For Tirthankar dropdown
+  const [selectedTirthankar, setSelectedTirthankar] = useState(""); // Selected Tirthankar
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [openSnackbar, setOpenSnackbar] = useState(false);
@@ -41,6 +48,17 @@ const Form = () => {
   const [newArtist, setNewArtist] = useState(""); // store new artist name
   const navigate = useNavigate(); // for redirection
 
+
+  useState(() => {
+    if (suggestion) {
+      setTitle(suggestion.title || "");
+      setArtist(suggestion.artistName || "");
+      setContent(suggestion.content || "");
+      setSelectedCollection(suggestion.collection || "");
+      // ... set other fields as needed
+    }
+  }, [suggestion]);
+  // Fetch artist options
   useEffect(() => {
     const fetchArtistOptions = async () => {
       try {
@@ -58,6 +76,7 @@ const Form = () => {
     fetchArtistOptions();
   }, []);
 
+  // Fetch collection list
   useEffect(() => {
     const fetchCollectionList = async () => {
       try {
@@ -75,12 +94,54 @@ const Form = () => {
     fetchCollectionList();
   }, []);
 
+  // Fetch Tirthankar list
+  useEffect(() => {
+    const fetchTirthankarList = async () => {
+      try {
+        const snapshot = await firestore.collection("tirtankar").orderBy("numbering").get();
+        const tirthankarList = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setTirthankarList(tirthankarList);
+      } catch (error) {
+        console.error("Error fetching Tirthankar list:", error);
+      }
+    };
+
+    fetchTirthankarList();
+  }, []);
+
+  // Helper function to validate YouTube URL
+  const isValidYouTubeURL = (url) => {
+    const regex =
+      /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/;
+    return regex.test(url);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validation
+    // Basic validation for required fields
     if (!selectedCollection || !title || !content) {
       setError("Please fill in all required fields.");
+      setSuccessMessage("");
+      setOpenSnackbar(true);
+      return;
+    }
+
+    // Validate YouTube URL if provided
+    if (youtube && !isValidYouTubeURL(youtube)) {
+      setError("Please enter a valid YouTube URL.");
+      setSuccessMessage("");
+      setOpenSnackbar(true);
+      return;
+    }
+
+    // Validate that tags are not empty if provided
+    const tagArray = tags.split(",").map((tag) => tag.trim());
+    if (tags && tagArray.length === 0) {
+      setError("Please enter at least one tag.");
       setSuccessMessage("");
       setOpenSnackbar(true);
       return;
@@ -94,7 +155,7 @@ const Form = () => {
         collectionRef = firestore.collection("lyrics");
       } else {
         const collection = collectionList.find(
-          (collection) => collection.id === selectedCollection
+          (collection) => collection.name === selectedCollection
         );
 
         if (!collection) {
@@ -105,10 +166,17 @@ const Form = () => {
         collectionRef = firestore.collection(collection.name);
       }
 
+      // Adding selected Tirthankar to the tags
+      const allTags = [...tagArray.map((tag) => tag.toLowerCase())];
+      if (selectedTirthankar) {
+        allTags.push(selectedTirthankar.name.toLowerCase());
+        allTags.push(selectedTirthankar.displayName.toLowerCase());
+      }
+
       const docRef = await collectionRef.add({
         title,
         artist,
-        tags: tags.split(",").map((tag) => tag.trim().toLowerCase()),
+        tags: allTags,
         content,
         youtube,
         publishDate,
@@ -116,12 +184,14 @@ const Form = () => {
       });
       console.log("Document written with ID:", docRef.id);
 
+      // Reset form fields
       setTitle("");
       setArtist("");
       setTags("");
       setContent("");
       setYoutube("");
       setSelectedCollection("");
+      setSelectedTirthankar("");
       setNewFlag(false);
       setError("");
       setSuccessMessage("Song added successfully!");
@@ -193,7 +263,7 @@ const Form = () => {
                 <em>Lyrics</em>
               </MenuItem>
               {collectionList.map((collection) => (
-                <MenuItem key={collection.id} value={collection.id}>
+                <MenuItem key={collection.id} value={collection.name}>
                   {collection.name.charAt(0).toUpperCase() +
                     collection.name.slice(1)}
                 </MenuItem>
@@ -224,6 +294,25 @@ const Form = () => {
             )}
           />
 
+          {/* Tirthankar Dropdown */}
+          <FormControl fullWidth sx={{ mt: 2 }}>
+            <InputLabel>Select Tirthankar</InputLabel>
+            <Select
+              value={selectedTirthankar}
+              onChange={(e) => setSelectedTirthankar(e.target.value)}
+              label="Select Tirthankar"
+            >
+              <MenuItem value="">
+                <em>Select a Tirthankar</em>
+              </MenuItem>
+              {tirthankarList.map((tirthankar) => (
+                <MenuItem key={tirthankar.id} value={tirthankar}>
+                  {tirthankar.numbering}. {tirthankar.name} ({tirthankar.displayName})
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
           <FormControlLabel
             control={
               <Checkbox
@@ -253,6 +342,8 @@ const Form = () => {
             value={youtube}
             onChange={(e) => setYoutube(e.target.value)}
             sx={{ mt: 2 }}
+            error={youtube && !isValidYouTubeURL(youtube)} // YouTube URL validation
+            helperText={youtube && !isValidYouTubeURL(youtube) ? "Invalid YouTube URL" : ""}
           />
 
           <TextField

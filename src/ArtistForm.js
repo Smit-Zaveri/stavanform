@@ -138,6 +138,7 @@ const ArtistForm = () => {
         <TextField
           label="Name"
           variant="outlined"
+          type="text"
           fullWidth
           margin="normal"
           value={name}
@@ -146,6 +147,7 @@ const ArtistForm = () => {
         <TextField
           label="Picture URL"
           variant="outlined"
+          type="url"
           fullWidth
           margin="normal"
           value={pictureUrl}
@@ -153,6 +155,7 @@ const ArtistForm = () => {
         />
         <TextField
           label="Number"
+          type="number"
           variant="outlined"
           fullWidth
           margin="normal"
