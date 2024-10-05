@@ -313,16 +313,7 @@ const suggestion = location.state?.suggestion;
             </Select>
           </FormControl>
 
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={newFlag}
-                onChange={(e) => setNewFlag(e.target.checked)}
-              />
-            }
-            label="New"
-            sx={{ mt: 2 }}
-          />
+          
         </Grid>
 
         <Grid item xs={12} sm={6} sx={{ mt: -2 }}>
@@ -357,6 +348,16 @@ const suggestion = location.state?.suggestion;
             sx={{ mt: 2 }}
             required
             error={!content && error}
+          />
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={newFlag}
+                onChange={(e) => setNewFlag(e.target.checked)}
+              />
+            }
+            label="New"
+            sx={{ mt: 2 }}
           />
         </Grid>
       </Grid>
