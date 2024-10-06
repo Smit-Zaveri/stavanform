@@ -60,11 +60,11 @@ const Tirthankar = () => {
       if (editingId) {
         // Update existing collection
         await firestore.collection("tirtankar").doc(editingId).update(collectionData);
-        setSnackbarMessage("Collection updated successfully.");
+        setSnackbarMessage("Tirtankar updated successfully.");
       } else {
         // Add new collection
         await firestore.collection("tirtankar").add(collectionData);
-        setSnackbarMessage("Collection added successfully.");
+        setSnackbarMessage("Tirtankar added successfully.");
       }
 
       setSnackbarOpen(true); // Show snackbar on success
@@ -72,7 +72,7 @@ const Tirthankar = () => {
       resetForm();
       fetchCollections(); // Reload data after submission
     } catch (error) {
-      console.error("Error adding/updating collection:", error);
+      console.error("Error adding/updating Tirtankar:", error);
     }
   };
 
@@ -87,11 +87,11 @@ const Tirthankar = () => {
     if (window.confirm("Are you sure you want to delete this collection?")) {
       try {
         await firestore.collection("tirtankar").doc(collectionId).delete();
-        setSnackbarMessage("Collection deleted successfully.");
+        setSnackbarMessage("Tirtankar deleted successfully.");
         setSnackbarOpen(true);
         fetchCollections(); // Reload data after deletion
       } catch (error) {
-        console.error("Error deleting collection:", error);
+        console.error("Error deleting Tirtankar:", error);
       }
     }
   };
@@ -111,7 +111,7 @@ const Tirthankar = () => {
   return (
     <Box sx={{ p: 2 }}>
       <Typography variant="h5" gutterBottom>
-        {editingId ? "Edit Collection" : "Create New Collection"}
+        {editingId ? "Edit Tirtankar" : "Create New Tirtankar"}
       </Typography>
 
       <form onSubmit={handleSubmit}>
