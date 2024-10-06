@@ -2,6 +2,7 @@ import { ThemeProvider, createTheme } from "@mui/material/styles";
 import React, { useCallback, useEffect, useState } from "react";
 import { BrowserRouter as Router } from "react-router-dom";
 import App from "./App"; // Make sure to import the App component
+import { Analytics } from '@vercel/analytics/react';
 
 const AppWrapper = () => {
   const [darkMode, setDarkMode] = useState(false); // State for dark mode
@@ -37,6 +38,7 @@ const AppWrapper = () => {
     <ThemeProvider theme={theme}>
       <Router> {/* Ensure App is wrapped in Router */}
         <App darkMode={darkMode} toggleTheme={toggleTheme} />
+        <Analytics />
       </Router>
     </ThemeProvider>
   );
