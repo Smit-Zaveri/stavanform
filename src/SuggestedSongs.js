@@ -1,31 +1,30 @@
-import React, { useEffect, useState } from "react";
+import InfoIcon from '@mui/icons-material/Info'; // Icon for modal pop-up
 import {
+  Alert,
   Box,
-  Typography,
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Divider,
+  IconButton,
+  Modal,
+  Paper,
+  Snackbar,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  CircularProgress,
-  Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  DialogContentText,
-  Modal,
-  Button,
-  IconButton,
-  Paper,
-  Divider,
-  TextField,
-  Snackbar,
+  Typography
 } from "@mui/material";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { firestore } from "./firebase"; // Import your firebase configuration
-import InfoIcon from '@mui/icons-material/Info'; // Icon for modal pop-up
 
 const SuggestedSongs = () => {
   const [loading, setLoading] = useState(true);
@@ -36,7 +35,6 @@ const SuggestedSongs = () => {
   const [selectedSong, setSelectedSong] = useState(null);
   const [suggestionToDelete, setSuggestionToDelete] = useState(null);
   const [selectedCollection, setSelectedCollection] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
   const [snackOpen, setSnackOpen] = useState(false);
   const [snackMessage, setSnackMessage] = useState("");
 
@@ -119,20 +117,6 @@ const SuggestedSongs = () => {
     setSuggestionToDelete(null);
   };
 
-  const handleFavoriteToggle = (song) => {
-    // Here you can implement favorite functionality, e.g., updating Firestore
-    // For simplicity, we will just log it and show a message
-    console.log(`Toggled favorite for: ${song.title}`);
-    setSnackMessage(`${song.title} has been marked as favorite.`);
-    setSnackOpen(true);
-  };
-
-  const filteredSuggestions = (suggestions) =>
-    suggestions.filter(
-      (song) =>
-        song.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        song.artistName.toLowerCase().includes(searchTerm.toLowerCase())
-    );
 
   if (loading) return <LoadingSpinner />;
   if (error) return <ErrorAlert error={error} />;
@@ -168,22 +152,12 @@ const SuggestedSongs = () => {
         <Typography variant="h4" gutterBottom align="center" sx={{ mb: 3 }}>
           Suggested Songs
         </Typography>
-        
-        {/* Search Field */}
-        <TextField
-          label="Search Songs"
-          variant="outlined"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          fullWidth
-          sx={{ mb: 2 }}
-        />
 
         {selectedCollection ? (
           groupedSuggestions[selectedCollection]?.length > 0 ? (
             <CollectionTable
               collectionName={selectedCollection}
-              suggestions={filteredSuggestions(groupedSuggestions[selectedCollection])}
+              suggestions={groupedSuggestions[selectedCollection]}
               onApply={handleApplySuggestion}
               onDelete={handleDeleteClick}
               onOpenModal={handleOpenModal}
