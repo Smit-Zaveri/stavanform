@@ -147,7 +147,7 @@ const Tirthankar = () => {
         />
 
         <Button variant="contained" color="primary" type="submit">
-          {editingId ? "Update Collection" : "Submit"}
+          {editingId ? "Update Tirtankar" : "Submit"}
         </Button>
         {editingId && (
           <Button variant="outlined" color="secondary" onClick={resetForm} sx={{ ml: 2 }}>
