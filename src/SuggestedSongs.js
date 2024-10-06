@@ -26,7 +26,6 @@ import {
 import { useNavigate } from "react-router-dom";
 import { firestore } from "./firebase"; // Import your firebase configuration
 import InfoIcon from '@mui/icons-material/Info'; // Icon for modal pop-up
-import FavoriteIcon from '@mui/icons-material/Favorite'; // Icon for favorite
 
 const SuggestedSongs = () => {
   const [loading, setLoading] = useState(true);
@@ -188,7 +187,6 @@ const SuggestedSongs = () => {
               onApply={handleApplySuggestion}
               onDelete={handleDeleteClick}
               onOpenModal={handleOpenModal}
-              onToggleFavorite={handleFavoriteToggle}
             />
           ) : (
             <Typography variant="h6" align="center" sx={{ mt: 4 }}>
@@ -239,7 +237,7 @@ const ErrorAlert = ({ error }) => (
   </Alert>
 );
 
-const CollectionTable = ({ collectionName, suggestions, onApply, onDelete, onOpenModal, onToggleFavorite }) => (
+const CollectionTable = ({ collectionName, suggestions, onApply, onDelete, onOpenModal }) => (
   <Box sx={{ mb: 4 }}>
     <Typography variant="h5" gutterBottom sx={{ textTransform: "capitalize", fontWeight: "bold", mb: 2 }}>
       Collection: {collectionName}
@@ -269,9 +267,6 @@ const CollectionTable = ({ collectionName, suggestions, onApply, onDelete, onOpe
                 </Button>
                 <IconButton size="small" color="info" onClick={() => onOpenModal(song)}>
                   <InfoIcon />
-                </IconButton>
-                <IconButton size="small" color="error" onClick={() => onToggleFavorite(song)}>
-                  <FavoriteIcon />
                 </IconButton>
               </TableCell>
             </TableRow>
