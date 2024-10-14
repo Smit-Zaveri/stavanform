@@ -66,22 +66,22 @@ const SongList = () => {
   const [collectionList, setCollectionList] = useState([]);
   const [openModal, setOpenModal] = useState(false);
   const [newArtist, setNewArtist] = useState("");
-  const [openDialog, setOpenDialog] = useState(false);
-  const navigate = useNavigate(); // for redirection
+  const [openArtistDialog, setOpenArtistDialog] = useState(false);
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false); // For delete confirmation
+  const [openResolveDialog, setOpenResolveDialog] = useState(false); // For resolve confirmation
+  const [deleteId, setDeleteId] = useState(""); // ID of the song to delete
+  const [resolveReportId, setResolveReportId] = useState(""); // ID of the report to resolve
+  const navigate = useNavigate();
 
   const handleConfirmNewArtist = () => {
-    setOpenDialog(false);
-    navigate(`/artist-form`, { state: { name: newArtist } }); // Redirect to ArtistForm with prefilled name
+    setOpenArtistDialog(false);
+    navigate(`/artist-form`, { state: { name: newArtist } });
   };
 
   const handleArtistInputBlur = () => {
-    // Check if the artist doesn't exist in the options
-    if (
-      editArtist &&
-      !artistOptions.some((option) => option.name === editArtist)
-    ) {
+    if (editArtist && !artistOptions.some((option) => option.name === editArtist)) {
       setNewArtist(editArtist);
-      setOpenDialog(true); // Open confirmation dialog
+      setOpenArtistDialog(true);
     }
   };
 
@@ -100,27 +100,10 @@ const SongList = () => {
           firestore.collection("collections").get(),
         ]);
 
-        const songsData = songSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        const artistList = artistSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        const reportList = reportSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        const collectionList = collectionSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-
-        setSongs(songsData);
-        setArtistOptions(artistList);
-        setReports(reportList);
-        setCollectionList(collectionList);
+        setSongs(songSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+        setArtistOptions(artistSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+        setReports(reportSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+        setCollectionList(collectionSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -132,46 +115,49 @@ const SongList = () => {
   useEffect(() => {
     const performSearch = () => {
       const searchTerm = searchInput.toLowerCase();
-      const filteredSongs = songs.filter((song) => {
-        const { title, tags } = song;
-        return (
-          title.toLowerCase().includes(searchTerm) ||
-          tags.some((tag) => tag.toLowerCase().includes(searchTerm))
-        );
-      });
+      const filteredSongs = songs.filter((song) =>
+        song.title.toLowerCase().includes(searchTerm) ||
+        song.tags.some((tag) => tag.toLowerCase().includes(searchTerm))
+      );
       setSearchResults(filteredSongs);
     };
 
     performSearch();
   }, [searchInput, songs]);
 
-  // Sorting function to place songs with reports at the top
-  const sortSongsByReport = (songs, reports) => {
-    return songs.sort((a, b) => {
-      const aHasReport = reports.some((report) => report.lyricsId === a.id);
-      const bHasReport = reports.some((report) => report.lyricsId === b.id);
+  const sortedSongs = (searchResults.length > 0 ? searchResults : songs).sort((a, b) => {
+    const aHasReport = reports.some((report) => report.lyricsId === a.id);
+    const bHasReport = reports.some((report) => report.lyricsId === b.id);
+    return aHasReport === bHasReport ? 0 : aHasReport ? -1 : 1;
+  });
 
-      // Songs with reports should appear first
-      if (aHasReport && !bHasReport) return -1;
-      if (!aHasReport && bHasReport) return 1;
-      return 0; // Keep the rest of the order the same
-    });
+  const handleDeleteClick = (id) => {
+    setDeleteId(id);
+    setOpenDeleteDialog(true);
   };
 
-  const sortedSongs = sortSongsByReport(
-    searchResults.length > 0 ? searchResults : songs,
-    reports
-  );
+  const handleConfirmDelete = async () => {
+    try {
+      await firestore.collection(selectedCollection).doc(deleteId).delete();
+      setSongs((prevSongs) => prevSongs.filter((song) => song.id !== deleteId));
+      setOpenDeleteDialog(false);
+    } catch (error) {
+      console.error("Error deleting document:", error);
+    }
+  };
 
-  const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this song?")) {
-      try {
-        await firestore.collection(selectedCollection).doc(id).delete();
-        setSongs(songs.filter((song) => song.id !== id));
-        console.log("Document deleted with ID:", id);
-      } catch (error) {
-        console.error("Error deleting document:", error);
-      }
+  const handleResolveClick = (reportId) => {
+    setResolveReportId(reportId);
+    setOpenResolveDialog(true);
+  };
+
+  const handleConfirmResolve = async () => {
+    try {
+      await firestore.collection("reports").doc(resolveReportId).delete();
+      setReports((prevReports) => prevReports.filter((report) => report.id !== resolveReportId));
+      setOpenResolveDialog(false);
+    } catch (error) {
+      console.error("Error resolving report:", error);
     }
   };
 
@@ -199,25 +185,6 @@ const SongList = () => {
     setEditTags("");
     setEditYoutubeLink("");
     setEditContent("");
-  };
-
-  const handleResolveReport = async (reportId) => {
-    if (window.confirm("Are you sure you want to resolve this report?")) {
-      try {
-        await firestore.collection("reports").doc(reportId).delete();
-
-        const reportSnapshot = await firestore.collection("reports").get();
-        const reportList = reportSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setReports(reportList);
-
-        console.log("Report resolved with ID:", reportId);
-      } catch (error) {
-        console.error("Error resolving report:", error);
-      }
-    }
   };
 
   const handleEdit = async (id) => {
@@ -267,19 +234,14 @@ const SongList = () => {
               onChange={(e) => setSelectedCollection(e.target.value)}
               displayEmpty
               inputProps={{ "aria-label": "Select Collection" }}
-              sx={{
-                bgcolor: theme.palette.background.paper,
-                borderRadius: 1,
-                boxShadow: 1,
-              }}
+              sx={{ bgcolor: theme.palette.background.paper, borderRadius: 1, boxShadow: 1 }}
             >
               <MenuItem value="lyrics">
                 <em>Lyrics</em>
               </MenuItem>
               {collectionList.map((collection) => (
                 <MenuItem key={collection.id} value={collection.name}>
-                  {collection.name.charAt(0).toUpperCase() +
-                    collection.name.slice(1)}
+                  {collection.name.charAt(0).toUpperCase() + collection.name.slice(1)}
                 </MenuItem>
               ))}
             </Select>
@@ -291,11 +253,7 @@ const SongList = () => {
             label="Search Songs"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            sx={{
-              bgcolor: theme.palette.background.paper,
-              borderRadius: 1,
-              boxShadow: 1,
-            }}
+            sx={{ bgcolor: theme.palette.background.paper, borderRadius: 1, boxShadow: 1 }}
           />
         </Grid>
       </Grid>
@@ -312,15 +270,13 @@ const SongList = () => {
             <Grid  size={{ xs: 1, sm: 4, md: 4 }} key={song.id}>
               <Card
                 sx={{
-                  bgcolor: report
-                    ? "rgba(255, 0, 0, 0.1)"
-                    : theme.palette.background.paper,
+                  bgcolor: report ? "rgba(255, 0, 0, 0.1)" : theme.palette.background.paper,
                   borderRadius: 2,
                   boxShadow: 3,
                   transition: "transform 0.2s, box-shadow 0.2s",
                   "&:hover": { transform: "scale(1.02)", boxShadow: 6 },
                   position: "relative",
-                  overflow: "visible", // Ensures the delete button is not clipped
+                  overflow: "visible",
                 }}
               >
                 <CardContent>
@@ -343,9 +299,7 @@ const SongList = () => {
                     </Typography>
                   )}
                 </CardContent>
-                <CardActions
-                  sx={{ display: "flex", justifyContent: "flex-start" }}
-                >
+                <CardActions sx={{ display: "flex", justifyContent: "flex-start" }}>
                   <IconButton
                     size="small"
                     color="primary"
@@ -366,7 +320,7 @@ const SongList = () => {
                       size="small"
                       variant="contained"
                       color="secondary"
-                      onClick={() => handleResolveReport(report.id)}
+                      onClick={() => handleResolveClick(report.id)}
                     >
                       Resolve Report
                     </Button>
@@ -376,7 +330,7 @@ const SongList = () => {
                 {/* Delete button positioned at bottom-right corner */}
                 <IconButton
                   size="small"
-                  onClick={() => handleDelete(song.id)}
+                  onClick={() => handleDeleteClick(song.id)}
                   sx={{
                     bgcolor: theme.palette.error.main,
                     color: "#fff",
@@ -384,8 +338,8 @@ const SongList = () => {
                       bgcolor: theme.palette.error.dark,
                     },
                     position: "absolute",
-                    bottom: 8, // Moves button to the bottom
-                    right: 8, // Moves button to the right
+                    bottom: 8,
+                    right: 8,
                     width: 40,
                     height: 40,
                     borderRadius: "50%",
@@ -480,7 +434,7 @@ const SongList = () => {
       </Modal>
 
       {/* Dialog for Adding New Artist */}
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+      <Dialog open={openArtistDialog} onClose={() => setOpenArtistDialog(false)}>
         <DialogTitle>Confirm New Artist</DialogTitle>
         <DialogContent>
           <Typography>
@@ -488,13 +442,54 @@ const SongList = () => {
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
+          <Button onClick={() => setOpenArtistDialog(false)}>Cancel</Button>
           <Button
             color="primary"
             variant="contained"
             onClick={handleConfirmNewArtist}
           >
             Yes
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)}>
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          <Typography>Are you sure you want to delete this song?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDeleteDialog(false)}>Cancel</Button>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={handleConfirmDelete}
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Resolve Report Confirmation Dialog */}
+      <Dialog
+        open={openResolveDialog}
+        onClose={() => setOpenResolveDialog(false)}
+      >
+        <DialogTitle>Confirm Resolve Report</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to resolve this report?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenResolveDialog(false)}>Cancel</Button>
+          <Button
+            color="primary"
+            variant="contained"
+            onClick={handleConfirmResolve}
+          >
+            Resolve
           </Button>
         </DialogActions>
       </Dialog>
