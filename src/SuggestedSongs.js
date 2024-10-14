@@ -1,4 +1,6 @@
-import InfoIcon from '@mui/icons-material/Info'; // Icon for modal pop-up
+import InfoIcon from '@mui/icons-material/Info';
+import { Delete, Edit } from "@mui/icons-material";
+import FavoriteIcon from '@mui/icons-material/Favorite';
 import {
   Alert,
   Box,
@@ -20,11 +22,13 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Typography
+  TextField,
+  Typography,
+  TablePagination,
 } from "@mui/material";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { firestore } from "./firebase"; // Import your firebase configuration
+import { firestore } from "./firebase";
 
 const SuggestedSongs = () => {
   const [loading, setLoading] = useState(true);
@@ -37,6 +41,9 @@ const SuggestedSongs = () => {
   const [selectedCollection, setSelectedCollection] = useState(null);
   const [snackOpen, setSnackOpen] = useState(false);
   const [snackMessage, setSnackMessage] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
 
   const navigate = useNavigate();
 
@@ -44,7 +51,7 @@ const SuggestedSongs = () => {
     const fetchSuggestions = async () => {
       try {
         const snapshot = await firestore.collection("suggestions_new").get();
-        const suggestions = snapshot.docs.map((doc) => ({
+        const suggestions = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
         }));
@@ -92,20 +99,24 @@ const SuggestedSongs = () => {
 
   const handleConfirmDelete = async () => {
     if (!suggestionToDelete) return;
+
     try {
       await firestore.collection("suggestions_new").doc(suggestionToDelete.id).delete();
-      setGroupedSuggestions((prev) => {
+      setGroupedSuggestions(prev => {
         const updated = { ...prev };
         updated[suggestionToDelete.collection] = updated[suggestionToDelete.collection].filter(
           (s) => s.id !== suggestionToDelete.id
         );
-        if (!updated[suggestionToDelete.collection].length) delete updated[suggestionToDelete.collection];
+        if (!updated[suggestionToDelete.collection].length) {
+          delete updated[suggestionToDelete.collection];
+        }
         return updated;
       });
       setSnackMessage("Suggestion deleted successfully.");
       setSnackOpen(true);
-    } catch {
+    } catch (error) {
       setError("Failed to delete suggestion.");
+      console.error("Delete error:", error);
     } finally {
       setOpenDialog(false);
       setSuggestionToDelete(null);
@@ -117,6 +128,26 @@ const SuggestedSongs = () => {
     setSuggestionToDelete(null);
   };
 
+  const handleSearchChange = (event) => {
+    setSearchTerm(event.target.value);
+    setPage(0); // Reset to first page on search
+  };
+
+  const filteredSuggestions = useMemo(() => {
+    if (!selectedCollection) return [];
+    return groupedSuggestions[selectedCollection].filter((song) =>
+      song.title.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [searchTerm, groupedSuggestions, selectedCollection]);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
   if (loading) return <LoadingSpinner />;
   if (error) return <ErrorAlert error={error} />;
@@ -124,177 +155,220 @@ const SuggestedSongs = () => {
   return (
     <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, p: 2 }}>
       {/* Sidebar */}
-      <Box sx={{ width: { xs: '100%', sm: 200 }, pr: { xs: 0, sm: 2 }, mb: { xs: 2, sm: 0 } }}>
-        <Typography variant="h6" gutterBottom>
-          Collections
-        </Typography>
-        <Divider />
-        {Object.keys(groupedSuggestions).map((collectionName) => (
-          <Button
-            key={collectionName}
-            onClick={() => setSelectedCollection(collectionName)}
-            sx={{
-              justifyContent: "flex-start",
-              width: "100%",
-              textAlign: "left",
-              mb: 1,
-              color: selectedCollection === collectionName ? "primary.main" : "inherit",
-              fontSize: { xs: '0.9rem', sm: '1rem' }, // Responsive font size
-            }}
-          >
-            {collectionName}
-          </Button>
-        ))}
-      </Box>
+      <Sidebar
+        collections={Object.keys(groupedSuggestions)}
+        selectedCollection={selectedCollection}
+        onSelectCollection={setSelectedCollection}
+      />
 
       {/* Main content */}
-      <Box sx={{ flexGrow: 1 }}>
-        <Typography variant="h4" gutterBottom align="center" sx={{ mb: 3 }}>
-          Suggested Songs
-        </Typography>
+      <MainContent
+        selectedCollection={selectedCollection}
+        groupedSuggestions={groupedSuggestions}
+        onApply={handleApplySuggestion}
+        onDelete={handleDeleteClick}
+        onOpenModal={handleOpenModal}
+        searchTerm={searchTerm}
+        onSearchChange={handleSearchChange}
+        filteredSuggestions={filteredSuggestions}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        onChangePage={handleChangePage}
+        onChangeRowsPerPage={handleChangeRowsPerPage}
+      />
 
-        {selectedCollection ? (
-          groupedSuggestions[selectedCollection]?.length > 0 ? (
-            <CollectionTable
-              collectionName={selectedCollection}
-              suggestions={groupedSuggestions[selectedCollection]}
-              onApply={handleApplySuggestion}
-              onDelete={handleDeleteClick}
-              onOpenModal={handleOpenModal}
-            />
-          ) : (
-            <Typography variant="h6" align="center" sx={{ mt: 4 }}>
-              There are no suggested songs.
-            </Typography>
-          )
-        ) : (
-          <Typography variant="h6" align="center" sx={{ mt: 4 }}>
-            Please select a collection to view suggestions.
-          </Typography>
-        )}
+      {/* Delete Confirmation Dialog */}
+      <DeleteDialog
+        open={openDialog}
+        onCancel={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+        suggestionToDelete={suggestionToDelete}
+      />
 
-        {/* Delete Confirmation Dialog */}
-        <DeleteDialog
-          open={openDialog}
-          onCancel={handleCancelDelete}
-          onConfirm={handleConfirmDelete}
-          suggestionToDelete={suggestionToDelete}
-        />
+      {/* Full Song Content Modal */}
+      {selectedSong && (
+        <SongModal open={openModal} onClose={handleCloseModal} selectedSong={selectedSong} />
+      )}
 
-        {/* Full Song Content Modal */}
-        {selectedSong && (
-          <SongModal open={openModal} onClose={handleCloseModal} selectedSong={selectedSong} />
-        )}
-
-        {/* Snackbar for notifications */}
-        <Snackbar
-          open={snackOpen}
-          autoHideDuration={6000}
-          onClose={() => setSnackOpen(false)}
-          message={snackMessage}
-        />
-      </Box>
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackOpen}
+        autoHideDuration={6000}
+        onClose={() => setSnackOpen(false)}
+        message={snackMessage}
+        severity={error ? 'error' : 'success'}
+      />
     </Box>
   );
 };
 
-// Components
+// Sidebar Component
+const Sidebar = ({ collections, selectedCollection, onSelectCollection }) => (
+  <Box sx={{ width: { xs: '100%', sm: 200 }, pr: { xs: 0, sm: 2 }, mb: { xs: 2, sm: 0 } }}>
+    <Typography variant="h6" gutterBottom>Collections</Typography>
+    <Divider />
+    {collections.map((collectionName) => (
+      <Button
+        key={collectionName}
+        onClick={() => onSelectCollection(collectionName)}
+        sx={{
+          justifyContent: "flex-start",
+          width: "100%",
+          textAlign: "left",
+          mb: 1,
+          color: selectedCollection === collectionName ? "primary.main" : "inherit",
+          fontSize: { xs: '0.9rem', sm: '1rem' },
+          '&:hover': {
+            backgroundColor: selectedCollection === collectionName ? 'rgba(0, 0, 0, 0.08)' : 'rgba(0, 0, 0, 0.04)',
+          },
+        }}
+      >
+        {collectionName}
+      </Button>
+    ))}
+  </Box>
+);
+
+// Main Content Component
+const MainContent = ({
+  selectedCollection,
+  groupedSuggestions,
+  onApply,
+  onDelete,
+  onOpenModal,
+  searchTerm,
+  onSearchChange,
+  filteredSuggestions,
+  page,
+  rowsPerPage,
+  onChangePage,
+  onChangeRowsPerPage
+}) => (
+  <Box sx={{ flexGrow: 1 }}>
+    <Typography variant="h4" gutterBottom align="center" sx={{ mb: 3 }}>
+      Suggested Songs
+    </Typography>
+
+    <TextField
+      variant="outlined"
+      placeholder="Search..."
+      value={searchTerm}
+      onChange={onSearchChange}
+      fullWidth
+      sx={{ mb: 2 }}
+    />
+
+    {selectedCollection ? (
+      filteredSuggestions.length > 0 ? (
+        <CollectionTable
+          collectionName={selectedCollection}
+          suggestions={filteredSuggestions}
+          onApply={onApply}
+          onDelete={onDelete}
+          onOpenModal={onOpenModal}
+          page={page}
+          rowsPerPage={rowsPerPage}
+          onChangePage={onChangePage}
+          onChangeRowsPerPage={onChangeRowsPerPage}
+        />
+      ) : (
+        <Typography variant="body1" align="center">No suggestions available for this collection.</Typography>
+      )
+    ) : (
+      <Typography variant="body1" align="center">Please select a collection.</Typography>
+    )}
+  </Box>
+);
+
+// Collection Table Component
+const CollectionTable = ({
+  collectionName,
+  suggestions,
+  onApply,
+  onDelete,
+  onOpenModal,
+  page,
+  rowsPerPage,
+  onChangePage,
+  onChangeRowsPerPage
+}) => (
+  <TableContainer component={Paper}>
+    <Table>
+      <TableHead>
+        <TableRow>
+          <TableCell>Title</TableCell>
+          <TableCell align="right">Actions</TableCell>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {suggestions.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((song) => (
+          <TableRow key={song.id} >
+            <TableCell>{song.title}</TableCell>
+            <TableCell align="right">
+              <IconButton onClick={() => onApply(song)}>
+                <Edit/>
+              </IconButton>
+              <IconButton onClick={() => onDelete(song)}>
+                <Delete />
+              </IconButton>
+              <IconButton onClick={() => onOpenModal(song)}>
+                <InfoIcon />
+              </IconButton>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+    <TablePagination
+      rowsPerPageOptions={[5, 10, 25]}
+      component="div"
+      count={suggestions.length}
+      rowsPerPage={rowsPerPage}
+      page={page}
+      onPageChange={onChangePage}
+      onRowsPerPageChange={onChangeRowsPerPage}
+    />
+  </TableContainer>
+);
+
+// Loading Spinner Component
 const LoadingSpinner = () => (
-  <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
     <CircularProgress />
   </Box>
 );
 
+// Error Alert Component
 const ErrorAlert = ({ error }) => (
-  <Alert severity="error" sx={{ mb: 2 }}>
-    {error}
-  </Alert>
-);
-
-const CollectionTable = ({ collectionName, suggestions, onApply, onDelete, onOpenModal }) => (
-  <Box sx={{ mb: 4 }}>
-    <Typography variant="h5" gutterBottom sx={{ textTransform: "capitalize", fontWeight: "bold", mb: 2 }}>
-      Collection: {collectionName}
-    </Typography>
-    <TableContainer component={Paper}>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Title</TableCell>
-            <TableCell>Artist</TableCell>
-            <TableCell>Content Preview</TableCell>
-            <TableCell>Actions</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {suggestions.map((song) => (
-            <TableRow key={song.id}>
-              <TableCell>{song.title}</TableCell>
-              <TableCell>{song.artistName}</TableCell>
-              <TableCell>{song.content.split("\n").slice(0, 2).join("\n") + "..."}</TableCell>
-              <TableCell>
-                <Button size="small" color="primary" onClick={() => onApply(song)}>
-                  Apply
-                </Button>
-                <Button size="small" color="secondary" onClick={() => onDelete(song)}>
-                  Delete
-                </Button>
-                <IconButton size="small" color="info" onClick={() => onOpenModal(song)}>
-                  <InfoIcon />
-                </IconButton>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
+  <Box sx={{ p: 2 }}>
+    <Alert severity="error">{error}</Alert>
   </Box>
 );
 
-const SongModal = ({ open, onClose, selectedSong }) => (
-  <Modal open={open} onClose={onClose}>
-    <Box
-      sx={{
-        position: "absolute",
-        top: "50%",
-        left: "50%",
-        transform: "translate(-50%, -50%)",
-        width: { xs: '90%', sm: 500 },
-        bgcolor: "background.paper",
-        boxShadow: 24,
-        p: 4,
-        borderRadius: 2,
-      }}
-    >
-      <Typography variant="h6" gutterBottom sx={{ fontWeight: "bold" }}>{selectedSong.title}</Typography>
-      <Typography variant="subtitle1" color="textSecondary" sx={{ mb: 2 }}>
-        Artist: {selectedSong.artistName}
-      </Typography>
-      <Typography sx={{ mt: 1, whiteSpace: 'pre-line' }}>{selectedSong.content}</Typography>
-      <Button onClick={onClose} sx={{ mt: 2 }} variant="contained" fullWidth>
-        Close
-      </Button>
-    </Box>
-  </Modal>
-);
-
+// Delete Confirmation Dialog Component
 const DeleteDialog = ({ open, onCancel, onConfirm, suggestionToDelete }) => (
   <Dialog open={open} onClose={onCancel}>
-    <DialogTitle>Confirm Deletion</DialogTitle>
+    <DialogTitle>Delete Suggestion</DialogTitle>
     <DialogContent>
       <DialogContentText>
-        Are you sure you want to delete the suggestion "{suggestionToDelete?.title}"?
+        Are you sure you want to delete the suggestion for "{suggestionToDelete?.title}"?
       </DialogContentText>
     </DialogContent>
     <DialogActions>
-      <Button onClick={onCancel} color="primary">
-        Cancel
-      </Button>
-      <Button onClick={onConfirm} color="secondary">
-        Delete
-      </Button>
+      <Button onClick={onCancel} color="primary">Cancel</Button>
+      <Button onClick={onConfirm} color="secondary">Delete</Button>
     </DialogActions>
   </Dialog>
+);
+
+// Song Modal Component
+const SongModal = ({ open, onClose, selectedSong }) => (
+  <Modal open={open} onClose={onClose}>
+    <Box sx={{ p: 4 , margin: "auto", width: "80%", maxHeight: "80vh", overflowY: "auto" }}>
+      <Typography variant="h5" gutterBottom>{selectedSong.title}</Typography>
+      <Typography variant="body1">{selectedSong.content}</Typography>
+    </Box>
+  </Modal>
 );
 
 export default SuggestedSongs;
