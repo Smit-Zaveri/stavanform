@@ -9,14 +9,20 @@ import {
   FormControl,
   Grid,
   MenuItem,
+  Autocomplete,
   Modal,
   Select,
   TextField,
   Typography,
   useTheme,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
 } from "@mui/material";
 import React, { useEffect, useState } from "react";
 import { firestore } from "./firebase";
+import { useNavigate, useLocation } from "react-router-dom"; // for redirection
 
 const modalStyle = {
   display: "flex",
@@ -57,6 +63,25 @@ const SongList = () => {
   const [selectedCollection, setSelectedCollection] = useState("lyrics");
   const [collectionList, setCollectionList] = useState([]);
   const [openModal, setOpenModal] = useState(false);
+  const [newArtist, setNewArtist] = useState("");
+  const [openDialog, setOpenDialog] = useState(false);
+  const navigate = useNavigate(); // for redirection
+
+  const handleConfirmNewArtist = () => {
+    setOpenDialog(false);
+    navigate(`/artist-form`, { state: { name: newArtist } }); // Redirect to ArtistForm with prefilled name
+  };
+
+  const handleArtistInputBlur = () => {
+    // Check if the artist doesn't exist in the options
+    if (
+      editArtist &&
+      !artistOptions.some((option) => option.name === editArtist)
+    ) {
+      setNewArtist(editArtist);
+      setOpenDialog(true); // Open confirmation dialog
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -176,14 +201,14 @@ const SongList = () => {
     if (window.confirm("Are you sure you want to resolve this report?")) {
       try {
         await firestore.collection("reports").doc(reportId).delete();
-        
+
         const reportSnapshot = await firestore.collection("reports").get();
         const reportList = reportSnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
         setReports(reportList);
-  
+
         console.log("Report resolved with ID:", reportId);
       } catch (error) {
         console.error("Error resolving report:", error);
@@ -197,13 +222,16 @@ const SongList = () => {
       return;
     }
     try {
-      await firestore.collection(selectedCollection).doc(id).update({
-        title: editTitle,
-        artist: editArtist,
-        tags: editTags.split(",").map((tag) => tag.trim().toLowerCase()),
-        content: editContent,
-        youtube: editYoutubeLink,
-      });
+      await firestore
+        .collection(selectedCollection)
+        .doc(id)
+        .update({
+          title: editTitle,
+          artist: editArtist,
+          tags: editTags.split(",").map((tag) => tag.trim().toLowerCase()),
+          content: editContent,
+          youtube: editYoutubeLink,
+        });
       console.log("Document updated with ID:", id);
       handleCloseModal();
       const snapshot = await firestore.collection(selectedCollection).get();
@@ -296,11 +324,7 @@ const SongList = () => {
                     {`Artist: ${song.artist} | Tags: ${song.tags.join(", ")}`}
                   </Typography>
                   {report && (
-                    <Typography
-                      variant="body2"
-                      color="error"
-                      sx={{ mt: 1 }}
-                    >
+                    <Typography variant="body2" color="error" sx={{ mt: 1 }}>
                       {`Report: ${report.reportText}`}
                     </Typography>
                   )}
@@ -363,22 +387,22 @@ const SongList = () => {
               fullWidth
               margin="normal"
             />
-            <FormControl fullWidth margin="normal">
-              <Select
-                value={editArtist}
-                onChange={(e) => setEditArtist(e.target.value)}
-                displayEmpty
-              >
-                <MenuItem value="">
-                  <em>None</em>
-                </MenuItem>
-                {artistOptions.map((artist) => (
-                  <MenuItem key={artist.id} value={artist.name}>
-                    {artist.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <Autocomplete
+              freeSolo
+              options={artistOptions.map((option) => option.name)}
+              value={editArtist}
+              onInputChange={(event, newValue) => setEditArtist(newValue)}
+              onBlur={handleArtistInputBlur}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Artist"
+                  variant="outlined"
+                  margin="normal"
+                  fullWidth
+                />
+              )}
+            />
             <TextField
               label="Tags (comma separated)"
               value={editTags}
@@ -424,6 +448,24 @@ const SongList = () => {
               Close
             </Button>
           </Box>
+          {/* Dialog for new artist confirmation */}
+          <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+            <DialogTitle>Create New Artist</DialogTitle>
+            <DialogContent>
+              <Typography>
+                The artist "{newArtist}" does not exist. Would you like to
+                create a new artist entry?
+              </Typography>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setOpenDialog(false)} color="secondary">
+                Cancel
+              </Button>
+              <Button onClick={handleConfirmNewArtist} color="primary">
+                Yes, Create Artist
+              </Button>
+            </DialogActions>
+          </Dialog>
         </Box>
       </Modal>
     </Container>
