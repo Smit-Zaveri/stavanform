@@ -8,7 +8,6 @@ import {
   InputLabel,
   MenuItem,
   Select,
-  Grid,
   Snackbar,
   TextField,
   Typography,
@@ -18,21 +17,21 @@ import {
   DialogContent,
   DialogTitle,
 } from "@mui/material";
-import { useNavigate, useLocation  } from "react-router-dom"; // for redirection
+import Grid from "@mui/material/Grid2";
+import { useNavigate, useLocation } from "react-router-dom"; // for redirection
 import firebase from "firebase/compat/app";
 import "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import { firestore } from "./firebase";
 
-
 const Form = () => {
   const location = useLocation();
-const suggestion = location.state?.suggestion;
-
+  const suggestion = location.state?.suggestion;
 
   const [title, setTitle] = useState("");
   const [artist, setArtist] = useState("");
   const [tags, setTags] = useState("");
+  const [order, setOrders] = useState("");
   const [content, setContent] = useState("");
   const [youtube, setYoutube] = useState("");
   const [newFlag, setNewFlag] = useState(false);
@@ -47,7 +46,6 @@ const suggestion = location.state?.suggestion;
   const [openDialog, setOpenDialog] = useState(false); // for confirmation dialog
   const [newArtist, setNewArtist] = useState(""); // store new artist name
   const navigate = useNavigate(); // for redirection
-
 
   useState(() => {
     if (suggestion) {
@@ -98,7 +96,10 @@ const suggestion = location.state?.suggestion;
   useEffect(() => {
     const fetchTirthankarList = async () => {
       try {
-        const snapshot = await firestore.collection("tirtankar").orderBy("numbering").get();
+        const snapshot = await firestore
+          .collection("tirtankar")
+          .orderBy("numbering")
+          .get();
         const tirthankarList = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
@@ -114,14 +115,13 @@ const suggestion = location.state?.suggestion;
 
   // Helper function to validate YouTube URL
   const isValidYouTubeURL = (url) => {
-    const regex =
-      /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/;
+    const regex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/;
     return regex.test(url);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
     // Basic validation for required fields
     if (!selectedCollection || !title || !content) {
       setError("Please fill in all required fields.");
@@ -129,7 +129,7 @@ const suggestion = location.state?.suggestion;
       setOpenSnackbar(true);
       return;
     }
-
+  
     // Validate YouTube URL if provided
     if (youtube && !isValidYouTubeURL(youtube)) {
       setError("Please enter a valid YouTube URL.");
@@ -137,7 +137,7 @@ const suggestion = location.state?.suggestion;
       setOpenSnackbar(true);
       return;
     }
-
+  
     // Validate that tags are not empty if provided
     const tagArray = tags.split(",").map((tag) => tag.trim());
     if (tags && tagArray.length === 0) {
@@ -146,10 +146,10 @@ const suggestion = location.state?.suggestion;
       setOpenSnackbar(true);
       return;
     }
-
+  
     try {
       const publishDate = firebase.firestore.Timestamp.now();
-
+  
       let collectionRef;
       if (selectedCollection === "lyrics") {
         collectionRef = firestore.collection("lyrics");
@@ -157,37 +157,41 @@ const suggestion = location.state?.suggestion;
         const collection = collectionList.find(
           (collection) => collection.name === selectedCollection
         );
-
+  
         if (!collection) {
           console.log("Invalid collection selected. Cannot submit.");
           return;
         }
-
+  
         collectionRef = firestore.collection(collection.name);
       }
-
+  
       // Adding selected Tirthankar to the tags
       const allTags = [...tagArray.map((tag) => tag.toLowerCase())];
       if (selectedTirthankar) {
         allTags.push(selectedTirthankar.name.toLowerCase());
         allTags.push(selectedTirthankar.displayName.toLowerCase());
       }
-
+  
+      // Parse the order to ensure it's a number
+  
       const docRef = await collectionRef.add({
         title,
         artist,
         tags: allTags,
         content,
         youtube,
+        order: Number(order), // Send as number
         publishDate,
         newFlag,
       });
       console.log("Document written with ID:", docRef.id);
-
+  
       // Reset form fields
       setTitle("");
       setArtist("");
       setTags("");
+      setOrders("");
       setContent("");
       setYoutube("");
       setSelectedCollection("");
@@ -203,6 +207,7 @@ const suggestion = location.state?.suggestion;
       setOpenSnackbar(true);
     }
   };
+  
 
   const handleCloseSnackbar = () => {
     setOpenSnackbar(false);
@@ -247,8 +252,12 @@ const suggestion = location.state?.suggestion;
         </Alert>
       </Snackbar>
 
-      <Grid container spacing={2}>
-        <Grid item xs={12} sm={6}>
+      <Grid
+        container
+        spacing={{ xs: 1, md: 2 }}
+        columns={{ xs: 1, sm: 8, md: 12 }}
+      >
+        <Grid size={{ xs: 1, sm: 1, md: 6 }}>
           <FormControl fullWidth required error={!selectedCollection && error}>
             <InputLabel>Select Collection</InputLabel>
             <Select
@@ -270,18 +279,19 @@ const suggestion = location.state?.suggestion;
               ))}
             </Select>
           </FormControl>
-
+        </Grid>
+        <Grid size={{ xs: 1, sm: 1, md: 6 }}>
           <TextField
             label="Title"
             variant="outlined"
             fullWidth
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            sx={{ mt: 2 }}
             required
             error={!title && error}
           />
-
+        </Grid>
+        <Grid size={{ xs: 1, sm: 1, md: 6 }}>
           {/* Artist Autocomplete with Text Box */}
           <Autocomplete
             freeSolo
@@ -290,12 +300,18 @@ const suggestion = location.state?.suggestion;
             onInputChange={(event, newValue) => setArtist(newValue)}
             onBlur={handleArtistInputBlur}
             renderInput={(params) => (
-              <TextField {...params} label="Artist" variant="outlined" fullWidth sx={{ mt: 2 }} />
+              <TextField
+                {...params}
+                label="Artist"
+                variant="outlined"
+                fullWidth
+              />
             )}
           />
-
+        </Grid>
+        <Grid size={{ xs: 1, sm: 1, md: 6 }}>
           {/* Tirthankar Dropdown */}
-          <FormControl fullWidth sx={{ mt: 2 }}>
+          <FormControl fullWidth>
             <InputLabel>Select Tirthankar</InputLabel>
             <Select
               value={selectedTirthankar}
@@ -307,36 +323,48 @@ const suggestion = location.state?.suggestion;
               </MenuItem>
               {tirthankarList.map((tirthankar) => (
                 <MenuItem key={tirthankar.id} value={tirthankar}>
-                  {tirthankar.numbering}. {tirthankar.name} ({tirthankar.displayName})
+                  {tirthankar.numbering}. {tirthankar.name} (
+                  {tirthankar.displayName})
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
-
-          
         </Grid>
-
-        <Grid item xs={12} sm={6} sx={{ mt: -2 }}>
+        <Grid size={{ xs: 1, sm: 1, md: 6 }}>
           <TextField
             label="Tags (comma-separated)"
             variant="outlined"
             fullWidth
             value={tags}
             onChange={(e) => setTags(e.target.value)}
-            sx={{ mt: 2 }}
           />
-
+        </Grid>
+        <Grid size={{ xs: 1, sm: 1, md: 6 }}>
           <TextField
             label="YouTube Link"
             variant="outlined"
             fullWidth
             value={youtube}
             onChange={(e) => setYoutube(e.target.value)}
-            sx={{ mt: 2 }}
             error={youtube && !isValidYouTubeURL(youtube)} // YouTube URL validation
-            helperText={youtube && !isValidYouTubeURL(youtube) ? "Invalid YouTube URL" : ""}
+            helperText={
+              youtube && !isValidYouTubeURL(youtube)
+                ? "Invalid YouTube URL"
+                : ""
+            }
           />
-
+        </Grid>
+        <Grid size={{ xs: 1, sm: 1, md: 6 }}>
+          <TextField
+            label="Order"
+            variant="outlined"
+            fullWidth
+            value={order}
+            onChange={(e) => setOrders(e.target.value)}
+            error={!order && error}
+          />
+        </Grid>
+        <Grid size={{ xs: 1, sm: 1, md: 6 }}>
           <TextField
             label="Content"
             variant="outlined"
@@ -345,10 +373,11 @@ const suggestion = location.state?.suggestion;
             rows={4}
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            sx={{ mt: 2 }}
             required
             error={!content && error}
           />
+        </Grid>
+        <Grid size={{ xs: 1, sm: 1, md: 6 }}>
           <FormControlLabel
             control={
               <Checkbox
@@ -357,7 +386,6 @@ const suggestion = location.state?.suggestion;
               />
             }
             label="New"
-            sx={{ mt: 2 }}
           />
         </Grid>
       </Grid>
