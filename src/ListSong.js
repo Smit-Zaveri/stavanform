@@ -22,7 +22,7 @@ import {
 } from "@mui/material";
 import React, { useEffect, useState } from "react";
 import { firestore } from "./firebase";
-import { useNavigate, useLocation } from "react-router-dom"; // for redirection
+import { useNavigate } from "react-router-dom"; // for redirection
 
 const modalStyle = {
   display: "flex",
@@ -52,6 +52,7 @@ const SongList = () => {
   const [songs, setSongs] = useState([]);
   const [editId, setEditId] = useState("");
   const [editTitle, setEditTitle] = useState("");
+  const [editOrder, setEditOrder] = useState("");
   const [artistOptions, setArtistOptions] = useState([]);
   const [editArtist, setEditArtist] = useState("");
   const [editTags, setEditTags] = useState("");
@@ -178,6 +179,7 @@ const SongList = () => {
     setEditTitle(song.title);
     setEditArtist(song.artist);
     setEditTags(song.tags.join(", "));
+    setEditOrder(song.order);
     setEditYoutubeLink(song.youtube);
     setEditContent(song.content);
     setOpenModal(true);
@@ -192,6 +194,7 @@ const SongList = () => {
     setEditId("");
     setEditTitle("");
     setEditArtist("");
+    setEditOrder("");
     setEditTags("");
     setEditYoutubeLink("");
     setEditContent("");
@@ -229,6 +232,7 @@ const SongList = () => {
           title: editTitle,
           artist: editArtist,
           tags: editTags.split(",").map((tag) => tag.trim().toLowerCase()),
+          order: editOrder,
           content: editContent,
           youtube: editYoutubeLink,
         });
@@ -407,6 +411,13 @@ const SongList = () => {
               label="Tags (comma separated)"
               value={editTags}
               onChange={(e) => setEditTags(e.target.value)}
+              fullWidth
+              margin="normal"
+            />
+            <TextField
+              label="Order"
+              value={editOrder}
+              onChange={(e) => setEditOrder(e.target.value)}
               fullWidth
               margin="normal"
             />
