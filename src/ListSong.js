@@ -7,7 +7,6 @@ import {
   CardContent,
   Container,
   FormControl,
-  Grid,
   MenuItem,
   Autocomplete,
   Modal,
@@ -20,9 +19,10 @@ import {
   DialogContent,
   DialogTitle,
 } from "@mui/material";
+import Grid from "@mui/material/Grid";
 import React, { useEffect, useState } from "react";
 import { firestore } from "./firebase";
-import { useNavigate } from "react-router-dom"; // for redirection
+import { useNavigate } from "react-router-dom";
 
 const modalStyle = {
   display: "flex",
@@ -251,10 +251,8 @@ const SongList = () => {
 
   return (
     <Container maxWidth="md" sx={{ marginTop: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        Song List
-      </Typography>
-      <Grid container spacing={2} alignItems="center">
+      <Typography variant="h4" gutterBottom>Song List</Typography>
+      <Grid container spacing={2}>
         <Grid item xs={12} sm={6}>
           <FormControl fullWidth>
             <Select
@@ -262,19 +260,12 @@ const SongList = () => {
               onChange={(e) => setSelectedCollection(e.target.value)}
               displayEmpty
               inputProps={{ "aria-label": "Select Collection" }}
-              sx={{
-                bgcolor: theme.palette.background.paper,
-                borderRadius: 1,
-                boxShadow: 1,
-              }}
+              sx={{ bgcolor: theme.palette.background.paper, borderRadius: 1, boxShadow: 1 }}
             >
-              <MenuItem value="lyrics">
-                <em>Lyrics</em>
-              </MenuItem>
+              <MenuItem value="lyrics"><em>Lyrics</em></MenuItem>
               {collectionList.map((collection) => (
                 <MenuItem key={collection.id} value={collection.name}>
-                  {collection.name.charAt(0).toUpperCase() +
-                    collection.name.slice(1)}
+                  {collection.name.charAt(0).toUpperCase() + collection.name.slice(1)}
                 </MenuItem>
               ))}
             </Select>
@@ -286,89 +277,37 @@ const SongList = () => {
             label="Search Songs"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            margin="normal"
-            sx={{
-              bgcolor: theme.palette.background.paper,
-              borderRadius: 1,
-              boxShadow: 1,
-            }}
+            sx={{ bgcolor: theme.palette.background.paper, borderRadius: 1, boxShadow: 1 }}
           />
         </Grid>
       </Grid>
-      <Grid container spacing={2} sx={{ marginTop: 3 }}>
-        {sortedSongs.map((song) => {
-          const report = reports.find(
-            (report) =>
-              report.lyricsId === song.id && report.lyricsTitle === song.title
-          );
 
+      <Grid container spacing={2} sx={{ mt: 2 }}>
+        {sortedSongs.map((song) => {
+          const report = reports.find((report) => report.lyricsId === song.id);
           return (
             <Grid item xs={12} sm={6} md={4} key={song.id}>
-              <Card
-                sx={{
-                  bgcolor: report
-                    ? "rgba(255, 0, 0, 0.1)"
-                    : theme.palette.background.paper,
-                  border: report
-                    ? "1px solid red"
-                    : "1px solid rgba(0, 0, 0, 0.1)",
-                  borderRadius: 2,
-                  boxShadow: 3,
-                  transition: "transform 0.2s",
-                  "&:hover": {
-                    transform: "scale(1.02)",
-                  },
-                }}
-              >
+              <Card sx={{ bgcolor: report ? "rgba(255, 0, 0, 0.1)" : theme.palette.background.paper, borderRadius: 2, boxShadow: 3, transition: "transform 0.2s", "&:hover": { transform: "scale(1.02)" } }}>
                 <CardContent>
-                  <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1 }}>
-                    {song.title}
-                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1 }}>{song.title}</Typography>
                   <Typography variant="body2" color="textSecondary">
                     {`Artist: ${song.artist} | Tags: ${song.tags.join(", ")}`}
                   </Typography>
-                  {report && (
-                    <Typography variant="body2" color="error" sx={{ mt: 1 }}>
-                      {`Report: ${report.reportText}`}
-                    </Typography>
-                  )}
+                  {report && <Typography variant="body2" color="error" sx={{ mt: 1 }}>{`Report: ${report.reportText}`}</Typography>}
                 </CardContent>
                 <CardActions>
+                  <Button size="small" color="primary" onClick={() => handleEditClick(song)} startIcon={<Edit />}>Edit</Button>
                   <Button
                     size="small"
-                    color="primary"
-                    onClick={() => handleEditClick(song)}
-                    startIcon={<Edit />}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    size="small"
-                    sx={{
-                      color: "#fff",
-                      backgroundColor: theme.palette.error.main,
-                      "&:hover": {
-                        backgroundColor: theme.palette.error.dark,
-                      },
-                    }}
+                    sx={{ color: "#fff", backgroundColor: theme.palette.error.main, "&:hover": { backgroundColor: theme.palette.error.dark } }}
                     onClick={() => handleDelete(song.id)}
                     startIcon={<Delete />}
                   >
                     Delete
                   </Button>
                   {report && (
-                    <Button
-                      size="small"
-                      sx={{
-                        color: "#fff",
-                        backgroundColor: theme.palette.success.main,
-                        "&:hover": {
-                          backgroundColor: theme.palette.success.dark,
-                        },
-                      }}
-                      onClick={() => handleResolveReport(report.id)}
-                    >
-                      Resolve
+                    <Button size="small" color="secondary" onClick={() => handleResolveReport(report.id)}>
+                      Resolve Report
                     </Button>
                   )}
                 </CardActions>
@@ -378,10 +317,10 @@ const SongList = () => {
         })}
       </Grid>
 
-      <Modal open={openModal} onClose={handleCloseModal}>
-        <Box sx={modalStyle}>
-          <Box sx={contentStyle}>
-            <Typography variant="h6" gutterBottom>
+      {/* Edit Modal */}
+      <Modal open={openModal} onClose={handleCloseModal} sx={modalStyle}>
+        <Box sx={contentStyle}>
+        <Typography variant="h6" gutterBottom>
               Edit Song
             </Typography>
             <TextField
@@ -442,43 +381,24 @@ const SongList = () => {
                 boxShadow: 1,
               }}
             />
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={() => handleEdit(editId)}
-              sx={{ mr: 2, mt: 2 }}
-            >
-              Save Changes
-            </Button>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleCloseModal}
-              sx={{ mt: 2 }}
-            >
-              Close
-            </Button>
+          <Box sx={{ textAlign: "right" }}>
+            <Button color="primary" variant="contained" onClick={() => handleEdit(editId)}>Save</Button>
+            <Button color="secondary" onClick={handleCloseModal} sx={{ ml: 1 }}>Cancel</Button>
           </Box>
-          {/* Dialog for new artist confirmation */}
-          <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
-            <DialogTitle>Create New Artist</DialogTitle>
-            <DialogContent>
-              <Typography>
-                The artist "{newArtist}" does not exist. Would you like to
-                create a new artist entry?
-              </Typography>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setOpenDialog(false)} color="secondary">
-                Cancel
-              </Button>
-              <Button onClick={handleConfirmNewArtist} color="primary">
-                Yes, Create Artist
-              </Button>
-            </DialogActions>
-          </Dialog>
         </Box>
       </Modal>
+
+      {/* Dialog for Adding New Artist */}
+      <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+        <DialogTitle>Confirm New Artist</DialogTitle>
+        <DialogContent>
+          <Typography>Do you want to add "{newArtist}" as a new artist?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
+          <Button color="primary" variant="contained" onClick={handleConfirmNewArtist}>Yes</Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };
