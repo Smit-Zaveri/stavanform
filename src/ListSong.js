@@ -14,12 +14,13 @@ import {
   TextField,
   Typography,
   useTheme,
+  IconButton,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
 } from "@mui/material";
-import Grid from "@mui/material/Grid";
+import Grid from "@mui/material/Grid2";
 import React, { useEffect, useState } from "react";
 import { firestore } from "./firebase";
 import { useNavigate } from "react-router-dom";
@@ -251,66 +252,148 @@ const SongList = () => {
 
   return (
     <Container maxWidth="md" sx={{ marginTop: 4 }}>
-      <Typography variant="h4" gutterBottom>Song List</Typography>
-      <Grid container spacing={2}>
-        <Grid item xs={12} sm={6}>
+      <Typography variant="h4" gutterBottom>
+        Song List
+      </Typography>
+      <Grid
+        container
+        spacing={{ xs: 1, md: 2 }}
+        columns={{ xs: 1, sm: 12, md: 12 }}
+      >
+        <Grid size={{ xs: 1, sm: 6, md: 6 }}>
           <FormControl fullWidth>
             <Select
               value={selectedCollection}
               onChange={(e) => setSelectedCollection(e.target.value)}
               displayEmpty
               inputProps={{ "aria-label": "Select Collection" }}
-              sx={{ bgcolor: theme.palette.background.paper, borderRadius: 1, boxShadow: 1 }}
+              sx={{
+                bgcolor: theme.palette.background.paper,
+                borderRadius: 1,
+                boxShadow: 1,
+              }}
             >
-              <MenuItem value="lyrics"><em>Lyrics</em></MenuItem>
+              <MenuItem value="lyrics">
+                <em>Lyrics</em>
+              </MenuItem>
               {collectionList.map((collection) => (
                 <MenuItem key={collection.id} value={collection.name}>
-                  {collection.name.charAt(0).toUpperCase() + collection.name.slice(1)}
+                  {collection.name.charAt(0).toUpperCase() +
+                    collection.name.slice(1)}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 1, sm: 6, md: 6 }}>
           <TextField
             fullWidth
             label="Search Songs"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            sx={{ bgcolor: theme.palette.background.paper, borderRadius: 1, boxShadow: 1 }}
+            sx={{
+              bgcolor: theme.palette.background.paper,
+              borderRadius: 1,
+              boxShadow: 1,
+            }}
           />
         </Grid>
       </Grid>
 
-      <Grid container spacing={2} sx={{ mt: 2 }}>
+      <Grid
+        sx={{ marginTop: 4 }}
+        container
+        spacing={{ xs: 1, md: 2 }}
+        columns={{ xs: 1, sm: 8, md: 12 }}
+      >
         {sortedSongs.map((song) => {
           const report = reports.find((report) => report.lyricsId === song.id);
           return (
-            <Grid item xs={12} sm={6} md={4} key={song.id}>
-              <Card sx={{ bgcolor: report ? "rgba(255, 0, 0, 0.1)" : theme.palette.background.paper, borderRadius: 2, boxShadow: 3, transition: "transform 0.2s", "&:hover": { transform: "scale(1.02)" } }}>
+            <Grid  size={{ xs: 1, sm: 4, md: 4 }} key={song.id}>
+              <Card
+                sx={{
+                  bgcolor: report
+                    ? "rgba(255, 0, 0, 0.1)"
+                    : theme.palette.background.paper,
+                  borderRadius: 2,
+                  boxShadow: 3,
+                  transition: "transform 0.2s, box-shadow 0.2s",
+                  "&:hover": { transform: "scale(1.02)", boxShadow: 6 },
+                  position: "relative",
+                  overflow: "visible", // Ensures the delete button is not clipped
+                }}
+              >
                 <CardContent>
-                  <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1 }}>{song.title}</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1 }}>
+                    {song.title}
+                  </Typography>
                   <Typography variant="body2" color="textSecondary">
                     {`Artist: ${song.artist} | Tags: ${song.tags.join(", ")}`}
                   </Typography>
-                  {report && <Typography variant="body2" color="error" sx={{ mt: 1 }}>{`Report: ${report.reportText}`}</Typography>}
-                </CardContent>
-                <CardActions>
-                  <Button size="small" color="primary" onClick={() => handleEditClick(song)} startIcon={<Edit />}>Edit</Button>
-                  <Button
-                    size="small"
-                    sx={{ color: "#fff", backgroundColor: theme.palette.error.main, "&:hover": { backgroundColor: theme.palette.error.dark } }}
-                    onClick={() => handleDelete(song.id)}
-                    startIcon={<Delete />}
-                  >
-                    Delete
-                  </Button>
                   {report && (
-                    <Button size="small" color="secondary" onClick={() => handleResolveReport(report.id)}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        mt: 1,
+                        color: theme.palette.error.main,
+                        fontWeight: "bold",
+                      }}
+                    >
+                      {`Report: ${report.reportText}`}
+                    </Typography>
+                  )}
+                </CardContent>
+                <CardActions
+                  sx={{ display: "flex", justifyContent: "flex-start" }}
+                >
+                  <IconButton
+                    size="small"
+                    color="primary"
+                    onClick={() => handleEditClick(song)}
+                    sx={{
+                      bgcolor: theme.palette.primary.light,
+                      color: theme.palette.primary.contrastText,
+                      "&:hover": {
+                        bgcolor: theme.palette.primary.dark,
+                      },
+                    }}
+                  >
+                    <Edit />
+                  </IconButton>
+
+                  {report && (
+                    <Button
+                      size="small"
+                      variant="contained"
+                      color="secondary"
+                      onClick={() => handleResolveReport(report.id)}
+                    >
                       Resolve Report
                     </Button>
                   )}
                 </CardActions>
+
+                {/* Delete button positioned at bottom-right corner */}
+                <IconButton
+                  size="small"
+                  onClick={() => handleDelete(song.id)}
+                  sx={{
+                    bgcolor: theme.palette.error.main,
+                    color: "#fff",
+                    "&:hover": {
+                      bgcolor: theme.palette.error.dark,
+                    },
+                    position: "absolute",
+                    bottom: 8, // Moves button to the bottom
+                    right: 8, // Moves button to the right
+                    width: 40,
+                    height: 40,
+                    borderRadius: "50%",
+                    boxShadow: 3,
+                  }}
+                >
+                  <Delete />
+                </IconButton>
               </Card>
             </Grid>
           );
@@ -320,70 +403,78 @@ const SongList = () => {
       {/* Edit Modal */}
       <Modal open={openModal} onClose={handleCloseModal} sx={modalStyle}>
         <Box sx={contentStyle}>
-        <Typography variant="h6" gutterBottom>
-              Edit Song
-            </Typography>
-            <TextField
-              label="Title"
-              value={editTitle}
-              onChange={(e) => setEditTitle(e.target.value)}
-              fullWidth
-              margin="normal"
-            />
-            <Autocomplete
-              freeSolo
-              options={artistOptions.map((option) => option.name)}
-              value={editArtist}
-              onInputChange={(event, newValue) => setEditArtist(newValue)}
-              onBlur={handleArtistInputBlur}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Artist"
-                  variant="outlined"
-                  margin="normal"
-                  fullWidth
-                />
-              )}
-            />
-            <TextField
-              label="Tags (comma separated)"
-              value={editTags}
-              onChange={(e) => setEditTags(e.target.value)}
-              fullWidth
-              margin="normal"
-            />
-            <TextField
-              label="Order"
-              value={editOrder}
-              onChange={(e) => setEditOrder(e.target.value)}
-              fullWidth
-              margin="normal"
-            />
-            <TextField
-              label="YouTube Link"
-              value={editYoutubeLink}
-              onChange={(e) => setEditYoutubeLink(e.target.value)}
-              fullWidth
-              margin="normal"
-            />
-            <TextField
-              fullWidth
-              label="Content"
-              value={editContent}
-              onChange={(e) => setEditContent(e.target.value)}
-              multiline
-              rows={4}
-              margin="normal"
-              sx={{
-                bgcolor: theme.palette.background.paper,
-                borderRadius: 1,
-                boxShadow: 1,
-              }}
-            />
+          <Typography variant="h6" gutterBottom>
+            Edit Song
+          </Typography>
+          <TextField
+            label="Title"
+            value={editTitle}
+            onChange={(e) => setEditTitle(e.target.value)}
+            fullWidth
+            margin="normal"
+          />
+          <Autocomplete
+            freeSolo
+            options={artistOptions.map((option) => option.name)}
+            value={editArtist}
+            onInputChange={(event, newValue) => setEditArtist(newValue)}
+            onBlur={handleArtistInputBlur}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Artist"
+                variant="outlined"
+                margin="normal"
+                fullWidth
+              />
+            )}
+          />
+          <TextField
+            label="Tags (comma separated)"
+            value={editTags}
+            onChange={(e) => setEditTags(e.target.value)}
+            fullWidth
+            margin="normal"
+          />
+          <TextField
+            label="Order"
+            value={editOrder}
+            onChange={(e) => setEditOrder(e.target.value)}
+            fullWidth
+            margin="normal"
+          />
+          <TextField
+            label="YouTube Link"
+            value={editYoutubeLink}
+            onChange={(e) => setEditYoutubeLink(e.target.value)}
+            fullWidth
+            margin="normal"
+          />
+          <TextField
+            fullWidth
+            label="Content"
+            value={editContent}
+            onChange={(e) => setEditContent(e.target.value)}
+            multiline
+            rows={4}
+            margin="normal"
+            sx={{
+              bgcolor: theme.palette.background.paper,
+              borderRadius: 1,
+              boxShadow: 1,
+            }}
+          />
           <Box sx={{ textAlign: "right" }}>
-            <Button color="primary" variant="contained" onClick={() => handleEdit(editId)}>Save</Button>
-            <Button color="secondary" onClick={handleCloseModal} sx={{ ml: 1 }}>Cancel</Button>
+            <Button
+              color="primary"
+              variant="contained"
+              onClick={() => handleEdit(editId)}
+            >
+              Save
+            </Button>
+            <Button color="secondary" onClick={handleCloseModal} sx={{ ml: 1 }}>
+              Cancel
+            </Button>
           </Box>
         </Box>
       </Modal>
@@ -392,11 +483,19 @@ const SongList = () => {
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
         <DialogTitle>Confirm New Artist</DialogTitle>
         <DialogContent>
-          <Typography>Do you want to add "{newArtist}" as a new artist?</Typography>
+          <Typography>
+            Do you want to add "{newArtist}" as a new artist?
+          </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
-          <Button color="primary" variant="contained" onClick={handleConfirmNewArtist}>Yes</Button>
+          <Button
+            color="primary"
+            variant="contained"
+            onClick={handleConfirmNewArtist}
+          >
+            Yes
+          </Button>
         </DialogActions>
       </Dialog>
     </Container>
