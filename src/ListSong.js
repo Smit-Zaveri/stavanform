@@ -200,7 +200,7 @@ const SongList = () => {
           title: editTitle,
           artist: editArtist,
           tags: editTags.split(",").map((tag) => tag.trim().toLowerCase()),
-          order: editOrder,
+          order: Number(editOrder),
           content: editContent,
           youtube: editYoutubeLink,
         });
