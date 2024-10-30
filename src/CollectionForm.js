@@ -1,18 +1,19 @@
-import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Button,
   IconButton,
   List,
   ListItem,
-  ListItemSecondaryAction,
   ListItemText,
   Snackbar,
   TextField,
   Typography,
+  Divider
 } from "@mui/material";
-import React, { useEffect, useState } from "react";
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
+import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import { firestore } from "./firebase";
 
 const CollectionForm = () => {
@@ -24,6 +25,7 @@ const CollectionForm = () => {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [editingId, setEditingId] = useState(null);
+  const [draggedIndex, setDraggedIndex] = useState(null);
 
   useEffect(() => {
     fetchCollections();
@@ -45,32 +47,25 @@ const CollectionForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!name || !displayName || !numbering) {
+      setError("Please fill in all fields.");
+      return;
+    }
+
+    const collectionData = { name, displayName, numbering: parseInt(numbering, 10) };
+
     try {
-      if (!name || !displayName || !numbering) {
-        setError("Please fill in all fields.");
-        return;
-      }
-
-      const collectionData = {
-        name,
-        displayName,
-        numbering: parseInt(numbering, 10),
-      };
-
       if (editingId) {
-        // Update existing collection
         await firestore.collection("collections").doc(editingId).update(collectionData);
         setSnackbarMessage("Collection updated successfully.");
       } else {
-        // Add new collection
         await firestore.collection("collections").add(collectionData);
         setSnackbarMessage("Collection added successfully.");
       }
 
-      setSnackbarOpen(true); // Show snackbar on success
-
+      setSnackbarOpen(true);
       resetForm();
-      fetchCollections(); // Reload data after submission
+      fetchCollections();
     } catch (error) {
       console.error("Error adding/updating collection:", error);
     }
@@ -89,7 +84,7 @@ const CollectionForm = () => {
         await firestore.collection("collections").doc(collectionId).delete();
         setSnackbarMessage("Collection deleted successfully.");
         setSnackbarOpen(true);
-        fetchCollections(); // Reload data after deletion
+        fetchCollections();
       } catch (error) {
         console.error("Error deleting collection:", error);
       }
@@ -106,6 +101,27 @@ const CollectionForm = () => {
 
   const handleSnackbarClose = () => {
     setSnackbarOpen(false);
+  };
+
+  const handleDragStart = (index) => setDraggedIndex(index);
+
+  const handleDragOver = (e) => e.preventDefault();
+
+  const handleDrop = (index) => {
+    const newCollections = [...collections];
+    const [movedItem] = newCollections.splice(draggedIndex, 1);
+    newCollections.splice(index, 0, movedItem);
+
+    const updatedCollections = newCollections.map((item, idx) => ({
+      ...item,
+      numbering: idx + 1,
+    }));
+
+    setCollections(updatedCollections);
+
+    updatedCollections.forEach((item) => {
+      firestore.collection("collections").doc(item.id).update({ numbering: item.numbering });
+    });
   };
 
   return (
@@ -138,7 +154,7 @@ const CollectionForm = () => {
         <TextField
           label="Number"
           variant="outlined"
-          type='number'
+          type="number"
           fullWidth
           margin="normal"
           value={numbering}
@@ -161,21 +177,38 @@ const CollectionForm = () => {
         Collections:
       </Typography>
       <List>
-        {collections.map((collection) => (
-          <ListItem key={collection.id}>
-            <ListItemText
-              primary={`#${collection.numbering} - ${collection.name}`}
-              secondary={collection.displayName}
-            />
-            <ListItemSecondaryAction>
-              <IconButton edge="end" onClick={() => handleEditCollection(collection)}>
-                <EditIcon />
+        {collections.map((collection, index) => (
+          <React.Fragment key={collection.id}>
+            <ListItem
+              draggable
+              onDragStart={() => handleDragStart(index)}
+              onDragOver={handleDragOver}
+              onDrop={() => handleDrop(index)}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                cursor: "grab",
+                padding: "8px 16px",
+              }}
+            >
+              <IconButton edge="start" sx={{ cursor: "grab", color: "gray" }}>
+                <DragIndicatorIcon />
               </IconButton>
-              <IconButton edge="end" onClick={() => handleDeleteCollection(collection.id)}>
-                <DeleteIcon />
-              </IconButton>
-            </ListItemSecondaryAction>
-          </ListItem>
+              <ListItemText
+                primary={`#${collection.numbering} - ${collection.name}`}
+                secondary={collection.displayName}
+              />
+              <Box sx={{ display: "flex", alignItems: "center" }}>
+                <IconButton edge="end" onClick={() => handleEditCollection(collection)}>
+                  <EditIcon />
+                </IconButton>
+                <IconButton edge="end" onClick={() => handleDeleteCollection(collection.id)}>
+                  <DeleteIcon />
+                </IconButton>
+              </Box>
+            </ListItem>
+            <Divider />
+          </React.Fragment>
         ))}
       </List>
 
