@@ -87,7 +87,7 @@ const App = ({ darkMode, toggleTheme }) => {
       {
         label: "List Song",
         icon: <PlaylistAddCheckIcon />,
-        path: "/list-song",
+        path: "/list-song/lyrics",
       },
       {
         label: "Suggested Song",
