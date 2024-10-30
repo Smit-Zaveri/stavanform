@@ -9,11 +9,11 @@ import {
   Snackbar,
   TextField,
   Typography,
-  Divider
+  Divider,
 } from "@mui/material";
-import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
-import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
+import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from "@mui/icons-material/Edit";
+import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 import { firestore } from "./firebase";
 
 const CollectionForm = () => {
@@ -33,7 +33,10 @@ const CollectionForm = () => {
 
   const fetchCollections = async () => {
     try {
-      const snapshot = await firestore.collection("collections").orderBy("numbering").get();
+      const snapshot = await firestore
+        .collection("collections")
+        .orderBy("numbering")
+        .get();
       const collectionList = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
@@ -52,7 +55,11 @@ const CollectionForm = () => {
       return;
     }
 
-    const collectionData = { name, displayName, numbering: parseInt(numbering, 10) };
+    const collectionData = {
+      name,
+      displayName,
+      numbering: parseInt(numbering, 10),
+    };
 
     try {
       if (editingId) {
@@ -105,9 +112,12 @@ const CollectionForm = () => {
 
   const handleDragStart = (index) => setDraggedIndex(index);
 
-  const handleDragOver = (e) => e.preventDefault();
+  const handleDragOver = (e) => {
+    e.preventDefault(); // Prevent default to allow drop
+  };
 
   const handleDrop = (index) => {
+    if (draggedIndex === null || draggedIndex === index) return; // No valid drop
     const newCollections = [...collections];
     const [movedItem] = newCollections.splice(draggedIndex, 1);
     newCollections.splice(index, 0, movedItem);
@@ -119,9 +129,26 @@ const CollectionForm = () => {
 
     setCollections(updatedCollections);
 
+    // Update Firestore with new numbering
     updatedCollections.forEach((item) => {
       firestore.collection("collections").doc(item.id).update({ numbering: item.numbering });
     });
+
+    setDraggedIndex(null); // Reset dragged index
+  };
+
+  // Handle touch events for mobile
+  const handleTouchStart = (index) => setDraggedIndex(index);
+
+  const handleTouchMove = (e) => {
+    e.preventDefault();
+    const target = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY);
+    if (target && target.getAttribute("data-index") !== null) {
+      const dropIndex = parseInt(target.getAttribute("data-index"), 10);
+      if (dropIndex !== draggedIndex) {
+        handleDrop(dropIndex);
+      }
+    }
   };
 
   return (
@@ -184,6 +211,9 @@ const CollectionForm = () => {
               onDragStart={() => handleDragStart(index)}
               onDragOver={handleDragOver}
               onDrop={() => handleDrop(index)}
+              onTouchStart={() => handleTouchStart(index)}
+              onTouchMove={handleTouchMove}
+              data-index={index}
               sx={{
                 display: "flex",
                 alignItems: "center",

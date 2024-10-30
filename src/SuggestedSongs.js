@@ -1,6 +1,5 @@
 import InfoIcon from '@mui/icons-material/Info';
 import { Delete, Edit } from "@mui/icons-material";
-import FavoriteIcon from '@mui/icons-material/Favorite';
 import {
   Alert,
   Box,
