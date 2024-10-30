@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   Box,
   Button,
@@ -16,42 +16,44 @@ import EditIcon from "@mui/icons-material/Edit";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 import { firestore } from "./firebase";
 
-const CollectionForm = () => {
+const CollectionForm = ({ collectionName }) => {
   const [name, setName] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [numbering, setNumber] = useState("");
   const [collections, setCollections] = useState([]);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [editingId, setEditingId] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  useEffect(() => {
-    fetchCollections();
-  }, []);
-
-  const fetchCollections = async () => {
+  const fetchCollections = useCallback(async () => {
+    setLoading(true);
     try {
-      const snapshot = await firestore
-        .collection("collections")
-        .orderBy("numbering")
-        .get();
+      const snapshot = await firestore.collection(collectionName).orderBy("numbering").get();
       const collectionList = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
       setCollections(collectionList);
+      setError(""); // Clear any previous errors
     } catch (error) {
+      setError("Error fetching collections. Please try again.");
       console.error("Error fetching collections:", error);
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [collectionName]);
+
+  useEffect(() => {
+    fetchCollections();
+  }, [fetchCollections]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!name || !displayName || !numbering) {
+    if (!name || !displayName) {
       setError("Please fill in all fields.");
       return;
     }
@@ -59,23 +61,27 @@ const CollectionForm = () => {
     const collectionData = {
       name,
       displayName,
-      numbering: parseInt(numbering, 10),
+      numbering: collections.length + 1,
     };
 
+    setLoading(true);
     try {
       if (editingId) {
-        await firestore.collection("collections").doc(editingId).update(collectionData);
+        await firestore.collection(collectionName).doc(editingId).update(collectionData);
         setSnackbarMessage("Collection updated successfully.");
       } else {
-        await firestore.collection("collections").add(collectionData);
+        await firestore.collection(collectionName).add(collectionData);
         setSnackbarMessage("Collection added successfully.");
       }
 
-      setSnackbarOpen(true);
       resetForm();
       fetchCollections();
     } catch (error) {
+      setError("Error adding/updating collection. Please try again.");
       console.error("Error adding/updating collection:", error);
+    } finally {
+      setLoading(false);
+      setSnackbarOpen(true);
     }
   };
 
@@ -83,18 +89,22 @@ const CollectionForm = () => {
     setEditingId(collection.id);
     setName(collection.name);
     setDisplayName(collection.displayName);
-    setNumber(collection.numbering);
+    setError(""); // Clear error when editing
   };
 
   const handleDeleteCollection = async (collectionId) => {
     if (window.confirm("Are you sure you want to delete this collection?")) {
+      setLoading(true);
       try {
-        await firestore.collection("collections").doc(collectionId).delete();
+        await firestore.collection(collectionName).doc(collectionId).delete();
         setSnackbarMessage("Collection deleted successfully.");
-        setSnackbarOpen(true);
         fetchCollections();
       } catch (error) {
+        setError("Error deleting collection. Please try again.");
         console.error("Error deleting collection:", error);
+      } finally {
+        setLoading(false);
+        setSnackbarOpen(true);
       }
     }
   };
@@ -102,15 +112,15 @@ const CollectionForm = () => {
   const resetForm = () => {
     setName("");
     setDisplayName("");
-    setNumber("");
     setEditingId(null);
-    setError(null);
+    setError("");
   };
 
   const handleSnackbarClose = () => {
     setSnackbarOpen(false);
   };
 
+  // Drag-and-drop functionality
   const handleLongPressStart = (index) => {
     setDraggedIndex(index);
     setIsDragging(true);
@@ -135,7 +145,6 @@ const CollectionForm = () => {
     if (!isDragging) return;
     e.preventDefault();
 
-    // Get the position of the touch event
     const touch = e.touches[0];
     const target = document.elementFromPoint(touch.clientX, touch.clientY);
     if (target && target.getAttribute("data-index") !== null) {
@@ -172,7 +181,7 @@ const CollectionForm = () => {
 
     // Update Firestore with new numbering
     updatedCollections.forEach((item) => {
-      firestore.collection("collections").doc(item.id).update({ numbering: item.numbering });
+      firestore.collection(collectionName).doc(item.id).update({ numbering: item.numbering });
     });
 
     setIsDragging(false); // Reset dragging state
@@ -181,7 +190,7 @@ const CollectionForm = () => {
   return (
     <Box sx={{ p: 2 }}>
       <Typography variant="h5" gutterBottom>
-        {editingId ? "Edit Collection" : "Create New Collection"}
+        {editingId ? `Edit ${collectionName.charAt(0).toUpperCase() + collectionName.slice(1)}` : `Create New ${collectionName.charAt(0).toUpperCase() + collectionName.slice(1)}`}
       </Typography>
 
       <form onSubmit={handleSubmit}>
@@ -193,7 +202,7 @@ const CollectionForm = () => {
           value={name}
           onChange={(e) => setName(e.target.value)}
           error={!!error}
-          helperText={error && "Please fill in this field."}
+          helperText={error}
         />
         <TextField
           label="Display Name"
@@ -203,22 +212,11 @@ const CollectionForm = () => {
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
           error={!!error}
-          helperText={error && "Please fill in this field."}
-        />
-        <TextField
-          label="Number"
-          variant="outlined"
-          type="number"
-          fullWidth
-          margin="normal"
-          value={numbering}
-          onChange={(e) => setNumber(e.target.value)}
-          error={!!error}
-          helperText={error && "Please fill in this field."}
+          helperText={error}
         />
 
-        <Button variant="contained" color="primary" type="submit">
-          {editingId ? "Update Collection" : "Submit"}
+        <Button variant="contained" color="primary" type="submit" disabled={loading}>
+          {loading ? "Loading..." : editingId ? "Update Collection" : "Submit"}
         </Button>
         {editingId && (
           <Button variant="outlined" color="secondary" onClick={resetForm} sx={{ ml: 2 }}>
@@ -228,56 +226,63 @@ const CollectionForm = () => {
       </form>
 
       <Typography variant="h6" sx={{ mt: 4 }}>
-        Collections:
+        {collectionName.charAt(0).toUpperCase() + collectionName.slice(1)}:
       </Typography>
       <List>
-        {collections.map((collection, index) => (
-          <React.Fragment key={collection.id}>
-            <ListItem
-              onTouchStart={() => handleLongPressStart(index)}
-              onTouchEnd={handleTouchEnd}
-              onTouchMove={handleTouchMove}
-              onMouseDown={() => handleMouseDown(index)}
-              onMouseUp={handleMouseUp}
-              onMouseMove={handleMouseMove}
-              data-index={index}
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                padding: "8px 16px",
-                backgroundColor:  "inherit",
-                cursor: isDragging ? "grabbing" : "grab",
-              }}
-            >
-              <IconButton edge="start" sx={{ color: "gray" }}>
-                <DragIndicatorIcon />
-              </IconButton>
-              <ListItemText
-                primary={`#${collection.numbering} - ${collection.name}`}
-                secondary={collection.displayName}
-              />
-              <Box sx={{ display: "flex", alignItems: "center" }}>
-                <IconButton edge="end" onClick={() => handleEditCollection(collection)}>
-                  <EditIcon />
-                </IconButton>
-                <IconButton edge="end" onClick={() => handleDeleteCollection(collection.id)}>
-                  <DeleteIcon />
-                </IconButton>
-              </Box>
-            </ListItem>
-            <Divider />
-          </React.Fragment>
-        ))}
-      </List>
+  {collections.map((collection, index) => (
+    <React.Fragment key={collection.id}>
+      <ListItem
+        onTouchStart={() => handleLongPressStart(index)}
+        onTouchEnd={handleTouchEnd}
+        onTouchMove={handleTouchMove}
+        onMouseDown={() => handleMouseDown(index)}
+        onMouseUp={handleMouseUp}
+        onMouseMove={handleMouseMove}
+        data-index={index}
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          padding: "8px 16px",
+          backgroundColor: "inherit",
+          cursor: isDragging ? "grabbing" : "grab",
+          userSelect: "none", // Prevent text selection
+    WebkitUserSelect: "none", // For Safari
+    MozUserSelect: "none",
+        }}
+      >
+        <IconButton edge="start" sx={{ color: "gray" }}>
+          <DragIndicatorIcon />
+        </IconButton>
+        <ListItemText
+          primary={`#${collection.numbering} - ${collection.name}`}
+          secondary={collection.displayName}
+          sx={{userSelect: "none", // Prevent text selection
+            WebkitUserSelect: "none", // For Safari
+            MozUserSelect: "none",}} // Apply the unselectable style here
+        />
+        <Box sx={{ ml: "auto" }}>
+          <IconButton onClick={() => handleEditCollection(collection)}>
+            <EditIcon />
+          </IconButton>
+          <IconButton onClick={() => handleDeleteCollection(collection.id)}>
+            <DeleteIcon />
+          </IconButton>
+        </Box>
+      </ListItem>
+      <Divider />
+    </React.Fragment>
+  ))}
+</List>
 
       <Snackbar
         open={snackbarOpen}
-        autoHideDuration={6000}
+        autoHideDuration={3000}
         onClose={handleSnackbarClose}
         message={snackbarMessage}
       />
     </Box>
   );
 };
+
 
 export default CollectionForm;

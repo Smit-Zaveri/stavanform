@@ -22,16 +22,11 @@ import {
   Toolbar,
   Typography,
   useMediaQuery,
-  useTheme
+  useTheme,
 } from "@mui/material";
 import { onAuthStateChanged } from "firebase/auth";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  Route,
-  Routes,
-  useLocation,
-  useNavigate
-} from "react-router-dom";
+import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { auth } from "./firebase"; // Import Firebase auth
 
 import ArtistForm from "./ArtistForm";
@@ -40,9 +35,6 @@ import Form from "./Form";
 import SongList from "./ListSong";
 import Login from "./Login";
 import ResetPassword from "./ResetPassword";
-import SuggestionForm from "./Suggestion";
-import Tag from "./Tag";
-import Tirthankar from "./Tirthankar";
 import SuggestedSongs from "./SuggestedSongs";
 
 const drawerWidth = 245;
@@ -88,6 +80,7 @@ const App = ({ darkMode, toggleTheme }) => {
       { label: "Form", icon: <EditIcon />, path: "/" },
       { label: "Artist Form", icon: <MusicNoteIcon />, path: "/artist-form" },
       { label: "Collection", icon: <CollectionsIcon />, path: "/collection" },
+      { label: "Tirth", icon: <CollectionsIcon />, path: "/tirth" },
       { label: "Tirtankar", icon: <LibraryMusicIcon />, path: "/tirtankar" },
       { label: "Tag", icon: <LabelIcon />, path: "/tag" },
       { label: "Suggestion", icon: <EmojiObjectsIcon />, path: "/suggestion" },
@@ -154,13 +147,15 @@ const App = ({ darkMode, toggleTheme }) => {
           background: theme.palette.background.default,
         }}
       >
-        <CircularProgress  sx={{ background: theme.palette.background.default }}/>
+        <CircularProgress
+          sx={{ background: theme.palette.background.default }}
+        />
       </Box>
     );
   }
 
   return (
-    <Box sx={{ display: "flex", background: theme.palette.background.default, }}>
+    <Box sx={{ display: "flex", background: theme.palette.background.default }}>
       <CssBaseline />
       <AppBar position="fixed" sx={{ zIndex: theme.zIndex.drawer + 1 }}>
         <Toolbar>
@@ -226,10 +221,17 @@ const App = ({ darkMode, toggleTheme }) => {
         <Toolbar />
         <Routes>
           <Route path="/" element={user ? <Form /> : <Login />} />
-          <Route path="/tag" element={user ? <Tag /> : <Login />} />
+          <Route
+            path="/tag"
+            element={
+              user ? <CollectionForm collectionName="tags" /> : <Login />
+            }
+          />
           <Route
             path="/suggestion"
-            element={user ? <SuggestionForm /> : <Login />}
+            element={
+              user ? <CollectionForm collectionName="suggestions" /> : <Login />
+            }
           />
           <Route
             path="/artist-form"
@@ -237,12 +239,22 @@ const App = ({ darkMode, toggleTheme }) => {
           />
           <Route
             path="/collection"
-            element={user ? <CollectionForm /> : <Login />}
+            element={
+              user ? <CollectionForm collectionName="collections" /> : <Login />
+            }
+          />
+          <Route
+            path="/tirth"
+            element={
+              user ? <CollectionForm collectionName="tirth" /> : <Login />
+            }
           />
           <Route path="/list-song" element={user ? <SongList /> : <Login />} />
           <Route
             path="/tirtankar"
-            element={user ? <Tirthankar /> : <Login />}
+            element={
+              user ? <CollectionForm collectionName="tirtankar" /> : <Login />
+            }
           />
           <Route
             path="/suggestedsongs"
