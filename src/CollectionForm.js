@@ -26,6 +26,7 @@ const CollectionForm = () => {
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [draggedIndex, setDraggedIndex] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     fetchCollections();
@@ -110,10 +111,50 @@ const CollectionForm = () => {
     setSnackbarOpen(false);
   };
 
-  const handleDragStart = (index) => setDraggedIndex(index);
+  const handleLongPressStart = (index) => {
+    setDraggedIndex(index);
+    setIsDragging(true);
+  };
 
-  const handleDragOver = (e) => {
-    e.preventDefault(); // Prevent default to allow drop
+  const handleMouseDown = (index) => {
+    setDraggedIndex(index);
+    setIsDragging(true);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    setDraggedIndex(null);
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+    setDraggedIndex(null);
+  };
+
+  const handleTouchMove = (e) => {
+    if (!isDragging) return;
+    e.preventDefault();
+
+    // Get the position of the touch event
+    const touch = e.touches[0];
+    const target = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (target && target.getAttribute("data-index") !== null) {
+      const dropIndex = parseInt(target.getAttribute("data-index"), 10);
+      if (dropIndex !== draggedIndex) {
+        handleDrop(dropIndex);
+      }
+    }
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDragging) return;
+    const target = document.elementFromPoint(e.clientX, e.clientY);
+    if (target && target.getAttribute("data-index") !== null) {
+      const dropIndex = parseInt(target.getAttribute("data-index"), 10);
+      if (dropIndex !== draggedIndex) {
+        handleDrop(dropIndex);
+      }
+    }
   };
 
   const handleDrop = (index) => {
@@ -134,21 +175,7 @@ const CollectionForm = () => {
       firestore.collection("collections").doc(item.id).update({ numbering: item.numbering });
     });
 
-    setDraggedIndex(null); // Reset dragged index
-  };
-
-  // Handle touch events for mobile
-  const handleTouchStart = (index) => setDraggedIndex(index);
-
-  const handleTouchMove = (e) => {
-    e.preventDefault();
-    const target = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY);
-    if (target && target.getAttribute("data-index") !== null) {
-      const dropIndex = parseInt(target.getAttribute("data-index"), 10);
-      if (dropIndex !== draggedIndex) {
-        handleDrop(dropIndex);
-      }
-    }
+    setIsDragging(false); // Reset dragging state
   };
 
   return (
@@ -207,21 +234,22 @@ const CollectionForm = () => {
         {collections.map((collection, index) => (
           <React.Fragment key={collection.id}>
             <ListItem
-              draggable
-              onDragStart={() => handleDragStart(index)}
-              onDragOver={handleDragOver}
-              onDrop={() => handleDrop(index)}
-              onTouchStart={() => handleTouchStart(index)}
+              onTouchStart={() => handleLongPressStart(index)}
+              onTouchEnd={handleTouchEnd}
               onTouchMove={handleTouchMove}
+              onMouseDown={() => handleMouseDown(index)}
+              onMouseUp={handleMouseUp}
+              onMouseMove={handleMouseMove}
               data-index={index}
               sx={{
                 display: "flex",
                 alignItems: "center",
-                cursor: "grab",
                 padding: "8px 16px",
+                backgroundColor:  "inherit",
+                cursor: isDragging ? "grabbing" : "grab",
               }}
             >
-              <IconButton edge="start" sx={{ cursor: "grab", color: "gray" }}>
+              <IconButton edge="start" sx={{ color: "gray" }}>
                 <DragIndicatorIcon />
               </IconButton>
               <ListItemText
