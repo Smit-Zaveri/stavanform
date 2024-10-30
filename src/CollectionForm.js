@@ -232,9 +232,9 @@ const CollectionForm = ({ collectionName }) => {
   {collections.map((collection, index) => (
     <React.Fragment key={collection.id}>
       <ListItem
-        onTouchStart={() => handleLongPressStart(index)}
-        onTouchEnd={handleTouchEnd}
-        onTouchMove={handleTouchMove}
+        // onTouchStart={() => handleLongPressStart(index)}
+        // onTouchEnd={handleTouchEnd}
+        // onTouchMove={handleTouchMove}
         onMouseDown={() => handleMouseDown(index)}
         onMouseUp={handleMouseUp}
         onMouseMove={handleMouseMove}
