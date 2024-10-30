@@ -19,6 +19,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Pagination,
 } from "@mui/material";
 import Grid from "@mui/material/Grid2";
 import React, { useEffect, useState } from "react";
@@ -67,10 +68,12 @@ const SongList = () => {
   const [openModal, setOpenModal] = useState(false);
   const [newArtist, setNewArtist] = useState("");
   const [openArtistDialog, setOpenArtistDialog] = useState(false);
-  const [openDeleteDialog, setOpenDeleteDialog] = useState(false); // For delete confirmation
-  const [openResolveDialog, setOpenResolveDialog] = useState(false); // For resolve confirmation
-  const [deleteId, setDeleteId] = useState(""); // ID of the song to delete
-  const [resolveReportId, setResolveReportId] = useState(""); // ID of the report to resolve
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [openResolveDialog, setOpenResolveDialog] = useState(false);
+  const [deleteId, setDeleteId] = useState("");
+  const [resolveReportId, setResolveReportId] = useState("");
+  const [page, setPage] = useState(1); // Current page for pagination
+  const itemsPerPage = 10; // Number of songs per page
   const navigate = useNavigate();
 
   const handleConfirmNewArtist = () => {
@@ -217,6 +220,10 @@ const SongList = () => {
     }
   };
 
+  // Calculate pagination data
+  const totalPages = Math.ceil(sortedSongs.length / itemsPerPage);
+  const paginatedSongs = sortedSongs.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+
   return (
     <Container maxWidth="md" sx={{ marginTop: 4 }}>
       <Typography variant="h4" gutterBottom>
@@ -239,9 +246,10 @@ const SongList = () => {
               <MenuItem value="lyrics">
                 <em>Lyrics</em>
               </MenuItem>
-              {collectionList.map((collection) => (
+              {collectionList.sort((a, b) => a.numbering - b.numbering).map((collection) => (
                 <MenuItem key={collection.id} value={collection.name}>
-                  {collection.name.charAt(0).toUpperCase() + collection.name.slice(1)}
+                  {collection.name.charAt(0).toUpperCase() +
+                    collection.name.slice(1)}
                 </MenuItem>
               ))}
             </Select>
@@ -250,109 +258,53 @@ const SongList = () => {
         <Grid size={{ xs: 1, sm: 6, md: 6 }}>
           <TextField
             fullWidth
-            label="Search Songs"
+            label="Search"
+            variant="outlined"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            sx={{ bgcolor: theme.palette.background.paper, borderRadius: 1, boxShadow: 1 }}
           />
         </Grid>
       </Grid>
-
-      <Grid
-        sx={{ marginTop: 4 }}
-        container
-        spacing={{ xs: 1, md: 2 }}
-        columns={{ xs: 1, sm: 8, md: 12 }}
-      >
-        {sortedSongs.map((song) => {
-          const report = reports.find((report) => report.lyricsId === song.id);
-          return (
-            <Grid  size={{ xs: 1, sm: 4, md: 4 }} key={song.id}>
-              <Card
-                sx={{
-                  bgcolor: report ? "rgba(255, 0, 0, 0.1)" : theme.palette.background.paper,
-                  borderRadius: 2,
-                  boxShadow: 3,
-                  transition: "transform 0.2s, box-shadow 0.2s",
-                  "&:hover": { transform: "scale(1.02)", boxShadow: 6 },
-                  position: "relative",
-                  overflow: "visible",
-                }}
-              >
+      <Box mt={2}>
+        <Grid container spacing={2}>
+          {paginatedSongs.map((song) => (
+            <Grid item xs={12} sm={6} md={6} key={song.id}>
+              <Card>
                 <CardContent>
-                  <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1 }}>
-                    {song.title}
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary">
-                    {`Artist: ${song.artist} | Tags: ${song.tags.join(", ")}`}
-                  </Typography>
-                  {report && (
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        mt: 1,
-                        color: theme.palette.error.main,
-                        fontWeight: "bold",
-                      }}
-                    >
-                      {`Report: ${report.reportText}`}
+                  <Typography variant="h5">{song.title}</Typography>
+                  <Typography variant="subtitle1">Artist: {song.artist}</Typography>
+                  <Typography variant="body2">Tags: {song.tags.join(", ")}</Typography>
+                  <Typography variant="body2">YouTube: {song.youtube}</Typography>
+                  {reports.some((report) => report.lyricsId === song.id) && (
+                    <Typography variant="body2" color="error">
+                      Reported
                     </Typography>
                   )}
                 </CardContent>
-                <CardActions sx={{ display: "flex", justifyContent: "flex-start" }}>
-                  <IconButton
-                    size="small"
-                    color="primary"
-                    onClick={() => handleEditClick(song)}
-                    sx={{
-                      bgcolor: theme.palette.primary.light,
-                      color: theme.palette.primary.contrastText,
-                      "&:hover": {
-                        bgcolor: theme.palette.primary.dark,
-                      },
-                    }}
-                  >
+                <CardActions>
+                  <Button size="small" color="primary" onClick={() => handleEditClick(song)}>
                     <Edit />
+                  </Button>
+                  <IconButton
+                    color="secondary"
+                    onClick={() => handleDeleteClick(song.id)}
+                  >
+                    <Delete />
                   </IconButton>
-
-                  {report && (
-                    <Button
-                      size="small"
-                      variant="contained"
-                      color="secondary"
-                      onClick={() => handleResolveClick(report.id)}
-                    >
-                      Resolve Report
-                    </Button>
-                  )}
                 </CardActions>
-
-                {/* Delete button positioned at bottom-right corner */}
-                <IconButton
-                  size="small"
-                  onClick={() => handleDeleteClick(song.id)}
-                  sx={{
-                    bgcolor: theme.palette.error.main,
-                    color: "#fff",
-                    "&:hover": {
-                      bgcolor: theme.palette.error.dark,
-                    },
-                    position: "absolute",
-                    bottom: 8,
-                    right: 8,
-                    width: 40,
-                    height: 40,
-                    borderRadius: "50%",
-                    boxShadow: 3,
-                  }}
-                >
-                  <Delete />
-                </IconButton>
               </Card>
             </Grid>
-          );
-        })}
-      </Grid>
+          ))}
+        </Grid>
+      </Box>
+      <Box mt={4} display="flex" justifyContent="center">
+        <Pagination
+          count={totalPages}
+          page={page}
+          onChange={(event, value) => setPage(value)}
+          color="primary"
+        />
+      </Box>
 
       {/* Edit Modal */}
       <Modal open={openModal} onClose={handleCloseModal} sx={modalStyle}>
