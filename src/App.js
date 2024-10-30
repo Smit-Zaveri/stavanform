@@ -249,7 +249,8 @@ const App = ({ darkMode, toggleTheme }) => {
               user ? <CollectionForm collectionName="tirth" /> : <Login />
             }
           />
-          <Route path="/list-song" element={user ? <SongList /> : <Login />} />
+          <Route path="/list-song/:collectionName" element={user ? <SongList /> : <Login />} />
+
           <Route
             path="/tirtankar"
             element={

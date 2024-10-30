@@ -1,4 +1,5 @@
 import { Delete, Edit } from "@mui/icons-material";
+import { useParams } from "react-router-dom";
 import {
   Box,
   Button,
@@ -63,7 +64,8 @@ const SongList = () => {
   const [searchInput, setSearchInput] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [reports, setReports] = useState([]);
-  const [selectedCollection, setSelectedCollection] = useState("lyrics");
+  const { collectionName  } = useParams();
+  const [selectedCollection, setSelectedCollection] = useState(collectionName || "lyrics");
   const [collectionList, setCollectionList] = useState([]);
   const [openModal, setOpenModal] = useState(false);
   const [newArtist, setNewArtist] = useState("");
@@ -76,13 +78,28 @@ const SongList = () => {
   const itemsPerPage = 10; // Number of songs per page
   const navigate = useNavigate();
 
+  useEffect(() => {
+    if (collectionName && collectionName !== selectedCollection) {
+      setSelectedCollection(collectionName); // Update based on URL param
+    }
+  }, [collectionName, selectedCollection]);
+
+  const handleCollectionChange = (e) => {
+    const newCollection = e.target.value;
+    setSelectedCollection(newCollection);
+    navigate(`/list-song/${newCollection}`);
+  };
+
   const handleConfirmNewArtist = () => {
     setOpenArtistDialog(false);
     navigate(`/artist-form`, { state: { name: newArtist } });
   };
 
   const handleArtistInputBlur = () => {
-    if (editArtist && !artistOptions.some((option) => option.name === editArtist)) {
+    if (
+      editArtist &&
+      !artistOptions.some((option) => option.name === editArtist)
+    ) {
       setNewArtist(editArtist);
       setOpenArtistDialog(true);
     }
@@ -103,10 +120,18 @@ const SongList = () => {
           firestore.collection("collections").get(),
         ]);
 
-        setSongs(songSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
-        setArtistOptions(artistSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
-        setReports(reportSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
-        setCollectionList(collectionSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+        setSongs(
+          songSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+        );
+        setArtistOptions(
+          artistSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+        );
+        setReports(
+          reportSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+        );
+        setCollectionList(
+          collectionSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+        );
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -118,9 +143,10 @@ const SongList = () => {
   useEffect(() => {
     const performSearch = () => {
       const searchTerm = searchInput.toLowerCase();
-      const filteredSongs = songs.filter((song) =>
-        song.title.toLowerCase().includes(searchTerm) ||
-        song.tags.some((tag) => tag.toLowerCase().includes(searchTerm))
+      const filteredSongs = songs.filter(
+        (song) =>
+          song.title.toLowerCase().includes(searchTerm) ||
+          song.tags.some((tag) => tag.toLowerCase().includes(searchTerm))
       );
       setSearchResults(filteredSongs);
     };
@@ -128,11 +154,13 @@ const SongList = () => {
     performSearch();
   }, [searchInput, songs]);
 
-  const sortedSongs = (searchResults.length > 0 ? searchResults : songs).sort((a, b) => {
-    const aHasReport = reports.some((report) => report.lyricsId === a.id);
-    const bHasReport = reports.some((report) => report.lyricsId === b.id);
-    return aHasReport === bHasReport ? 0 : aHasReport ? -1 : 1;
-  });
+  const sortedSongs = (searchResults.length > 0 ? searchResults : songs).sort(
+    (a, b) => {
+      const aHasReport = reports.some((report) => report.lyricsId === a.id);
+      const bHasReport = reports.some((report) => report.lyricsId === b.id);
+      return aHasReport === bHasReport ? 0 : aHasReport ? -1 : 1;
+    }
+  );
 
   const handleDeleteClick = (id) => {
     setDeleteId(id);
@@ -157,7 +185,9 @@ const SongList = () => {
   const handleConfirmResolve = async () => {
     try {
       await firestore.collection("reports").doc(resolveReportId).delete();
-      setReports((prevReports) => prevReports.filter((report) => report.id !== resolveReportId));
+      setReports((prevReports) =>
+        prevReports.filter((report) => report.id !== resolveReportId)
+      );
       setOpenResolveDialog(false);
     } catch (error) {
       console.error("Error resolving report:", error);
@@ -222,7 +252,10 @@ const SongList = () => {
 
   // Calculate pagination data
   const totalPages = Math.ceil(sortedSongs.length / itemsPerPage);
-  const paginatedSongs = sortedSongs.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+  const paginatedSongs = sortedSongs.slice(
+    (page - 1) * itemsPerPage,
+    page * itemsPerPage
+  );
 
   return (
     <Container maxWidth="md" sx={{ marginTop: 4 }}>
@@ -235,25 +268,27 @@ const SongList = () => {
         columns={{ xs: 1, sm: 12, md: 12 }}
       >
         <Grid size={{ xs: 1, sm: 6, md: 6 }}>
-          <FormControl fullWidth>
-            <Select
-              value={selectedCollection}
-              onChange={(e) => setSelectedCollection(e.target.value)}
-              displayEmpty
-              inputProps={{ "aria-label": "Select Collection" }}
-              sx={{ bgcolor: theme.palette.background.paper, borderRadius: 1, boxShadow: 1 }}
-            >
-              <MenuItem value="lyrics">
-                <em>Lyrics</em>
-              </MenuItem>
-              {collectionList.sort((a, b) => a.numbering - b.numbering).map((collection) => (
-                <MenuItem key={collection.id} value={collection.name}>
-                  {collection.name.charAt(0).toUpperCase() +
-                    collection.name.slice(1)}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+        <FormControl fullWidth>
+      <Select
+        value={selectedCollection}
+        onChange={handleCollectionChange}
+        displayEmpty
+        inputProps={{ "aria-label": "Select Collection" }}
+        sx={{
+          bgcolor: theme.palette.background.paper,
+          borderRadius: 1,
+          boxShadow: 1,
+        }}
+      >
+        {collectionList
+          .sort((a, b) => a.numbering - b.numbering)
+          .map((collection) => (
+            <MenuItem key={collection.id} value={collection.name}>
+              {collection.name.charAt(0).toUpperCase() + collection.name.slice(1)}
+            </MenuItem>
+          ))}
+      </Select>
+    </FormControl>
         </Grid>
         <Grid size={{ xs: 1, sm: 6, md: 6 }}>
           <TextField
@@ -267,34 +302,67 @@ const SongList = () => {
       </Grid>
       <Box mt={2}>
         <Grid container spacing={2}>
-          {paginatedSongs.map((song) => (
-            <Grid item xs={12} sm={6} md={6} key={song.id}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h5">{song.title}</Typography>
-                  <Typography variant="subtitle1">Artist: {song.artist}</Typography>
-                  <Typography variant="body2">Tags: {song.tags.join(", ")}</Typography>
-                  <Typography variant="body2">YouTube: {song.youtube}</Typography>
-                  {reports.some((report) => report.lyricsId === song.id) && (
-                    <Typography variant="body2" color="error">
-                      Reported
+          {paginatedSongs.map((song) => {
+            const isReported = reports.some(
+              (report) => report.lyricsId === song.id
+            );
+            return (
+              <Grid item xs={12} sm={6} md={6} key={song.id}>
+                <Card sx={isReported ? reportedCardStyle : {}}>
+                  <CardContent>
+                    <Typography variant="h5">{song.title}</Typography>
+                    <Typography variant="subtitle1">
+                      Artist: {song.artist}
                     </Typography>
-                  )}
-                </CardContent>
-                <CardActions>
-                  <Button size="small" color="primary" onClick={() => handleEditClick(song)}>
-                    <Edit />
-                  </Button>
-                  <IconButton
-                    color="secondary"
-                    onClick={() => handleDeleteClick(song.id)}
-                  >
-                    <Delete />
-                  </IconButton>
-                </CardActions>
-              </Card>
-            </Grid>
-          ))}
+                    <Typography variant="body2">
+                      Tags: {song.tags.join(", ")}
+                    </Typography>
+                    <Typography variant="body2">
+                      YouTube: {song.youtube}
+                    </Typography>
+                    {isReported && (
+                      <Typography variant="body2" color="error">
+                        Reported
+                      </Typography>
+                    )}
+                  </CardContent>
+                  <CardActions>
+                    <Button
+                      size="small"
+                      color="primary"
+                      onClick={() => handleEditClick(song)}
+                    >
+                      <Edit />
+                    </Button>
+                    <IconButton
+                      color="secondary"
+                      onClick={() => handleDeleteClick(song.id)}
+                    >
+                      <Delete />
+                    </IconButton>
+                    {isReported && (
+                      <Button
+                        size="small"
+                        color="error"
+                        onClick={() => {
+                          const report = reports.find(
+                            (report) => report.lyricsId === song.id
+                          );
+                          if (report) {
+                            handleResolveClick(report.id); // Pass the specific report.id here
+                          } else {
+                            console.error("No report found for this song.");
+                          }
+                        }}
+                      >
+                        Resolve
+                      </Button>
+                    )}
+                  </CardActions>
+                </Card>
+              </Grid>
+            );
+          })}
         </Grid>
       </Box>
       <Box mt={4} display="flex" justifyContent="center">
@@ -386,7 +454,10 @@ const SongList = () => {
       </Modal>
 
       {/* Dialog for Adding New Artist */}
-      <Dialog open={openArtistDialog} onClose={() => setOpenArtistDialog(false)}>
+      <Dialog
+        open={openArtistDialog}
+        onClose={() => setOpenArtistDialog(false)}
+      >
         <DialogTitle>Confirm New Artist</DialogTitle>
         <DialogContent>
           <Typography>
@@ -406,7 +477,10 @@ const SongList = () => {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)}>
+      <Dialog
+        open={openDeleteDialog}
+        onClose={() => setOpenDeleteDialog(false)}
+      >
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
           <Typography>Are you sure you want to delete this song?</Typography>
@@ -430,9 +504,7 @@ const SongList = () => {
       >
         <DialogTitle>Confirm Resolve Report</DialogTitle>
         <DialogContent>
-          <Typography>
-            Are you sure you want to resolve this report?
-          </Typography>
+          <Typography>Are you sure you want to resolve this report?</Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenResolveDialog(false)}>Cancel</Button>
@@ -447,6 +519,11 @@ const SongList = () => {
       </Dialog>
     </Container>
   );
+};
+
+const reportedCardStyle = {
+  border: "2px solid red",
+  boxShadow: "0px 0px 10px rgba(255, 0, 0, 0.5)",
 };
 
 export default SongList;
