@@ -119,94 +119,110 @@ const Form = () => {
     return regex.test(url);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-  
-    // Basic validation for required fields
-    if (!selectedCollection || !title || !content) {
-      setError("Please fill in all required fields.");
-      setSuccessMessage("");
-      setOpenSnackbar(true);
-      return;
-    }
-  
-    // Validate YouTube URL if provided
-    if (youtube && !isValidYouTubeURL(youtube)) {
-      setError("Please enter a valid YouTube URL.");
-      setSuccessMessage("");
-      setOpenSnackbar(true);
-      return;
-    }
-  
-    // Validate that tags are not empty if provided
-    const tagArray = tags.split(",").map((tag) => tag.trim());
-    if (tags && tagArray.length === 0) {
-      setError("Please enter at least one tag.");
-      setSuccessMessage("");
-      setOpenSnackbar(true);
-      return;
-    }
-  
-    try {
-      const publishDate = firebase.firestore.Timestamp.now();
-  
-      let collectionRef;
-      if (selectedCollection === "lyrics") {
-        collectionRef = firestore.collection("lyrics");
-      } else {
-        const collection = collectionList.find(
-          (collection) => collection.name === selectedCollection
-        );
-  
-        if (!collection) {
-          console.log("Invalid collection selected. Cannot submit.");
-          return;
-        }
-  
-        collectionRef = firestore.collection(collection.name);
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  // Basic validation for required fields
+  if (!selectedCollection || !title || !content) {
+    setError("Please fill in all required fields.");
+    setSuccessMessage("");
+    setOpenSnackbar(true);
+    return;
+  }
+
+  // Validate YouTube URL if provided
+  if (youtube && !isValidYouTubeURL(youtube)) {
+    setError("Please enter a valid YouTube URL.");
+    setSuccessMessage("");
+    setOpenSnackbar(true);
+    return;
+  }
+
+  // Validate that tags are not empty if provided
+  const tagArray = tags.split(",").map((tag) => tag.trim());
+  if (tags && tagArray.length === 0) {
+    setError("Please enter at least one tag.");
+    setSuccessMessage("");
+    setOpenSnackbar(true);
+    return;
+  }
+
+  // Validate the order field
+  const parsedOrder = order ? Number(order) : null; // Parse order or set it to null if not provided
+  if (order && isNaN(parsedOrder)) {
+    setError("Please enter a valid number for the order field.");
+    setSuccessMessage("");
+    setOpenSnackbar(true);
+    return;
+  }
+
+  try {
+    const publishDate = firebase.firestore.Timestamp.now();
+
+    let collectionRef;
+    if (selectedCollection === "lyrics") {
+      collectionRef = firestore.collection("lyrics");
+    } else {
+      const collection = collectionList.find(
+        (collection) => collection.name === selectedCollection
+      );
+
+      if (!collection) {
+        console.log("Invalid collection selected. Cannot submit.");
+        return;
       }
-  
-      // Adding selected Tirthankar to the tags
-      const allTags = [...tagArray.map((tag) => tag.toLowerCase())];
-      if (selectedTirthankar) {
-        allTags.push(selectedTirthankar.name.toLowerCase());
-        allTags.push(selectedTirthankar.displayName.toLowerCase());
-      }
-  
-      // Parse the order to ensure it's a number
-  
-      const docRef = await collectionRef.add({
-        title,
-        artist,
-        tags: allTags,
-        content,
-        youtube,
-        order: Number(order), // Send as number
-        publishDate,
-        newFlag,
-      });
-      console.log("Document written with ID:", docRef.id);
-  
-      // Reset form fields
-      setTitle("");
-      setArtist("");
-      setTags("");
-      setOrders("");
-      setContent("");
-      setYoutube("");
-      setSelectedCollection("");
-      setSelectedTirthankar("");
-      setNewFlag(false);
-      setError("");
-      setSuccessMessage("Song added successfully!");
-      setOpenSnackbar(true);
-    } catch (error) {
-      console.error("Error adding document:", error);
-      setError("Failed to submit the form.");
-      setSuccessMessage("");
-      setOpenSnackbar(true);
+
+      collectionRef = firestore.collection(collection.name);
     }
-  };
+
+    // Adding selected Tirthankar to the tags
+    const allTags = [...tagArray.map((tag) => tag.toLowerCase())];
+    if (selectedTirthankar) {
+      allTags.push(selectedTirthankar.name.toLowerCase());
+      allTags.push(selectedTirthankar.displayName.toLowerCase());
+    }
+
+    // Create the document data
+    const docData = {
+      title,
+      artist,
+      tags: allTags,
+      content,
+      youtube,
+      order: parsedOrder, // Use null if not provided
+      publishDate,
+      newFlag,
+    };
+
+    // Remove the `order` field if it's null
+    if (parsedOrder === null) {
+      delete docData.order;
+    }
+
+    const docRef = await collectionRef.add(docData);
+    console.log("Document written with ID:", docRef.id);
+
+    // Reset form fields
+    setTitle("");
+    setArtist("");
+    setTags("");
+    setOrders("");
+    setContent("");
+    setYoutube("");
+    setSelectedCollection("");
+    setSelectedTirthankar("");
+    setNewFlag(false);
+    setError("");
+    setSuccessMessage("Song added successfully!");
+    setOpenSnackbar(true);
+  } catch (error) {
+    console.error("Error adding document:", error);
+    setError("Failed to submit the form.");
+    setSuccessMessage("");
+    setOpenSnackbar(true);
+  }
+};
+
   
 
   const handleCloseSnackbar = () => {
