@@ -83,7 +83,6 @@ const App = ({ darkMode, toggleTheme }) => {
       { label: "Tirth", icon: <CollectionsIcon />, path: "/tirth" },
       { label: "Tirtankar", icon: <LibraryMusicIcon />, path: "/tirtankar" },
       { label: "Tag", icon: <LabelIcon />, path: "/tag" },
-      { label: "Suggestion", icon: <EmojiObjectsIcon />, path: "/suggestion" },
       {
         label: "List Song",
         icon: <PlaylistAddCheckIcon />,
@@ -228,12 +227,6 @@ const App = ({ darkMode, toggleTheme }) => {
             }
           />
           <Route
-            path="/suggestion"
-            element={
-              user ? <CollectionForm collectionName="suggestions" /> : <Login />
-            }
-          />
-          <Route
             path="/artist-form"
             element={user ? <ArtistForm /> : <Login />}
           />
@@ -249,7 +242,10 @@ const App = ({ darkMode, toggleTheme }) => {
               user ? <CollectionForm collectionName="tirth" /> : <Login />
             }
           />
-          <Route path="/list-song/:collectionName" element={user ? <SongList /> : <Login />} />
+          <Route
+            path="/list-song/:collectionName"
+            element={user ? <SongList /> : <Login />}
+          />
 
           <Route
             path="/tirtankar"
