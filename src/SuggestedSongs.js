@@ -168,7 +168,13 @@ const SuggestedSongs = () => {
       song.title.toLowerCase().includes(searchTerm.toLowerCase())
     );
     return sortedSuggestions(filtered);
-  }, [searchTerm, groupedSuggestions, selectedCollection, sortOrder]);
+  }, [
+    searchTerm,
+    groupedSuggestions,
+    selectedCollection,
+    sortOrder,
+    sortedSuggestions,
+  ]);
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);

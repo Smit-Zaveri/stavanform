@@ -2,26 +2,20 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { SongFormDialog } from "./SongFormDialog";
 import {
-  Alert,
-  Autocomplete,
   Box,
   Button,
-  Checkbox,
   Container,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   FormControl,
-  FormControlLabel,
-  Grid,
   IconButton,
   InputLabel,
   MenuItem,
   Pagination,
   Paper,
   Select,
-  Snackbar,
   LinearProgress,
   Table,
   TableBody,
@@ -112,10 +106,16 @@ const SongList = () => {
   }, [selectedCollection, fetchStaticData, fetchDynamicData]);
 
   // --- Sorting songs ---
-  // If both songs have an order, sort by order ascending.
+  // First, move songs that have a report to the top.
+  // Then, if both songs have an order, sort by order ascending.
   // If one has an order and the other does not, the one with order comes first.
   // If neither has order, sort alphabetically by title.
   const sortedSongs = [...songs].sort((a, b) => {
+    const aReported = reports.some((r) => r.lyricsId === a.id);
+    const bReported = reports.some((r) => r.lyricsId === b.id);
+    if (aReported && !bReported) return -1;
+    if (!aReported && bReported) return 1;
+
     if (a.order != null && b.order != null) {
       return a.order - b.order;
     } else if (a.order != null) {
@@ -127,7 +127,7 @@ const SongList = () => {
     }
   });
 
-  // Then filter by search input (by title or tag)
+  // Filter by search input (by title or tag)
   const filteredSongs = sortedSongs.filter(
     (song) =>
       song.title.toLowerCase().includes(searchInput.toLowerCase()) ||
@@ -140,6 +140,11 @@ const SongList = () => {
   const paginatedSongs = filteredSongs.slice(
     (page - 1) * itemsPerPage,
     page * itemsPerPage
+  );
+
+  // Determine if any of the displayed songs have a report.
+  const hasAnyReport = filteredSongs.some((song) =>
+    reports.some((r) => r.lyricsId === song.id)
   );
 
   // --- Handlers ---
@@ -382,6 +387,7 @@ const SongList = () => {
         <Table>
           <TableHead>
             <TableRow>
+              {hasAnyReport && <TableCell>Report Text</TableCell>}
               <TableCell>Order</TableCell>
               <TableCell>Title</TableCell>
               <TableCell>Tags</TableCell>
@@ -389,37 +395,74 @@ const SongList = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {paginatedSongs.map((song) => (
-              <TableRow key={song.id}>
-                <TableCell>{song.order != null ? song.order : "—"}</TableCell>
-                <TableCell>{song.title}</TableCell>
-                <TableCell>{song.tags ? song.tags.join(", ") : "—"}</TableCell>
-                <TableCell sx={{ display: "flex", gap: 1 }}>
-                  <Button
-                    variant="contained"
-                    size="small"
-                    onClick={() => handleEditClick(song)}
-                  >
-                    Edit
-                  </Button>
-                  <IconButton onClick={() => handleDeleteClick(song.id)}>
-                    <Delete />
-                  </IconButton>
-                  {reports.some((r) => r.lyricsId === song.id) && (
+            {paginatedSongs.map((song) => {
+              // Check if this song has an associated report
+              const report = reports.find((r) => r.lyricsId === song.id);
+              return (
+                <TableRow
+                  key={song.id}
+                  // If a report exists, use a red background color
+                  sx={{
+                    backgroundColor: report ? "red" : "inherit",
+                  }}
+                >
+                  {hasAnyReport && (
+                    <TableCell>
+                      {report ? report.reportText || "—" : "—"}
+                    </TableCell>
+                  )}
+                  <TableCell>{song.order != null ? song.order : "—"}</TableCell>
+                  <TableCell>
+                    <Typography
+                      variant="subtitle1"
+                      sx={{
+                        maxWidth: "200px", // adjust as needed
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {song.title}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        maxWidth: "150px", // adjust width as needed
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {song.tags ? song.tags.join(", ") : "—"}
+                    </Typography>
+                  </TableCell>
+
+                  <TableCell sx={{ display: "flex", gap: 1 }}>
                     <Button
                       variant="contained"
                       size="small"
-                      onClick={() => {
-                        const rep = reports.find((r) => r.lyricsId === song.id);
-                        handleResolveClick(rep.id);
-                      }}
+                      onClick={() => handleEditClick(song)}
                     >
-                      Resolve
+                      Edit
                     </Button>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
+                    <IconButton onClick={() => handleDeleteClick(song.id)}>
+                      <Delete />
+                    </IconButton>
+                    {report && (
+                      <Button
+                        variant="contained"
+                        size="small"
+                        onClick={() => handleResolveClick(report.id)}
+                      >
+                        Resolve
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </TableContainer>
