@@ -11,11 +11,13 @@ import {
   Typography,
   Divider,
   InputAdornment,
+  Grid,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
+import RefreshIcon from "@mui/icons-material/Refresh";
 import { firestore } from "./firebase";
 
 const CollectionForm = ({ collectionName }) => {
@@ -29,14 +31,16 @@ const CollectionForm = ({ collectionName }) => {
   const [snackbar, setSnackbar] = useState({ open: false, message: "" });
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const fileInputRef = useRef();
 
+  // Fetch collections from Firestore
   const fetchCollections = useCallback(async () => {
     setLoading(true);
     try {
       const snapshot = await firestore
         .collection(collectionName)
-        .orderBy("numbering") // Sorting by numbering
+        .orderBy("numbering")
         .get();
       const collectionList = snapshot.docs.map((doc) => ({
         id: doc.id,
@@ -56,15 +60,14 @@ const CollectionForm = ({ collectionName }) => {
     fetchCollections();
   }, [fetchCollections]);
 
+  // Handle form submission for add/edit
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     const { name, displayName, numbering } = formData;
     if (!name || !displayName || !numbering) {
       setError("Please fill in all fields and provide a valid order number.");
       return;
     }
-
     setLoading(true);
     try {
       const collectionData = { name, displayName, numbering };
@@ -91,6 +94,7 @@ const CollectionForm = ({ collectionName }) => {
     }
   };
 
+  // Edit an existing collection – load values into form
   const handleEditCollection = (collection) => {
     setEditingId(collection.id);
     setFormData({
@@ -101,6 +105,7 @@ const CollectionForm = ({ collectionName }) => {
     setError("");
   };
 
+  // Delete a collection with confirmation
   const handleDeleteCollection = async (collectionId) => {
     if (window.confirm("Are you sure you want to delete this collection?")) {
       setLoading(true);
@@ -120,6 +125,7 @@ const CollectionForm = ({ collectionName }) => {
     }
   };
 
+  // Reset form to default state
   const resetForm = () => {
     setFormData({
       name: "",
@@ -130,10 +136,12 @@ const CollectionForm = ({ collectionName }) => {
     setError("");
   };
 
+  // Handle closing the snackbar
   const handleSnackbarClose = () => {
     setSnackbar({ open: false, message: "" });
   };
 
+  // Export current collections to CSV
   const exportToCSV = () => {
     const csvHeaders = ["Name", "Display Name", "Order Number"];
     const csvRows = collections.map(({ name, displayName, numbering }) => [
@@ -158,6 +166,7 @@ const CollectionForm = ({ collectionName }) => {
     document.body.removeChild(link);
   };
 
+  // Import collections from CSV file
   const importFromCSV = (file) => {
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -212,7 +221,6 @@ const CollectionForm = ({ collectionName }) => {
         ) {
           return;
         }
-
         validData.push(item);
         newCollectionNames.add(normalizedName);
       });
@@ -254,8 +262,13 @@ const CollectionForm = ({ collectionName }) => {
     reader.readAsText(file);
   };
 
+  // Live filter for collections based on search input
+  const filteredCollections = collections.filter((coll) =>
+    coll.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
-    <Box sx={{ p: 2 }}>
+    <Box sx={{ p: { xs: 2, md: 3 } }}>
       <Typography variant="h5" gutterBottom>
         {editingId
           ? `Edit ${
@@ -266,112 +279,160 @@ const CollectionForm = ({ collectionName }) => {
             }`}
       </Typography>
 
-      <form onSubmit={handleSubmit}>
-        <TextField
-          label="Name"
-          variant="outlined"
-          fullWidth
-          margin="normal"
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          error={!!error}
-          helperText={error}
-        />
-        <TextField
-          label="Display Name"
-          variant="outlined"
-          fullWidth
-          margin="normal"
-          value={formData.displayName}
-          onChange={(e) =>
-            setFormData({ ...formData, displayName: e.target.value })
-          }
-          error={!!error}
-          helperText={error}
-        />
-        <TextField
-          label="Order Number"
-          variant="outlined"
-          fullWidth
-          margin="normal"
-          type="number"
-          value={formData.numbering}
-          onChange={(e) =>
-            setFormData({ ...formData, numbering: Number(e.target.value) })
-          }
-          error={!!error}
-          helperText={error}
-        />
-
-        <Button
-          variant="contained"
-          color="primary"
-          type="submit"
-          disabled={loading}
-        >
-          {loading ? "Loading..." : editingId ? "Update Collection" : "Submit"}
-        </Button>
-        {editingId && (
-          <Button
-            variant="outlined"
-            color="secondary"
-            onClick={resetForm}
-            sx={{ ml: 2 }}
-          >
-            Cancel Edit
-          </Button>
-        )}
-      </form>
-
-      <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
-        <Button
-          variant="outlined"
-          color="success"
-          startIcon={<FileDownloadIcon />}
-          onClick={exportToCSV}
-        >
-          Export to CSV
-        </Button>
-        <Button
-          variant="outlined"
-          color="success"
-          startIcon={<FileUploadIcon />}
-          onClick={() => fileInputRef.current.click()}
-        >
-          Import from CSV
-        </Button>
-        <input
-          type="file"
-          accept=".csv"
-          style={{ display: "none" }}
-          ref={fileInputRef}
-          onChange={(e) => {
-            if (e.target.files?.length > 0) {
-              importFromCSV(e.target.files[0]);
-            }
-          }}
-        />
+      {/* Form and Controls */}
+      <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mb: 3 }}>
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={4}>
+            <TextField
+              label="Name"
+              variant="outlined"
+              fullWidth
+              value={formData.name}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
+              error={!!error}
+              helperText={error}
+            />
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <TextField
+              label="Display Name"
+              variant="outlined"
+              fullWidth
+              value={formData.displayName}
+              onChange={(e) =>
+                setFormData({ ...formData, displayName: e.target.value })
+              }
+              error={!!error}
+              helperText={error}
+            />
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <TextField
+              label="Order Number"
+              variant="outlined"
+              fullWidth
+              type="number"
+              value={formData.numbering}
+              onChange={(e) =>
+                setFormData({ ...formData, numbering: Number(e.target.value) })
+              }
+              error={!!error}
+              helperText={error}
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Button
+              variant="contained"
+              color="primary"
+              type="submit"
+              fullWidth
+              disabled={loading}
+            >
+              {loading
+                ? "Loading..."
+                : editingId
+                ? "Update Collection"
+                : "Submit"}
+            </Button>
+          </Grid>
+          {editingId && (
+            <Grid item xs={12} md={6}>
+              <Button
+                variant="outlined"
+                color="secondary"
+                onClick={resetForm}
+                fullWidth
+              >
+                Cancel Edit
+              </Button>
+            </Grid>
+          )}
+        </Grid>
       </Box>
 
-      <Typography variant="h6" sx={{ mt: 4 }}>
+      {/* Additional Controls: Search, Export/Import, Refresh */}
+      <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
+        <Grid item xs={12} md={4}>
+          <TextField
+            label="Search Collections"
+            variant="outlined"
+            fullWidth
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <RefreshIcon
+                    sx={{ cursor: "pointer" }}
+                    onClick={fetchCollections}
+                  />
+                </InputAdornment>
+              ),
+            }}
+          />
+        </Grid>
+        <Grid
+          item
+          xs={12}
+          md={4}
+          sx={{ textAlign: { xs: "center", md: "left" } }}
+        >
+          <Button
+            variant="outlined"
+            startIcon={<FileDownloadIcon />}
+            onClick={exportToCSV}
+            fullWidth
+          >
+            Export to CSV
+          </Button>
+        </Grid>
+        <Grid
+          item
+          xs={12}
+          md={4}
+          sx={{ textAlign: { xs: "center", md: "left" } }}
+        >
+          <Button
+            variant="outlined"
+            startIcon={<FileUploadIcon />}
+            onClick={() => fileInputRef.current.click()}
+            fullWidth
+          >
+            Import from CSV
+          </Button>
+          <input
+            type="file"
+            accept=".csv"
+            style={{ display: "none" }}
+            ref={fileInputRef}
+            onChange={(e) => {
+              if (e.target.files?.length > 0) {
+                importFromCSV(e.target.files[0]);
+              }
+            }}
+          />
+        </Grid>
+      </Grid>
+
+      {/* List of Collections */}
+      <Typography variant="h6" sx={{ mt: 3 }}>
         {collectionName.charAt(0).toUpperCase() + collectionName.slice(1)}:
       </Typography>
       <List>
-        {collections.map((collection, index) => (
+        {filteredCollections.map((collection, index) => (
           <React.Fragment key={collection.id}>
             <ListItem
-              data-index={index}
               sx={{
                 display: "flex",
                 alignItems: "center",
-                padding: "8px 16px",
-                backgroundColor: "inherit",
+                paddingY: 1,
               }}
             >
               <ListItemText
                 primary={`#${collection.numbering} - ${collection.name}`}
                 secondary={collection.displayName}
-                sx={{ userSelect: "none" }}
               />
               <Box sx={{ ml: "auto" }}>
                 <IconButton onClick={() => handleEditCollection(collection)}>

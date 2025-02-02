@@ -46,7 +46,10 @@ const ArtistForm = () => {
 
   const fetchArtists = async () => {
     try {
-      const snapshot = await firestore.collection("artists").orderBy("numbering").get();
+      const snapshot = await firestore
+        .collection("artists")
+        .orderBy("numbering")
+        .get();
       const artistList = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
@@ -75,7 +78,10 @@ const ArtistForm = () => {
 
       if (editingArtistId) {
         // If editing, update the artist
-        await firestore.collection("artists").doc(editingArtistId).update(artistData);
+        await firestore
+          .collection("artists")
+          .doc(editingArtistId)
+          .update(artistData);
         setSnackbarMessage("Artist updated successfully.");
       } else {
         // If not editing, add a new artist
