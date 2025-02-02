@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   Box,
   Button,
@@ -10,34 +10,40 @@ import {
   TextField,
   Typography,
   Divider,
+  InputAdornment,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
-import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
+import FileUploadIcon from "@mui/icons-material/FileUpload";
 import { firestore } from "./firebase";
 
 const CollectionForm = ({ collectionName }) => {
-  const [name, setName] = useState("");
-  const [displayName, setDisplayName] = useState("");
+  const [formData, setFormData] = useState({
+    name: "",
+    displayName: "",
+    numbering: 1,
+  });
   const [collections, setCollections] = useState([]);
   const [error, setError] = useState("");
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbar, setSnackbar] = useState({ open: false, message: "" });
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [draggedIndex, setDraggedIndex] = useState(null);
-  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef();
 
   const fetchCollections = useCallback(async () => {
     setLoading(true);
     try {
-      const snapshot = await firestore.collection(collectionName).orderBy("numbering").get();
+      const snapshot = await firestore
+        .collection(collectionName)
+        .orderBy("numbering") // Sorting by numbering
+        .get();
       const collectionList = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
       setCollections(collectionList);
-      setError(""); // Clear any previous errors
+      setError("");
     } catch (error) {
       setError("Error fetching collections. Please try again.");
       console.error("Error fetching collections:", error);
@@ -53,27 +59,28 @@ const CollectionForm = ({ collectionName }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!name || !displayName) {
-      setError("Please fill in all fields.");
+    const { name, displayName, numbering } = formData;
+    if (!name || !displayName || !numbering) {
+      setError("Please fill in all fields and provide a valid order number.");
       return;
     }
 
-    const collectionData = {
-      name,
-      displayName,
-      numbering: collections.length + 1,
-    };
-
     setLoading(true);
     try {
+      const collectionData = { name, displayName, numbering };
       if (editingId) {
-        await firestore.collection(collectionName).doc(editingId).update(collectionData);
-        setSnackbarMessage("Collection updated successfully.");
+        await firestore
+          .collection(collectionName)
+          .doc(editingId)
+          .update(collectionData);
+        setSnackbar({
+          open: true,
+          message: "Collection updated successfully.",
+        });
       } else {
         await firestore.collection(collectionName).add(collectionData);
-        setSnackbarMessage("Collection added successfully.");
+        setSnackbar({ open: true, message: "Collection added successfully." });
       }
-
       resetForm();
       fetchCollections();
     } catch (error) {
@@ -81,15 +88,17 @@ const CollectionForm = ({ collectionName }) => {
       console.error("Error adding/updating collection:", error);
     } finally {
       setLoading(false);
-      setSnackbarOpen(true);
     }
   };
 
   const handleEditCollection = (collection) => {
     setEditingId(collection.id);
-    setName(collection.name);
-    setDisplayName(collection.displayName);
-    setError(""); // Clear error when editing
+    setFormData({
+      name: collection.name,
+      displayName: collection.displayName,
+      numbering: collection.numbering,
+    });
+    setError("");
   };
 
   const handleDeleteCollection = async (collectionId) => {
@@ -97,100 +106,164 @@ const CollectionForm = ({ collectionName }) => {
       setLoading(true);
       try {
         await firestore.collection(collectionName).doc(collectionId).delete();
-        setSnackbarMessage("Collection deleted successfully.");
+        setSnackbar({
+          open: true,
+          message: "Collection deleted successfully.",
+        });
         fetchCollections();
       } catch (error) {
         setError("Error deleting collection. Please try again.");
         console.error("Error deleting collection:", error);
       } finally {
         setLoading(false);
-        setSnackbarOpen(true);
       }
     }
   };
 
   const resetForm = () => {
-    setName("");
-    setDisplayName("");
+    setFormData({
+      name: "",
+      displayName: "",
+      numbering: collections.length + 1,
+    });
     setEditingId(null);
     setError("");
   };
 
   const handleSnackbarClose = () => {
-    setSnackbarOpen(false);
+    setSnackbar({ open: false, message: "" });
   };
 
-  // Drag-and-drop functionality
-  const handleLongPressStart = (index) => {
-    setDraggedIndex(index);
-    setIsDragging(true);
+  const exportToCSV = () => {
+    const csvHeaders = ["Name", "Display Name", "Order Number"];
+    const csvRows = collections.map(({ name, displayName, numbering }) => [
+      name,
+      displayName,
+      numbering,
+    ]);
+
+    const csvContent = [
+      csvHeaders.join(","),
+      ...csvRows.map((row) => row.map((field) => `"${field}"`).join(",")),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${collectionName}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
-  const handleMouseDown = (index) => {
-    setDraggedIndex(index);
-    setIsDragging(true);
-  };
+  const importFromCSV = (file) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target.result;
+      const csvRows = text.split("\n");
+      const headers = csvRows[0]
+        ?.split(",")
+        ?.map((header) => header.replace(/"/g, "").trim());
 
-  const handleMouseUp = () => {
-    setIsDragging(false);
-    setDraggedIndex(null);
-  };
-
-  const handleTouchEnd = () => {
-    setIsDragging(false);
-    setDraggedIndex(null);
-  };
-
-  const handleTouchMove = (e) => {
-    if (!isDragging) return;
-    e.preventDefault();
-
-    const touch = e.touches[0];
-    const target = document.elementFromPoint(touch.clientX, touch.clientY);
-    if (target && target.getAttribute("data-index") !== null) {
-      const dropIndex = parseInt(target.getAttribute("data-index"), 10);
-      if (dropIndex !== draggedIndex) {
-        handleDrop(dropIndex);
+      const nameIndex = headers.indexOf("Name");
+      const displayNameIndex = headers.indexOf("Display Name");
+      const numberingIndex = headers.indexOf("Order Number");
+      if (
+        nameIndex === -1 ||
+        displayNameIndex === -1 ||
+        numberingIndex === -1
+      ) {
+        setError("CSV must have Name, Display Name, and Order Number columns.");
+        setSnackbar({
+          open: true,
+          message: "CSV import failed due to missing columns.",
+        });
+        return;
       }
-    }
-  };
 
-  const handleMouseMove = (e) => {
-    if (!isDragging) return;
-    const target = document.elementFromPoint(e.clientX, e.clientY);
-    if (target && target.getAttribute("data-index") !== null) {
-      const dropIndex = parseInt(target.getAttribute("data-index"), 10);
-      if (dropIndex !== draggedIndex) {
-        handleDrop(dropIndex);
+      const parsedData = csvRows.slice(1).map((row) => {
+        const values = row
+          ?.split(",")
+          .map((value) => value.replace(/^"?|"$/g, ""));
+        if (values.length < headers.length) return null;
+        return {
+          name: values[nameIndex]?.trim(),
+          displayName: values[displayNameIndex]?.trim(),
+          numbering: parseFloat(values[numberingIndex]?.trim()),
+        };
+      });
+
+      const existingNames = collections.map((collection) =>
+        collection.name.toLowerCase()
+      );
+      const newCollectionNames = new Set();
+
+      const validData = [];
+      parsedData.forEach((item) => {
+        if (!item || !item.name || !item.displayName || isNaN(item.numbering))
+          return;
+
+        const normalizedName = item.name.toLowerCase();
+        if (
+          existingNames.includes(normalizedName) ||
+          newCollectionNames.has(normalizedName)
+        ) {
+          return;
+        }
+
+        validData.push(item);
+        newCollectionNames.add(normalizedName);
+      });
+
+      if (validData.length === 0) {
+        setError("No valid data to import.");
+        setSnackbar({ open: true, message: "No valid data to import." });
+        resetForm();
+        return;
       }
-    }
-  };
 
-  const handleDrop = (index) => {
-    if (draggedIndex === null || draggedIndex === index) return; // No valid drop
-    const newCollections = [...collections];
-    const [movedItem] = newCollections.splice(draggedIndex, 1);
-    newCollections.splice(index, 0, movedItem);
+      const batch = firestore.batch();
+      validData.forEach((item) => {
+        const docRef = firestore.collection(collectionName).doc();
+        batch.set(docRef, {
+          name: item.name,
+          displayName: item.displayName,
+          numbering: item.numbering,
+        });
+      });
 
-    const updatedCollections = newCollections.map((item, idx) => ({
-      ...item,
-      numbering: idx + 1,
-    }));
-
-    setCollections(updatedCollections);
-
-    // Update Firestore with new numbering
-    updatedCollections.forEach((item) => {
-      firestore.collection(collectionName).doc(item.id).update({ numbering: item.numbering });
-    });
-
-    setIsDragging(false); // Reset dragging state
+      batch
+        .commit()
+        .then(() => {
+          fetchCollections();
+          setSnackbar({
+            open: true,
+            message: `Imported ${validData.length} entries successfully.`,
+          });
+        })
+        .catch(() => {
+          setError("Error importing collections. Please try again.");
+          setSnackbar({
+            open: true,
+            message: "Error importing collections. Please try again.",
+          });
+        });
+    };
+    reader.readAsText(file);
   };
 
   return (
     <Box sx={{ p: 2 }}>
       <Typography variant="h5" gutterBottom>
-        {editingId ? `Edit ${collectionName.charAt(0).toUpperCase() + collectionName.slice(1)}` : `Create New ${collectionName.charAt(0).toUpperCase() + collectionName.slice(1)}`}
+        {editingId
+          ? `Edit ${
+              collectionName.charAt(0).toUpperCase() + collectionName.slice(1)
+            }`
+          : `Create New ${
+              collectionName.charAt(0).toUpperCase() + collectionName.slice(1)
+            }`}
       </Typography>
 
       <form onSubmit={handleSubmit}>
@@ -199,8 +272,8 @@ const CollectionForm = ({ collectionName }) => {
           variant="outlined"
           fullWidth
           margin="normal"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
+          value={formData.name}
+          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           error={!!error}
           helperText={error}
         />
@@ -209,80 +282,121 @@ const CollectionForm = ({ collectionName }) => {
           variant="outlined"
           fullWidth
           margin="normal"
-          value={displayName}
-          onChange={(e) => setDisplayName(e.target.value)}
+          value={formData.displayName}
+          onChange={(e) =>
+            setFormData({ ...formData, displayName: e.target.value })
+          }
+          error={!!error}
+          helperText={error}
+        />
+        <TextField
+          label="Order Number"
+          variant="outlined"
+          fullWidth
+          margin="normal"
+          type="number"
+          value={formData.numbering}
+          onChange={(e) =>
+            setFormData({ ...formData, numbering: Number(e.target.value) })
+          }
           error={!!error}
           helperText={error}
         />
 
-        <Button variant="contained" color="primary" type="submit" disabled={loading}>
+        <Button
+          variant="contained"
+          color="primary"
+          type="submit"
+          disabled={loading}
+        >
           {loading ? "Loading..." : editingId ? "Update Collection" : "Submit"}
         </Button>
         {editingId && (
-          <Button variant="outlined" color="secondary" onClick={resetForm} sx={{ ml: 2 }}>
+          <Button
+            variant="outlined"
+            color="secondary"
+            onClick={resetForm}
+            sx={{ ml: 2 }}
+          >
             Cancel Edit
           </Button>
         )}
       </form>
 
+      <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
+        <Button
+          variant="outlined"
+          color="success"
+          startIcon={<FileDownloadIcon />}
+          onClick={exportToCSV}
+        >
+          Export to CSV
+        </Button>
+        <Button
+          variant="outlined"
+          color="success"
+          startIcon={<FileUploadIcon />}
+          onClick={() => fileInputRef.current.click()}
+        >
+          Import from CSV
+        </Button>
+        <input
+          type="file"
+          accept=".csv"
+          style={{ display: "none" }}
+          ref={fileInputRef}
+          onChange={(e) => {
+            if (e.target.files?.length > 0) {
+              importFromCSV(e.target.files[0]);
+            }
+          }}
+        />
+      </Box>
+
       <Typography variant="h6" sx={{ mt: 4 }}>
         {collectionName.charAt(0).toUpperCase() + collectionName.slice(1)}:
       </Typography>
       <List>
-  {collections.map((collection, index) => (
-    <React.Fragment key={collection.id}>
-      <ListItem
-        // onTouchStart={() => handleLongPressStart(index)}
-        // onTouchEnd={handleTouchEnd}
-        // onTouchMove={handleTouchMove}
-        onMouseDown={() => handleMouseDown(index)}
-        onMouseUp={handleMouseUp}
-        onMouseMove={handleMouseMove}
-        data-index={index}
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          padding: "8px 16px",
-          backgroundColor: "inherit",
-          cursor: isDragging ? "grabbing" : "grab",
-          userSelect: "none", // Prevent text selection
-    WebkitUserSelect: "none", // For Safari
-    MozUserSelect: "none",
-        }}
-      >
-        <IconButton edge="start" sx={{ color: "gray" }}>
-          <DragIndicatorIcon />
-        </IconButton>
-        <ListItemText
-          primary={`#${collection.numbering} - ${collection.name}`}
-          secondary={collection.displayName}
-          sx={{userSelect: "none", // Prevent text selection
-            WebkitUserSelect: "none", // For Safari
-            MozUserSelect: "none",}} // Apply the unselectable style here
-        />
-        <Box sx={{ ml: "auto" }}>
-          <IconButton onClick={() => handleEditCollection(collection)}>
-            <EditIcon />
-          </IconButton>
-          <IconButton onClick={() => handleDeleteCollection(collection.id)}>
-            <DeleteIcon />
-          </IconButton>
-        </Box>
-      </ListItem>
-      <Divider />
-    </React.Fragment>
-  ))}
-</List>
+        {collections.map((collection, index) => (
+          <React.Fragment key={collection.id}>
+            <ListItem
+              data-index={index}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                padding: "8px 16px",
+                backgroundColor: "inherit",
+              }}
+            >
+              <ListItemText
+                primary={`#${collection.numbering} - ${collection.name}`}
+                secondary={collection.displayName}
+                sx={{ userSelect: "none" }}
+              />
+              <Box sx={{ ml: "auto" }}>
+                <IconButton onClick={() => handleEditCollection(collection)}>
+                  <EditIcon />
+                </IconButton>
+                <IconButton
+                  onClick={() => handleDeleteCollection(collection.id)}
+                >
+                  <DeleteIcon />
+                </IconButton>
+              </Box>
+            </ListItem>
+            <Divider />
+          </React.Fragment>
+        ))}
+      </List>
 
       <Snackbar
-        open={snackbarOpen}
+        open={snackbar.open}
         autoHideDuration={3000}
         onClose={handleSnackbarClose}
-        message={snackbarMessage}
+        message={snackbar.message}
       />
     </Box>
   );
 };
-
 
 export default CollectionForm;

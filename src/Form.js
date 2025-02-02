@@ -36,7 +36,7 @@ const Form = () => {
   const [youtube, setYoutube] = useState("");
   const [newFlag, setNewFlag] = useState(false);
   const [artistOptions, setArtistOptions] = useState([]);
-  const [selectedCollection, setSelectedCollection] = useState("");
+  const [selectedCollection, setSelectedCollection] = useState("lyrics");
   const [collectionList, setCollectionList] = useState([]);
   const [tirthankarList, setTirthankarList] = useState([]); // For Tirthankar dropdown
   const [selectedTirthankar, setSelectedTirthankar] = useState(""); // Selected Tirthankar
@@ -119,111 +119,130 @@ const Form = () => {
     return regex.test(url);
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  // Basic validation for required fields
-  if (!selectedCollection || !title || !content) {
-    setError("Please fill in all required fields.");
-    setSuccessMessage("");
-    setOpenSnackbar(true);
-    return;
-  }
+    if (!selectedCollection || !title || !content) {
+      setError("Please fill in all required fields.");
+      setSuccessMessage("");
+      setOpenSnackbar(true);
+      return;
+    }
 
-  // Validate YouTube URL if provided
-  if (youtube && !isValidYouTubeURL(youtube)) {
-    setError("Please enter a valid YouTube URL.");
-    setSuccessMessage("");
-    setOpenSnackbar(true);
-    return;
-  }
+    if (youtube && !isValidYouTubeURL(youtube)) {
+      setError("Please enter a valid YouTube URL.");
+      setSuccessMessage("");
+      setOpenSnackbar(true);
+      return;
+    }
 
-  // Validate that tags are not empty if provided
-  const tagArray = tags.split(",").map((tag) => tag.trim());
-  if (tags && tagArray.length === 0) {
-    setError("Please enter at least one tag.");
-    setSuccessMessage("");
-    setOpenSnackbar(true);
-    return;
-  }
+    const tagArray = tags.split(",").map((tag) => tag.trim());
+    if (tags && tagArray.length === 0) {
+      setError("Please enter at least one tag.");
+      setSuccessMessage("");
+      setOpenSnackbar(true);
+      return;
+    }
 
-  // Validate the order field
-  const parsedOrder = order ? Number(order) : null; // Parse order or set it to null if not provided
-  if (order && isNaN(parsedOrder)) {
-    setError("Please enter a valid number for the order field.");
-    setSuccessMessage("");
-    setOpenSnackbar(true);
-    return;
-  }
+    const parsedOrder = order ? Number(order) : null;
+    if (order && isNaN(parsedOrder)) {
+      setError("Please enter a valid number for the order field.");
+      setSuccessMessage("");
+      setOpenSnackbar(true);
+      return;
+    }
 
-  try {
-    const publishDate = firebase.firestore.Timestamp.now();
+    try {
+      // Fetch all collections and check if the title exists
+      const collectionsSnapshot = await firestore
+        .collection("collections")
+        .get();
+      let titleExists = false;
 
-    let collectionRef;
-    if (selectedCollection === "lyrics") {
-      collectionRef = firestore.collection("lyrics");
-    } else {
-      const collection = collectionList.find(
-        (collection) => collection.name === selectedCollection
-      );
+      for (const doc of collectionsSnapshot.docs) {
+        const collectionName = doc.data().name;
+        const querySnapshot = await firestore
+          .collection(collectionName)
+          .where("title", "==", title)
+          .get();
 
-      if (!collection) {
-        console.log("Invalid collection selected. Cannot submit.");
+        if (!querySnapshot.empty) {
+          titleExists = true;
+          break;
+        }
+      }
+
+      if (titleExists) {
+        setError(
+          "A song with this title already exists in another collection."
+        );
+        setSuccessMessage("");
+        setOpenSnackbar(true);
         return;
       }
 
-      collectionRef = firestore.collection(collection.name);
+      // Proceed with document creation
+      const publishDate = firebase.firestore.Timestamp.now();
+
+      let collectionRef;
+      if (selectedCollection === "lyrics") {
+        collectionRef = firestore.collection("lyrics");
+      } else {
+        const collection = collectionList.find(
+          (collection) => collection.name === selectedCollection
+        );
+
+        if (!collection) {
+          console.log("Invalid collection selected. Cannot submit.");
+          return;
+        }
+
+        collectionRef = firestore.collection(collection.name);
+      }
+
+      const allTags = [...tagArray.map((tag) => tag.toLowerCase())];
+      if (selectedTirthankar) {
+        allTags.push(selectedTirthankar.name.toLowerCase());
+        allTags.push(selectedTirthankar.displayName.toLowerCase());
+      }
+
+      const docData = {
+        title,
+        artist,
+        tags: allTags,
+        content,
+        youtube,
+        order: parsedOrder,
+        publishDate,
+        newFlag,
+      };
+
+      if (parsedOrder === null) {
+        delete docData.order;
+      }
+
+      const docRef = await collectionRef.add(docData);
+      console.log("Document written with ID:", docRef.id);
+
+      setTitle("");
+      setArtist("");
+      setTags("");
+      setOrders("");
+      setContent("");
+      setYoutube("");
+      setSelectedCollection("");
+      setSelectedTirthankar("");
+      setNewFlag(false);
+      setError("");
+      setSuccessMessage("Song added successfully!");
+      setOpenSnackbar(true);
+    } catch (error) {
+      console.error("Error adding document:", error);
+      setError("Failed to submit the form.");
+      setSuccessMessage("");
+      setOpenSnackbar(true);
     }
-
-    // Adding selected Tirthankar to the tags
-    const allTags = [...tagArray.map((tag) => tag.toLowerCase())];
-    if (selectedTirthankar) {
-      allTags.push(selectedTirthankar.name.toLowerCase());
-      allTags.push(selectedTirthankar.displayName.toLowerCase());
-    }
-
-    // Create the document data
-    const docData = {
-      title,
-      artist,
-      tags: allTags,
-      content,
-      youtube,
-      order: parsedOrder, // Use null if not provided
-      publishDate,
-      newFlag,
-    };
-
-    // Remove the `order` field if it's null
-    if (parsedOrder === null) {
-      delete docData.order;
-    }
-
-    const docRef = await collectionRef.add(docData);
-    console.log("Document written with ID:", docRef.id);
-
-    // Reset form fields
-    setTitle("");
-    setArtist("");
-    setTags("");
-    setOrders("");
-    setContent("");
-    setYoutube("");
-    setSelectedCollection("");
-    setSelectedTirthankar("");
-    setNewFlag(false);
-    setError("");
-    setSuccessMessage("Song added successfully!");
-    setOpenSnackbar(true);
-  } catch (error) {
-    console.error("Error adding document:", error);
-    setError("Failed to submit the form.");
-    setSuccessMessage("");
-    setOpenSnackbar(true);
-  }
-};
-
-  
+  };
 
   const handleCloseSnackbar = () => {
     setOpenSnackbar(false);
@@ -283,9 +302,6 @@ const handleSubmit = async (e) => {
             >
               <MenuItem value="">
                 <em>Select a collection</em>
-              </MenuItem>
-              <MenuItem value="lyrics">
-                <em>Lyrics</em>
               </MenuItem>
               {collectionList.map((collection) => (
                 <MenuItem key={collection.id} value={collection.name}>

@@ -1,32 +1,36 @@
-import { Delete, Edit } from "@mui/icons-material";
-import { useParams } from "react-router-dom";
+import React, { useEffect, useState, useCallback } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useTheme } from "@mui/material/styles";
+import EditSongModal from "./EditSongModal";
 import {
   Box,
   Button,
-  Card,
-  CardActions,
-  CardContent,
   Container,
   FormControl,
   MenuItem,
-  Autocomplete,
-  Modal,
   Select,
   TextField,
   Typography,
-  useTheme,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
   IconButton,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Pagination,
+  LinearProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
-import Grid from "@mui/material/Grid2";
-import React, { useEffect, useState } from "react";
+import { Delete, FileUpload, Save } from "@mui/icons-material";
+import Papa from "papaparse";
 import { firestore } from "./firebase";
-import { useNavigate } from "react-router-dom";
 
+// Styles for modal dialogs
 const modalStyle = {
   display: "flex",
   alignItems: "center",
@@ -50,480 +54,505 @@ const contentStyle = {
   overflowY: "auto",
 };
 
+const itemsPerPage = 10;
+
 const SongList = () => {
-  const theme = useTheme();
   const [songs, setSongs] = useState([]);
-  const [editId, setEditId] = useState("");
-  const [editTitle, setEditTitle] = useState("");
-  const [editOrder, setEditOrder] = useState("");
   const [artistOptions, setArtistOptions] = useState([]);
-  const [editArtist, setEditArtist] = useState("");
-  const [editTags, setEditTags] = useState("");
-  const [editYoutubeLink, setEditYoutubeLink] = useState("");
-  const [editContent, setEditContent] = useState("");
-  const [searchInput, setSearchInput] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
   const [reports, setReports] = useState([]);
-  const { collectionName  } = useParams();
-  const [selectedCollection, setSelectedCollection] = useState(collectionName || "lyrics");
   const [collectionList, setCollectionList] = useState([]);
-  const [openModal, setOpenModal] = useState(false);
-  const [newArtist, setNewArtist] = useState("");
   const [openArtistDialog, setOpenArtistDialog] = useState(false);
-  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
-  const [openResolveDialog, setOpenResolveDialog] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [resolveDialogOpen, setResolveDialogOpen] = useState(false);
   const [deleteId, setDeleteId] = useState("");
   const [resolveReportId, setResolveReportId] = useState("");
-  const [page, setPage] = useState(1); // Current page for pagination
-  const itemsPerPage = 10; // Number of songs per page
+  const [formData, setFormData] = useState({});
+  const [searchInput, setSearchInput] = useState("");
+  const [selectedCollection, setSelectedCollection] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [newArtist, setNewArtist] = useState("");
+
+  const { collectionName } = useParams();
   const navigate = useNavigate();
+  const theme = useTheme();
 
-  useEffect(() => {
-    if (collectionName && collectionName !== selectedCollection) {
-      setSelectedCollection(collectionName); // Update based on URL param
+  // Fetch static data: artists and collections
+  const fetchStaticData = useCallback(async () => {
+    try {
+      const artistSnapshot = await firestore.collection("artists").get();
+      const collectionSnapshot = await firestore
+        .collection("collections")
+        .get();
+      setArtistOptions(
+        artistSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+      );
+      setCollectionList(
+        collectionSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+      );
+    } catch (error) {
+      console.error("Error fetching static data:", error);
     }
-  }, [collectionName, selectedCollection]);
+  }, []);
 
+  // Fetch dynamic data: songs and reports
+  const fetchDynamicData = useCallback(async () => {
+    try {
+      const songSnapshot = await firestore.collection(selectedCollection).get();
+      const reportSnapshot = await firestore.collection("reports").get();
+      setSongs(songSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+      setReports(
+        reportSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+      );
+    } catch (error) {
+      console.error("Error fetching dynamic data:", error);
+    }
+  }, [selectedCollection]);
+
+  // Set initial collection from URL params
+  useEffect(() => {
+    if (collectionName) setSelectedCollection(collectionName);
+  }, [collectionName]);
+
+  // Fetch data whenever selectedCollection changes
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      await fetchStaticData();
+      await fetchDynamicData();
+      setLoading(false);
+    };
+    if (selectedCollection) {
+      fetchData();
+    }
+  }, [selectedCollection, fetchStaticData, fetchDynamicData]);
+
+  // Filter, sort, and paginate songs
+  const filteredSongs = songs.filter(
+    (song) =>
+      song.title.toLowerCase().includes(searchInput.toLowerCase()) ||
+      song.tags.some((tag) =>
+        tag.toLowerCase().includes(searchInput.toLowerCase())
+      )
+  );
+
+  const sortedSongs = filteredSongs.sort((a, b) => {
+    const aHasReport = reports.some((report) => report.lyricsId === a.id);
+    const bHasReport = reports.some((report) => report.lyricsId === b.id);
+    return aHasReport === bHasReport ? 0 : aHasReport ? -1 : 1;
+  });
+
+  const paginatedSongs = sortedSongs.slice(
+    (page - 1) * itemsPerPage,
+    page * itemsPerPage
+  );
+
+  // Change collection handler
   const handleCollectionChange = (e) => {
     const newCollection = e.target.value;
     setSelectedCollection(newCollection);
     navigate(`/list-song/${newCollection}`);
   };
 
-  const handleConfirmNewArtist = () => {
-    setOpenArtistDialog(false);
-    navigate(`/artist-form`, { state: { name: newArtist } });
+  // Export songs data as CSV
+  const exportData = () => {
+    const exportData = songs.map((song) => ({
+      Title: song.title,
+      Artist: song.artist,
+      Tags: song.tags.join(", "),
+      Order: song.order,
+      YouTube: song.youtube,
+      Content: song.content,
+    }));
+
+    const csv = Papa.unparse({
+      fields: ["Title", "Artist", "Tags", "Order", "YouTube", "Content"],
+      data: exportData,
+    });
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `songs-export-${Date.now()}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
-  const handleArtistInputBlur = () => {
-    if (
-      editArtist &&
-      !artistOptions.some((option) => option.name === editArtist)
-    ) {
-      setNewArtist(editArtist);
-      setOpenArtistDialog(true);
-    }
+  // Import songs from CSV file
+  const handleImport = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        try {
+          const collectionRef = firestore.collection(selectedCollection);
+          const incomingSongs = results.data;
+          let successCount = 0;
+
+          for (const row of incomingSongs) {
+            const existing = await collectionRef
+              .where("title", "==", row.Title)
+              .where("artist", "==", row.Artist)
+              .get();
+
+            if (existing.empty) {
+              await collectionRef.add({
+                title: row.Title,
+                artist: row.Artist,
+                tags:
+                  row.Tags?.split(",").map((tag) => tag.trim().toLowerCase()) ||
+                  [],
+                order: Number(row.Order),
+                youtube: row.YouTube,
+                content: row.Content,
+              });
+              successCount++;
+            }
+          }
+
+          if (successCount > 0) {
+            alert(`Imported ${successCount} song(s) successfully.`);
+            await fetchDynamicData();
+          }
+        } catch (error) {
+          console.error("Error during import:", error);
+          alert("An error occurred during import. Please try again.");
+        }
+      },
+      error: (err) => {
+        console.error("CSV parsing error:", err);
+        alert("Error parsing CSV file. Please check the file format.");
+      },
+    });
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [
-          songSnapshot,
-          artistSnapshot,
-          reportSnapshot,
-          collectionSnapshot,
-        ] = await Promise.all([
-          firestore.collection(selectedCollection).get(),
-          firestore.collection("artists").get(),
-          firestore.collection("reports").get(),
-          firestore.collection("collections").get(),
-        ]);
-
-        setSongs(
-          songSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
-        );
-        setArtistOptions(
-          artistSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
-        );
-        setReports(
-          reportSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
-        );
-        setCollectionList(
-          collectionSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
-        );
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    };
-
-    fetchData();
-  }, [selectedCollection]);
-
-  useEffect(() => {
-    const performSearch = () => {
-      const searchTerm = searchInput.toLowerCase();
-      const filteredSongs = songs.filter(
-        (song) =>
-          song.title.toLowerCase().includes(searchTerm) ||
-          song.tags.some((tag) => tag.toLowerCase().includes(searchTerm))
-      );
-      setSearchResults(filteredSongs);
-    };
-
-    performSearch();
-  }, [searchInput, songs]);
-
-  const sortedSongs = (searchResults.length > 0 ? searchResults : songs).sort(
-    (a, b) => {
-      const aHasReport = reports.some((report) => report.lyricsId === a.id);
-      const bHasReport = reports.some((report) => report.lyricsId === b.id);
-      return aHasReport === bHasReport ? 0 : aHasReport ? -1 : 1;
-    }
-  );
-
+  // Delete song handlers
   const handleDeleteClick = (id) => {
     setDeleteId(id);
-    setOpenDeleteDialog(true);
+    setDeleteDialogOpen(true);
   };
 
-  const handleConfirmDelete = async () => {
+  const confirmDelete = async () => {
     try {
       await firestore.collection(selectedCollection).doc(deleteId).delete();
       setSongs((prevSongs) => prevSongs.filter((song) => song.id !== deleteId));
-      setOpenDeleteDialog(false);
+      setDeleteDialogOpen(false);
     } catch (error) {
       console.error("Error deleting document:", error);
     }
   };
 
+  // Report resolution handlers
   const handleResolveClick = (reportId) => {
     setResolveReportId(reportId);
-    setOpenResolveDialog(true);
+    setResolveDialogOpen(true);
   };
 
-  const handleConfirmResolve = async () => {
+  const confirmResolve = async () => {
     try {
       await firestore.collection("reports").doc(resolveReportId).delete();
       setReports((prevReports) =>
         prevReports.filter((report) => report.id !== resolveReportId)
       );
-      setOpenResolveDialog(false);
+      setResolveDialogOpen(false);
     } catch (error) {
       console.error("Error resolving report:", error);
     }
   };
 
+  // Edit song handlers
   const handleEditClick = (song) => {
-    setEditId(song.id);
-    setEditTitle(song.title);
-    setEditArtist(song.artist);
-    setEditTags(song.tags.join(", "));
-    setEditOrder(song.order);
-    setEditYoutubeLink(song.youtube);
-    setEditContent(song.content);
-    setOpenModal(true);
+    setFormData({
+      id: song.id,
+      title: song.title,
+      artist: song.artist,
+      tags: song.tags.join(", "),
+      order: song.order,
+      youtube: song.youtube,
+      content: song.content,
+    });
+    setEditModalOpen(true);
   };
 
-  const handleCloseModal = () => {
-    setOpenModal(false);
-    resetEditFields();
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const resetEditFields = () => {
-    setEditId("");
-    setEditTitle("");
-    setEditArtist("");
-    setEditOrder("");
-    setEditTags("");
-    setEditYoutubeLink("");
-    setEditContent("");
+  // Check if the artist is new when the editor blurs
+  const handleEditorBlur = () => {
+    if (
+      formData.artist &&
+      !artistOptions.some((option) => option.name === formData.artist)
+    ) {
+      setNewArtist(formData.artist);
+      setOpenArtistDialog(true);
+    }
   };
 
-  const handleEdit = async (id) => {
-    if (!editTitle || !editContent) {
-      alert("Please fill in all fields.");
+  // Confirm adding a new artist; navigate to artist form
+  const handleConfirmNewArtist = () => {
+    setFormData((prev) => ({ ...prev, artist: newArtist }));
+    navigate(`/artist-form`, { state: { name: newArtist } });
+    setOpenArtistDialog(false);
+  };
+
+  // Save the edited song
+  const handleSave = async () => {
+    if (!formData.title || !formData.content) {
+      alert("Please fill in all required fields.");
       return;
     }
+
     try {
       await firestore
         .collection(selectedCollection)
-        .doc(id)
+        .doc(formData.id)
         .update({
-          title: editTitle,
-          artist: editArtist,
-          tags: editTags.split(",").map((tag) => tag.trim().toLowerCase()),
-          order: Number(editOrder),
-          content: editContent,
-          youtube: editYoutubeLink,
+          title: formData.title,
+          artist: formData.artist,
+          tags: formData.tags.split(",").map((tag) => tag.trim().toLowerCase()),
+          order: Number(formData.order),
+          content: formData.content,
+          youtube: formData.youtube,
         });
-      console.log("Document updated with ID:", id);
-      handleCloseModal();
-      const snapshot = await firestore.collection(selectedCollection).get();
-      const songsData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setSongs(songsData);
+      setEditModalOpen(false);
+      await fetchDynamicData();
     } catch (error) {
       console.error("Error updating document:", error);
     }
   };
 
-  // Calculate pagination data
-  const totalPages = Math.ceil(sortedSongs.length / itemsPerPage);
-  const paginatedSongs = sortedSongs.slice(
-    (page - 1) * itemsPerPage,
-    page * itemsPerPage
-  );
+  if (loading) return <LinearProgress />;
 
   return (
-    <Container maxWidth="md" sx={{ marginTop: 4 }}>
+    <Container maxWidth="lg" sx={{ mt: 4 }}>
       <Typography variant="h4" gutterBottom>
-        Song List
+        Song Management
       </Typography>
-      <Grid
-        container
-        spacing={{ xs: 1, md: 2 }}
-        columns={{ xs: 1, sm: 12, md: 12 }}
-      >
-        <Grid size={{ xs: 1, sm: 6, md: 6 }}>
-        <FormControl fullWidth>
-      <Select
-        value={selectedCollection}
-        onChange={handleCollectionChange}
-        displayEmpty
-        inputProps={{ "aria-label": "Select Collection" }}
+
+      {/* Collection Select and Search Field */}
+      <Box
         sx={{
-          bgcolor: theme.palette.background.paper,
-          borderRadius: 1,
-          boxShadow: 1,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mt: 4,
+          mb: 2,
+          gap: 2,
         }}
       >
-        {collectionList
-          .sort((a, b) => a.numbering - b.numbering)
-          .map((collection) => (
-            <MenuItem key={collection.id} value={collection.name}>
-              {collection.name.charAt(0).toUpperCase() + collection.name.slice(1)}
-            </MenuItem>
-          ))}
-      </Select>
-    </FormControl>
-        </Grid>
-        <Grid size={{ xs: 1, sm: 6, md: 6 }}>
-          <TextField
-            fullWidth
-            label="Search"
-            variant="outlined"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-          />
-        </Grid>
-      </Grid>
-      <Box mt={2}>
-        <Grid container spacing={2}>
-          {paginatedSongs.map((song) => {
-            const isReported = reports.some(
-              (report) => report.lyricsId === song.id
-            );
-            return (
-              <Grid item xs={12} sm={6} md={6} key={song.id}>
-                <Card sx={isReported ? reportedCardStyle : {}}>
-                  <CardContent>
-                    <Typography variant="h5">{song.title}</Typography>
-                    <Typography variant="subtitle1">
-                      Artist: {song.artist}
-                    </Typography>
-                    <Typography variant="body2">
-                      Tags: {song.tags.join(", ")}
-                    </Typography>
-                    <Typography variant="body2">
-                      YouTube: {song.youtube}
-                    </Typography>
-                    {isReported && (
-                      <Typography variant="body2" color="error">
-                        Reported
-                      </Typography>
-                    )}
-                  </CardContent>
-                  <CardActions>
+        <FormControl variant="outlined" sx={{ width: 200 }}>
+          <Select value={selectedCollection} onChange={handleCollectionChange}>
+            {collectionList
+              .sort((a, b) => a.numbering - b.numbering)
+              .map((collection) => (
+                <MenuItem key={collection.id} value={collection.name}>
+                  {collection.name.charAt(0).toUpperCase() +
+                    collection.name.slice(1)}
+                </MenuItem>
+              ))}
+          </Select>
+        </FormControl>
+        <TextField
+          label="Search songs or tags"
+          variant="outlined"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          sx={{ flexGrow: 1 }}
+        />
+      </Box>
+
+      {/* Export and Import Buttons */}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 4,
+        }}
+      >
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<Save />}
+          onClick={exportData}
+        >
+          Export Songs
+        </Button>
+        <Button
+          variant="contained"
+          component="label"
+          color="primary"
+          startIcon={<FileUpload />}
+        >
+          Import Songs
+          <input type="file" accept=".csv" hidden onChange={handleImport} />
+        </Button>
+      </Box>
+
+      {/* Songs Table */}
+      <TableContainer component={Paper} sx={{ maxHeight: 550 }}>
+        <Table stickyHeader>
+          <TableHead>
+            <TableRow>
+              <TableCell>Title</TableCell>
+              <TableCell>Tags</TableCell>
+              <TableCell>Report</TableCell>
+              <TableCell>Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {paginatedSongs.map((song) => {
+              const reported = reports.find(
+                (report) => report.lyricsId === song.id
+              );
+              const isReported = Boolean(reported);
+              const reportText = reported?.reportText || "No report";
+
+              return (
+                <TableRow
+                  key={song.id}
+                  sx={{
+                    backgroundColor: isReported ? "#ffe6e6" : undefined,
+                  }}
+                >
+                  <TableCell sx={{ color: isReported ? "#000" : undefined }}>
+                    {song.title}
+                  </TableCell>
+                  <TableCell>{song.tags.join(", ")}</TableCell>
+                  <TableCell sx={{ color: isReported ? "#000" : undefined }}>
+                    {isReported ? reportText : "—"}
+                  </TableCell>
+                  <TableCell
+                    sx={{ display: "flex", gap: 1, alignItems: "center" }}
+                  >
                     <Button
-                      size="small"
+                      variant="contained"
                       color="primary"
                       onClick={() => handleEditClick(song)}
+                      size="small"
                     >
-                      <Edit />
+                      Edit
                     </Button>
                     <IconButton
-                      color="secondary"
+                      color="error"
                       onClick={() => handleDeleteClick(song.id)}
                     >
                       <Delete />
                     </IconButton>
                     {isReported && (
                       <Button
-                        size="small"
+                        variant="contained"
                         color="error"
-                        onClick={() => {
-                          const report = reports.find(
-                            (report) => report.lyricsId === song.id
-                          );
-                          if (report) {
-                            handleResolveClick(report.id); // Pass the specific report.id here
-                          } else {
-                            console.error("No report found for this song.");
-                          }
-                        }}
+                        onClick={() => handleResolveClick(reported.id)}
+                        size="small"
                       >
                         Resolve
                       </Button>
                     )}
-                  </CardActions>
-                </Card>
-              </Grid>
-            );
-          })}
-        </Grid>
-      </Box>
-      <Box mt={4} display="flex" justifyContent="center">
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      {/* Pagination */}
+      <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
         <Pagination
-          count={totalPages}
+          count={Math.ceil(sortedSongs.length / itemsPerPage)}
           page={page}
-          onChange={(event, value) => setPage(value)}
+          onChange={(e, value) => setPage(value)}
           color="primary"
         />
       </Box>
 
-      {/* Edit Modal */}
-      <Modal open={openModal} onClose={handleCloseModal} sx={modalStyle}>
-        <Box sx={contentStyle}>
-          <Typography variant="h6" gutterBottom>
-            Edit Song
-          </Typography>
-          <TextField
-            label="Title"
-            value={editTitle}
-            onChange={(e) => setEditTitle(e.target.value)}
-            fullWidth
-            margin="normal"
-          />
-          <Autocomplete
-            freeSolo
-            options={artistOptions.map((option) => option.name)}
-            value={editArtist}
-            onInputChange={(event, newValue) => setEditArtist(newValue)}
-            onBlur={handleArtistInputBlur}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="Artist"
-                variant="outlined"
-                margin="normal"
-                fullWidth
-              />
-            )}
-          />
-          <TextField
-            label="Tags (comma separated)"
-            value={editTags}
-            onChange={(e) => setEditTags(e.target.value)}
-            fullWidth
-            margin="normal"
-          />
-          <TextField
-            label="Order"
-            value={editOrder}
-            onChange={(e) => setEditOrder(e.target.value)}
-            fullWidth
-            margin="normal"
-          />
-          <TextField
-            label="YouTube Link"
-            value={editYoutubeLink}
-            onChange={(e) => setEditYoutubeLink(e.target.value)}
-            fullWidth
-            margin="normal"
-          />
-          <TextField
-            fullWidth
-            label="Content"
-            value={editContent}
-            onChange={(e) => setEditContent(e.target.value)}
-            multiline
-            rows={4}
-            margin="normal"
-            sx={{
-              bgcolor: theme.palette.background.paper,
-              borderRadius: 1,
-              boxShadow: 1,
-            }}
-          />
-          <Box sx={{ textAlign: "right" }}>
-            <Button
-              color="primary"
-              variant="contained"
-              onClick={() => handleEdit(editId)}
-            >
-              Save
-            </Button>
-            <Button color="secondary" onClick={handleCloseModal} sx={{ ml: 1 }}>
-              Cancel
-            </Button>
-          </Box>
-        </Box>
-      </Modal>
+      {/* Edit Song Modal */}
+      <EditSongModal
+        editModalOpen={editModalOpen}
+        setEditModalOpen={setEditModalOpen}
+        formData={formData}
+        handleInputChange={handleInputChange}
+        artistOptions={artistOptions}
+        handleEditorBlur={handleEditorBlur}
+        handleSave={handleSave}
+      />
 
-      {/* Dialog for Adding New Artist */}
-      <Dialog
+      {/* Confirmation Dialog for New Artist */}
+      <ConfirmationDialog
         open={openArtistDialog}
         onClose={() => setOpenArtistDialog(false)}
-      >
-        <DialogTitle>Confirm New Artist</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Do you want to add "{newArtist}" as a new artist?
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenArtistDialog(false)}>Cancel</Button>
-          <Button
-            color="primary"
-            variant="contained"
-            onClick={handleConfirmNewArtist}
-          >
-            Yes
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onConfirm={handleConfirmNewArtist}
+        title="Confirm New Artist"
+        message={`Add "${newArtist}" as a new artist?`}
+        confirmLabel="Add Artist"
+      />
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={openDeleteDialog}
-        onClose={() => setOpenDeleteDialog(false)}
-      >
-        <DialogTitle>Confirm Delete</DialogTitle>
-        <DialogContent>
-          <Typography>Are you sure you want to delete this song?</Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenDeleteDialog(false)}>Cancel</Button>
-          <Button
-            color="error"
-            variant="contained"
-            onClick={handleConfirmDelete}
-          >
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Confirmation Dialog for Delete Song */}
+      <ConfirmationDialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        onConfirm={confirmDelete}
+        title="Confirm Delete"
+        message="Are you sure you want to delete this song?"
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        confirmColor="error"
+      />
 
-      {/* Resolve Report Confirmation Dialog */}
-      <Dialog
-        open={openResolveDialog}
-        onClose={() => setOpenResolveDialog(false)}
-      >
-        <DialogTitle>Confirm Resolve Report</DialogTitle>
-        <DialogContent>
-          <Typography>Are you sure you want to resolve this report?</Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenResolveDialog(false)}>Cancel</Button>
-          <Button
-            color="primary"
-            variant="contained"
-            onClick={handleConfirmResolve}
-          >
-            Resolve
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Confirmation Dialog for Resolving Report */}
+      <ConfirmationDialog
+        open={resolveDialogOpen}
+        onClose={() => setResolveDialogOpen(false)}
+        onConfirm={confirmResolve}
+        title="Confirm Resolve"
+        message="Are you sure you want to mark this report as resolved?"
+        confirmLabel="Resolve"
+        cancelLabel="Cancel"
+        confirmColor="error"
+      />
     </Container>
   );
 };
 
-const reportedCardStyle = {
-  border: "2px solid red",
-  boxShadow: "0px 0px 10px rgba(255, 0, 0, 0.5)",
+export default SongList;
+
+// ConfirmationDialog Component
+const ConfirmationDialog = ({
+  open,
+  onClose,
+  onConfirm,
+  title,
+  message,
+  confirmLabel = "Yes",
+  cancelLabel = "No",
+  confirmColor = "primary",
+}) => {
+  return (
+    <Dialog open={open} onClose={onClose}>
+      <DialogTitle>{title}</DialogTitle>
+      <DialogContent sx={{ minWidth: 300, pt: 2, pb: 3 }}>
+        {message}
+      </DialogContent>
+      <DialogActions sx={{ p: 3 }}>
+        <Button variant="text" onClick={onClose}>
+          {cancelLabel}
+        </Button>
+        <Button variant="contained" color={confirmColor} onClick={onConfirm}>
+          {confirmLabel}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
 };
 
-export default SongList;
+export { ConfirmationDialog };
