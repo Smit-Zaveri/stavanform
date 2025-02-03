@@ -5,6 +5,7 @@ import {
   Box,
   Button,
   Container,
+  Checkbox,
   Dialog,
   DialogActions,
   DialogContent,
@@ -38,6 +39,7 @@ const itemsPerPage = 10;
 const SongList = () => {
   const [songs, setSongs] = useState([]);
   const [artistOptions, setArtistOptions] = useState([]);
+  const [selectedSongIds, setSelectedSongIds] = useState([]);
   const [reports, setReports] = useState([]);
   const [collectionList, setCollectionList] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -54,6 +56,26 @@ const SongList = () => {
 
   const navigate = useNavigate();
   const { collectionName } = useParams();
+
+  // Toggle selection for a single song
+  const handleSelectSong = (id) => {
+    setSelectedSongIds((prevSelected) =>
+      prevSelected.includes(id)
+        ? prevSelected.filter((songId) => songId !== id)
+        : [...prevSelected, id]
+    );
+  };
+
+  // Toggle selection for all songs in the current filtered list (or current page)
+  const handleSelectAll = (event) => {
+    if (event.target.checked) {
+      // Select all songs that are visible in the current page
+      const newSelecteds = paginatedSongs.map((song) => song.id);
+      setSelectedSongIds(newSelecteds);
+    } else {
+      setSelectedSongIds([]);
+    }
+  };
 
   // Fetch static data: artists and collections
   const fetchStaticData = useCallback(async () => {
@@ -235,11 +257,22 @@ const SongList = () => {
 
   const confirmDelete = async () => {
     try {
-      await firestore.collection(selectedCollection).doc(deleteId).delete();
-      setSongs((prev) => prev.filter((song) => song.id !== deleteId));
+      // Loop through selected songs and delete each one
+      const batch = firestore.batch();
+      selectedSongIds.forEach((id) => {
+        const docRef = firestore.collection(selectedCollection).doc(id);
+        batch.delete(docRef);
+      });
+      await batch.commit();
+
+      // Update local state: remove the deleted songs
+      setSongs((prev) =>
+        prev.filter((song) => !selectedSongIds.includes(song.id))
+      );
+      setSelectedSongIds([]); // Clear selection after deletion
       setDeleteDialogOpen(false);
     } catch (error) {
-      console.error("Error deleting document:", error);
+      console.error("Error deleting documents:", error);
     }
   };
 
@@ -381,6 +414,15 @@ const SongList = () => {
         >
           Add New Song
         </Button>
+        {selectedSongIds.length > 0 && (
+          <Button
+            variant="contained"
+            color="error"
+            onClick={() => setDeleteDialogOpen(true)}
+          >
+            Delete Selected ({selectedSongIds.length})
+          </Button>
+        )}
       </Box>
 
       {/* Songs Table */}
@@ -388,6 +430,19 @@ const SongList = () => {
         <Table>
           <TableHead>
             <TableRow>
+              <TableCell padding="checkbox">
+                <Checkbox
+                  indeterminate={
+                    selectedSongIds.length > 0 &&
+                    selectedSongIds.length < paginatedSongs.length
+                  }
+                  checked={
+                    paginatedSongs.length > 0 &&
+                    selectedSongIds.length === paginatedSongs.length
+                  }
+                  onChange={handleSelectAll}
+                />
+              </TableCell>
               {hasAnyReport && <TableCell>Report Text</TableCell>}
               <TableCell>Order</TableCell>
               <TableCell>Title</TableCell>
@@ -395,18 +450,22 @@ const SongList = () => {
               <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
+
           <TableBody>
             {paginatedSongs.map((song) => {
-              // Check if this song has an associated report
               const report = reports.find((r) => r.lyricsId === song.id);
+              const isItemSelected = selectedSongIds.includes(song.id);
               return (
                 <TableRow
                   key={song.id}
-                  // If a report exists, use a red background color
-                  sx={{
-                    backgroundColor: report ? "red" : "inherit",
-                  }}
+                  sx={{ backgroundColor: report ? "red" : "inherit" }}
                 >
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      checked={isItemSelected}
+                      onChange={() => handleSelectSong(song.id)}
+                    />
+                  </TableCell>
                   {hasAnyReport && (
                     <TableCell>
                       {report ? report.reportText || "—" : "—"}
@@ -417,7 +476,7 @@ const SongList = () => {
                     <Typography
                       variant="subtitle1"
                       sx={{
-                        maxWidth: "200px", // adjust as needed
+                        maxWidth: "200px",
                         whiteSpace: "nowrap",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
@@ -430,7 +489,7 @@ const SongList = () => {
                     <Typography
                       variant="body2"
                       sx={{
-                        maxWidth: "150px", // adjust width as needed
+                        maxWidth: "150px",
                         whiteSpace: "nowrap",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
@@ -439,7 +498,6 @@ const SongList = () => {
                       {song.tags ? song.tags.join(", ") : "—"}
                     </Typography>
                   </TableCell>
-
                   <TableCell sx={{ display: "flex", gap: 1 }}>
                     <Button
                       variant="contained"
