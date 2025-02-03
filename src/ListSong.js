@@ -205,6 +205,7 @@ const SongList = () => {
                   [],
                 order: row.Order ? Number(row.Order) : null,
                 youtube: row.YouTube,
+                publishDate: firebase.firestore.Timestamp.now(),
                 content: row.Content,
               });
               successCount++;
