@@ -1,4 +1,3 @@
-// SongFormDialog.js
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -95,15 +94,68 @@ const SongFormDialog = ({
           .collection("tirtankar")
           .orderBy("numbering")
           .get();
-        setTirthankarList(
-          snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
-        );
+        const tirthankarData = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setTirthankarList(tirthankarData);
+
+        // Check initial tags for Tirthankar names
+        if (initialData?.tags) {
+          const initialTags = initialData.tags.map((tag) => tag.toLowerCase());
+          const matchingTirthankar = tirthankarData.find((tirthankar) =>
+            initialTags.includes(tirthankar.name.toLowerCase())
+          );
+          if (matchingTirthankar) {
+            setSelectedTirthankar(matchingTirthankar);
+          }
+        }
       } catch (error) {
         console.error("Error fetching Tirthankar list:", error);
       }
     };
     fetchTirthankarList();
-  }, []);
+  }, [initialData?.tags]);
+
+  // Update tags when selectedTirthankar changes
+  useEffect(() => {
+    if (selectedTirthankar) {
+      // Filter out existing Tirthankar tags
+      const currentTirthankarNames = new Set(
+        tirthankarList.flatMap((tirthankar) => [
+          tirthankar.name.toLowerCase(),
+          tirthankar.displayName.toLowerCase(),
+        ])
+      );
+
+      const filteredTags = tags
+        .split(",")
+        .map((tag) => tag.trim().toLowerCase())
+        .filter((tag) => !currentTirthankarNames.has(tag));
+
+      // Add new Tirthankar tags
+      const newTagsSet = new Set([...filteredTags]);
+      newTagsSet.add(selectedTirthankar.name.toLowerCase());
+      newTagsSet.add(selectedTirthankar.displayName.toLowerCase());
+
+      setTags(Array.from(newTagsSet).join(", "));
+    } else {
+      // Remove all Tirthankar tags if none is selected
+      const currentTirthankarNames = new Set(
+        tirthankarList.flatMap((tirthankar) => [
+          tirthankar.name.toLowerCase(),
+          tirthankar.displayName.toLowerCase(),
+        ])
+      );
+
+      const filteredTags = tags
+        .split(",")
+        .map((tag) => tag.trim().toLowerCase())
+        .filter((tag) => !currentTirthankarNames.has(tag));
+
+      setTags(filteredTags.join(", "));
+    }
+  }, [selectedTirthankar, tirthankarList, tags]);
 
   // Helper: Validate YouTube URL
   const isValidYouTubeURL = (url) => {
@@ -134,18 +186,11 @@ const SongFormDialog = ({
       return;
     }
 
-    // Build the tags array (and include Tirthankar names if selected)
-    const allTags = tagArray.map((tag) => tag.toLowerCase());
-    if (selectedTirthankar) {
-      allTags.push(selectedTirthankar.name.toLowerCase());
-      allTags.push(selectedTirthankar.displayName.toLowerCase());
-    }
-
     // Build the document data. For edit mode, include the id.
     const docData = {
       title,
       artist,
-      tags: allTags,
+      tags: tagArray,
       content,
       youtube,
       order: parsedOrder,
