@@ -97,37 +97,6 @@ const SongFormDialog = ({
   }, []);
 
   // Fetch Tirthankar list from "tirtankar" collection
-  useEffect(() => {
-    const fetchTirthankarList = async () => {
-      try {
-        const snapshot = await firestore
-          .collection("tirtankar")
-          .orderBy("numbering")
-          .get();
-        const tirthData = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setTirthankarList(tirthData);
-
-        // If initialData contains tags and no Tirthankar is selected, try to find one
-        if (initialData?.tags && !selectedTirthankar) {
-          const initialTagsLower = initialData.tags.map((tag) =>
-            tag.toLowerCase()
-          );
-          const matching = tirthData.find((t) =>
-            initialTagsLower.includes(t.name.toLowerCase())
-          );
-          if (matching) {
-            setSelectedTirthankar(matching.id);
-          }
-        }
-      } catch (err) {
-        console.error("Error fetching Tirthankar list:", err);
-      }
-    };
-    fetchTirthankarList();
-  }, [initialData?.tags, selectedTirthankar]);
 
   // Fetch tag suggestions from Firebase "tags" collection
   useEffect(() => {
@@ -144,8 +113,49 @@ const SongFormDialog = ({
   }, []);
 
   // Updated useEffect to handle Tirthankar selection and tag management
+  // 1. Update Tirthankar list fetch effect (remove selectedTirthankar dependency)
   useEffect(() => {
+    const fetchTirthankarList = async () => {
+      try {
+        const snapshot = await firestore
+          .collection("tirtankar")
+          .orderBy("numbering")
+          .get();
+        const tirthData = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setTirthankarList(tirthData);
+
+        // Only set initial Tirthankar if not already set
+        if (initialData?.tags && !selectedTirthankar) {
+          const initialTagsLower = initialData.tags.map((tag) =>
+            tag.toLowerCase()
+          );
+          const matching = tirthData.find((t) =>
+            initialTagsLower.includes(t.name.toLowerCase())
+          );
+          // Use functional update to prevent overwriting user changes
+          setSelectedTirthankar((current) => current || matching?.id || "");
+        }
+      } catch (err) {
+        console.error("Error fetching Tirthankar list:", err);
+      }
+    };
+    fetchTirthankarList();
+  }, [initialData?.tags]); // Only depends on initial tags
+
+  // 2. Enhanced tag cleanup effect
+  useEffect(() => {
+    // Create set of all possible Tirthankar tags
+    const allTirthTags = new Set();
+    tirthankarList.forEach((t) => {
+      allTirthTags.add(t.name.toLowerCase());
+      allTirthTags.add(t.displayName.toLowerCase());
+    });
+
     if (selectedTirthankar) {
+      // Existing logic for when Tirthankar is selected...
       const selectedObj = tirthankarList.find(
         (t) => t.id === selectedTirthankar
       );
@@ -155,19 +165,13 @@ const SongFormDialog = ({
           t.toLowerCase()
         );
 
-        // Collect all Tirthankar tags from other Tirthankars
-        const otherTirthTags = new Set();
-        tirthankarList.forEach((t) => {
-          if (t.id !== selectedTirthankar) {
-            otherTirthTags.add(t.name.toLowerCase());
-            otherTirthTags.add(t.displayName.toLowerCase());
-          }
-        });
-
-        // Filter out tags that are from other Tirthankars
+        // Filter out any tags from other Tirthankars
         const filteredTags = tags.filter((tag) => {
           const lowerTag = tag.toLowerCase();
-          return !otherTirthTags.has(lowerTag);
+          return (
+            !allTirthTags.has(lowerTag) ||
+            currentTirthTagsLower.includes(lowerTag)
+          );
         });
 
         // Add current Tirthankar tags if missing
@@ -178,10 +182,18 @@ const SongFormDialog = ({
 
         const newTags = [...filteredTags, ...missingTags];
 
-        // Update tags only if there's a change
         if (JSON.stringify(newTags) !== JSON.stringify(tags)) {
           setTags(newTags);
         }
+      }
+    } else {
+      // When no Tirthankar selected, remove ALL Tirthankar-related tags
+      const filteredTags = tags.filter(
+        (tag) => !allTirthTags.has(tag.toLowerCase())
+      );
+
+      if (JSON.stringify(filteredTags) !== JSON.stringify(tags)) {
+        setTags(filteredTags);
       }
     }
   }, [selectedTirthankar, tirthankarList, tags]);
@@ -339,7 +351,7 @@ const SongFormDialog = ({
                   label="Select Tirthankar"
                 >
                   <MenuItem value="">
-                    <em>Select a Tirthankar</em>
+                    <em>Clear Selection</em>
                   </MenuItem>
                   {tirthankarList.map((tirth) => (
                     <MenuItem key={tirth.id} value={tirth.id}>
