@@ -199,6 +199,15 @@ const CollectionForm = ({ collectionName }) => {
     }
   };
 
+  // Toggle selection for all filtered collections
+  const toggleSelectAll = () => {
+    if (selectedIds.length === filteredCollections.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredCollections.map((coll) => coll.id));
+    }
+  };
+
   // Toggle selection for a collection
   const toggleSelect = (id) => {
     setSelectedIds((prevSelected) =>
@@ -579,6 +588,26 @@ const CollectionForm = ({ collectionName }) => {
           </Typography>
         ) : (
           <List>
+            {/* Select All Option */}
+            <ListItem key="select-all">
+              <Checkbox
+                edge="start"
+                checked={
+                  filteredCollections.length > 0 &&
+                  selectedIds.length === filteredCollections.length
+                }
+                indeterminate={
+                  selectedIds.length > 0 &&
+                  selectedIds.length < filteredCollections.length
+                }
+                onChange={toggleSelectAll}
+                tabIndex={-1}
+                disableRipple
+              />
+              <ListItemText primary="Select All" />
+            </ListItem>
+
+            {/* Existing collection items */}
             {filteredCollections.map((collection) => (
               <React.Fragment key={collection.id}>
                 <ListItem
@@ -609,7 +638,6 @@ const CollectionForm = ({ collectionName }) => {
                     tabIndex={-1}
                     disableRipple
                   />
-                  {/* Show Avatar if picture URL is available */}
                   {collection.picture && (
                     <ListItemAvatar>
                       <Avatar
