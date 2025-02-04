@@ -143,20 +143,44 @@ const SongFormDialog = ({
     fetchTagsOptions();
   }, []);
 
-  // When a Tirthankar is selected, add its name and displayName to tags.
+  // Updated useEffect to handle Tirthankar selection and tag management
   useEffect(() => {
     if (selectedTirthankar) {
       const selectedObj = tirthankarList.find(
         (t) => t.id === selectedTirthankar
       );
       if (selectedObj) {
-        const tirthNames = [selectedObj.name, selectedObj.displayName];
-        const lowerTags = tags.map((tag) => tag.toLowerCase());
-        const missing = tirthNames.filter(
-          (name) => !lowerTags.includes(name.toLowerCase())
+        const currentTirthTags = [selectedObj.name, selectedObj.displayName];
+        const currentTirthTagsLower = currentTirthTags.map((t) =>
+          t.toLowerCase()
         );
-        if (missing.length > 0) {
-          setTags((prevTags) => [...prevTags, ...missing]);
+
+        // Collect all Tirthankar tags from other Tirthankars
+        const otherTirthTags = new Set();
+        tirthankarList.forEach((t) => {
+          if (t.id !== selectedTirthankar) {
+            otherTirthTags.add(t.name.toLowerCase());
+            otherTirthTags.add(t.displayName.toLowerCase());
+          }
+        });
+
+        // Filter out tags that are from other Tirthankars
+        const filteredTags = tags.filter((tag) => {
+          const lowerTag = tag.toLowerCase();
+          return !otherTirthTags.has(lowerTag);
+        });
+
+        // Add current Tirthankar tags if missing
+        const missingTags = currentTirthTags.filter(
+          (t) =>
+            !filteredTags.some((ft) => ft.toLowerCase() === t.toLowerCase())
+        );
+
+        const newTags = [...filteredTags, ...missingTags];
+
+        // Update tags only if there's a change
+        if (JSON.stringify(newTags) !== JSON.stringify(tags)) {
+          setTags(newTags);
         }
       }
     }
