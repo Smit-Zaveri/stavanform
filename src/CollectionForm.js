@@ -439,7 +439,7 @@ const CollectionForm = ({ collectionName }) => {
                   helperText={error && " "}
                 />
               </Grid>
-              <Grid item xs={12} md={12}>
+              <Grid item xs={12} md={6}>
                 <TextField
                   label="Picture URL (Optional)"
                   variant="outlined"
