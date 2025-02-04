@@ -112,6 +112,19 @@ const SongFormDialog = ({
     fetchTagsOptions();
   }, []);
 
+  useEffect(() => {
+    const fetchTirthTags = async () => {
+      try {
+        const snapshot = await firestore.collection("tirth").get();
+        const tirthTags = snapshot.docs.map((doc) => doc.data().name); // Assuming the field name is "name"
+        setTagsOptions((prevTags) => [...prevTags, ...tirthTags]);
+      } catch (err) {
+        console.error("Error fetching Tirth tags:", err);
+      }
+    };
+    fetchTirthTags();
+  }, []);
+
   // Updated useEffect to handle Tirthankar selection and tag management
   // 1. Update Tirthankar list fetch effect (remove selectedTirthankar dependency)
   useEffect(() => {
@@ -199,13 +212,7 @@ const SongFormDialog = ({
   }, [selectedTirthankar, tirthankarList, tags]);
 
   // Combine suggestions from Firebase "tags" collection and Tirthankar names.
-  const combinedTagSuggestions = Array.from(
-    new Set([
-      ...tagsOptions,
-      ...tirthankarList.map((t) => t.name),
-      ...tirthankarList.map((t) => t.displayName),
-    ])
-  );
+  const combinedTagSuggestions = Array.from(new Set([...tagsOptions]));
 
   // Helper: Validate YouTube URL.
   const isValidYouTubeURL = (url) => {
