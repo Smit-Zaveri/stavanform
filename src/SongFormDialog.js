@@ -34,12 +34,12 @@ const SongFormDialog = ({
   onSubmit,
 }) => {
   const navigate = useNavigate();
+
   // Fields
   const [title, setTitle] = useState(initialData?.title || "");
   const [artist, setArtist] = useState(initialData?.artist || "");
-  const [tags, setTags] = useState(
-    initialData?.tags ? initialData.tags.join(", ") : ""
-  );
+  // Store tags as an array
+  const [tags, setTags] = useState(initialData?.tags || []);
   const [order, setOrder] = useState(initialData?.order ?? "");
   const [content, setContent] = useState(initialData?.content || "");
   const [youtube, setYoutube] = useState(initialData?.youtube || "");
@@ -47,7 +47,10 @@ const SongFormDialog = ({
   const [selectedCollection, setSelectedCollection] = useState(
     collectionName || "lyrics"
   );
-  const [selectedTirthankar, setSelectedTirthankar] = useState("");
+  // Instead of storing the whole object, store only the Tirthankar id.
+  const [selectedTirthankar, setSelectedTirthankar] = useState(
+    initialData?.tirthankarId || ""
+  );
   const [artistOptions, setArtistOptions] = useState([]);
   const [collectionOptions, setCollectionOptions] = useState([]);
   const [tirthankarList, setTirthankarList] = useState([]);
@@ -55,6 +58,11 @@ const SongFormDialog = ({
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const [newArtist, setNewArtist] = useState("");
+
+  // State for tag suggestions from Firebase "tags" collection
+  const [tagsOptions, setTagsOptions] = useState([]);
+  // State for controlling the Autocomplete text input
+  const [tagsInputValue, setTagsInputValue] = useState("");
 
   // Fetch artist options
   useEffect(() => {
@@ -71,7 +79,7 @@ const SongFormDialog = ({
     fetchArtistOptions();
   }, []);
 
-  // Fetch collection list (if needed)
+  // Fetch collection list
   useEffect(() => {
     const fetchCollections = async () => {
       try {
@@ -86,7 +94,7 @@ const SongFormDialog = ({
     fetchCollections();
   }, []);
 
-  // Fetch Tirthankar list
+  // Fetch Tirthankar list from "tirtankar" collection
   useEffect(() => {
     const fetchTirthankarList = async () => {
       try {
@@ -94,20 +102,23 @@ const SongFormDialog = ({
           .collection("tirtankar")
           .orderBy("numbering")
           .get();
-        const tirthankarData = snapshot.docs.map((doc) => ({
+        const tirthData = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
-        setTirthankarList(tirthankarData);
+        setTirthankarList(tirthData);
 
-        // Check initial tags for Tirthankar names
-        if (initialData?.tags) {
-          const initialTags = initialData.tags.map((tag) => tag.toLowerCase());
-          const matchingTirthankar = tirthankarData.find((tirthankar) =>
-            initialTags.includes(tirthankar.name.toLowerCase())
+        // If initialData contains tags, check if one matches a Tirthankar name.
+        // If so, set the selectedTirthankar (if not already set).
+        if (initialData?.tags && !selectedTirthankar) {
+          const initialTagsLower = initialData.tags.map((tag) =>
+            tag.toLowerCase()
           );
-          if (matchingTirthankar) {
-            setSelectedTirthankar(matchingTirthankar);
+          const matching = tirthData.find((t) =>
+            initialTagsLower.includes(t.name.toLowerCase())
+          );
+          if (matching) {
+            setSelectedTirthankar(matching.id);
           }
         }
       } catch (error) {
@@ -115,32 +126,53 @@ const SongFormDialog = ({
       }
     };
     fetchTirthankarList();
-  }, [initialData?.tags]);
+  }, [initialData?.tags, selectedTirthankar]);
 
-  // Update tags when selectedTirthankar changes
+  // Fetch tag suggestions from Firebase "tags" collection
+  useEffect(() => {
+    const fetchTagsOptions = async () => {
+      try {
+        const snapshot = await firestore.collection("tags").get();
+        // Assumes each tag document has a "name" field.
+        const firebaseTags = snapshot.docs.map((doc) => doc.data().name);
+        setTagsOptions(firebaseTags);
+      } catch (error) {
+        console.error("Error fetching tags options:", error);
+      }
+    };
+    fetchTagsOptions();
+  }, []);
+
+  // When a Tirthankar is selected, look up its data and add its name/displayName to tags.
   useEffect(() => {
     if (selectedTirthankar) {
-      const tirthankarNames = new Set([
-        selectedTirthankar.name.toLowerCase(),
-        selectedTirthankar.displayName.toLowerCase(),
-      ]);
-
-      const tagArray = tags.split(",").map((tag) => tag.trim().toLowerCase());
-
-      // Keep existing tags that are not Tirthankar names
-      const filteredTags = tagArray.filter(
-        (tag) =>
-          !tirthankarList.some((t) =>
-            [t.name.toLowerCase(), t.displayName.toLowerCase()].includes(tag)
-          )
+      // Find the selected Tirthankar object by its id.
+      const selectedObj = tirthankarList.find(
+        (t) => t.id === selectedTirthankar
       );
-
-      // Add new Tirthankar tags
-      setTags([...filteredTags, ...tirthankarNames].join(", "));
+      if (selectedObj) {
+        const tirthNames = [selectedObj.name, selectedObj.displayName];
+        const lowerTags = tags.map((tag) => tag.toLowerCase());
+        const missing = tirthNames.filter(
+          (name) => !lowerTags.includes(name.toLowerCase())
+        );
+        if (missing.length > 0) {
+          setTags((prevTags) => [...prevTags, ...missing]);
+        }
+      }
     }
-  }, [selectedTirthankar, tirthankarList]);
+  }, [selectedTirthankar, tirthankarList, tags]);
 
-  // Helper: Validate YouTube URL
+  // Combine suggestions from the Firebase "tags" collection and the Tirthankar names.
+  const combinedTagSuggestions = Array.from(
+    new Set([
+      ...tagsOptions,
+      ...tirthankarList.map((t) => t.name),
+      ...tirthankarList.map((t) => t.displayName),
+    ])
+  );
+
+  // Helper: Validate YouTube URL.
   const isValidYouTubeURL = (url) => {
     const regex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/;
     return regex.test(url);
@@ -158,32 +190,27 @@ const SongFormDialog = ({
       setOpenSnackbar(true);
       return;
     }
-    const tagArray = tags
-      .split(",")
-      .map((tag) => tag.trim())
-      .filter((tag) => tag);
     const parsedOrder = order ? Number(order) : null;
     if (order && isNaN(parsedOrder)) {
       setError("Please enter a valid number for the order field.");
       setOpenSnackbar(true);
       return;
     }
-
-    // Build the document data. For edit mode, include the id.
     const docData = {
       title,
       artist,
-      tags: tagArray,
+      tags, // Already an array.
       content,
       youtube,
       order: parsedOrder,
       publishDate: firebase.firestore.Timestamp.now(),
       newFlag,
+      // Save the selected Tirthankar id.
+      tirthankarId: selectedTirthankar,
     };
     if (mode === "edit" && initialData?.id) {
       docData.id = initialData.id;
     }
-    // Submit the data via the onSubmit callback provided from SongList.
     await onSubmit(docData, mode);
   };
 
@@ -210,6 +237,7 @@ const SongFormDialog = ({
       <DialogContent>
         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
           <Grid container spacing={{ xs: 1, md: 2 }}>
+            {/* Collection */}
             <Grid item xs={12} md={6}>
               <FormControl
                 fullWidth
@@ -233,6 +261,7 @@ const SongFormDialog = ({
                 </Select>
               </FormControl>
             </Grid>
+            {/* Title */}
             <Grid item xs={12} md={6}>
               <TextField
                 label="Title"
@@ -244,6 +273,7 @@ const SongFormDialog = ({
                 error={!title && !!error}
               />
             </Grid>
+            {/* Artist */}
             <Grid item xs={12} md={6}>
               <Autocomplete
                 freeSolo
@@ -261,6 +291,7 @@ const SongFormDialog = ({
                 )}
               />
             </Grid>
+            {/* Tirthankar */}
             <Grid item xs={12} md={6}>
               <FormControl fullWidth>
                 <InputLabel>Select Tirthankar</InputLabel>
@@ -272,24 +303,37 @@ const SongFormDialog = ({
                   <MenuItem value="">
                     <em>Select a Tirthankar</em>
                   </MenuItem>
-                  {tirthankarList.map((tirthankar) => (
-                    <MenuItem key={tirthankar.id} value={tirthankar}>
-                      {tirthankar.numbering}. {tirthankar.name} (
-                      {tirthankar.displayName})
+                  {tirthankarList.map((tirth) => (
+                    <MenuItem key={tirth.id} value={tirth.id}>
+                      {tirth.numbering}. {tirth.name} ({tirth.displayName})
                     </MenuItem>
                   ))}
                 </Select>
               </FormControl>
             </Grid>
+            {/* Tags (combining suggestions from both collections) */}
             <Grid item xs={12} md={6}>
-              <TextField
-                label="Tags (comma-separated)"
-                variant="outlined"
-                fullWidth
+              <Autocomplete
+                multiple
+                freeSolo
+                options={combinedTagSuggestions}
                 value={tags}
-                onChange={(e) => setTags(e.target.value)}
+                onChange={(event, newValue) => setTags(newValue)}
+                inputValue={tagsInputValue}
+                onInputChange={(event, newInputValue) =>
+                  setTagsInputValue(newInputValue)
+                }
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Tags"
+                    variant="outlined"
+                    fullWidth
+                  />
+                )}
               />
             </Grid>
+            {/* YouTube */}
             <Grid item xs={12} md={6}>
               <TextField
                 label="YouTube Link"
@@ -305,6 +349,7 @@ const SongFormDialog = ({
                 }
               />
             </Grid>
+            {/* Order */}
             <Grid item xs={12} md={6}>
               <TextField
                 label="Order"
@@ -315,6 +360,7 @@ const SongFormDialog = ({
                 error={order && isNaN(Number(order))}
               />
             </Grid>
+            {/* Content */}
             <Grid item xs={12}>
               <TextField
                 label="Content"
@@ -328,6 +374,7 @@ const SongFormDialog = ({
                 error={!content && !!error}
               />
             </Grid>
+            {/* New flag */}
             <Grid item xs={12}>
               <FormControlLabel
                 control={
@@ -359,6 +406,7 @@ const SongFormDialog = ({
           {error}
         </Alert>
       </Snackbar>
+
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
         <DialogTitle>Create New Artist</DialogTitle>
         <DialogContent>
