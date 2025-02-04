@@ -120,42 +120,25 @@ const SongFormDialog = ({
   // Update tags when selectedTirthankar changes
   useEffect(() => {
     if (selectedTirthankar) {
-      // Filter out existing Tirthankar tags
-      const currentTirthankarNames = new Set(
-        tirthankarList.flatMap((tirthankar) => [
-          tirthankar.name.toLowerCase(),
-          tirthankar.displayName.toLowerCase(),
-        ])
-      );
+      const tirthankarNames = new Set([
+        selectedTirthankar.name.toLowerCase(),
+        selectedTirthankar.displayName.toLowerCase(),
+      ]);
 
-      const filteredTags = tags
-        .split(",")
-        .map((tag) => tag.trim().toLowerCase())
-        .filter((tag) => !currentTirthankarNames.has(tag));
+      const tagArray = tags.split(",").map((tag) => tag.trim().toLowerCase());
+
+      // Keep existing tags that are not Tirthankar names
+      const filteredTags = tagArray.filter(
+        (tag) =>
+          !tirthankarList.some((t) =>
+            [t.name.toLowerCase(), t.displayName.toLowerCase()].includes(tag)
+          )
+      );
 
       // Add new Tirthankar tags
-      const newTagsSet = new Set([...filteredTags]);
-      newTagsSet.add(selectedTirthankar.name.toLowerCase());
-      newTagsSet.add(selectedTirthankar.displayName.toLowerCase());
-
-      setTags(Array.from(newTagsSet).join(", "));
-    } else {
-      // Remove all Tirthankar tags if none is selected
-      const currentTirthankarNames = new Set(
-        tirthankarList.flatMap((tirthankar) => [
-          tirthankar.name.toLowerCase(),
-          tirthankar.displayName.toLowerCase(),
-        ])
-      );
-
-      const filteredTags = tags
-        .split(",")
-        .map((tag) => tag.trim().toLowerCase())
-        .filter((tag) => !currentTirthankarNames.has(tag));
-
-      setTags(filteredTags.join(", "));
+      setTags([...filteredTags, ...tirthankarNames].join(", "));
     }
-  }, [selectedTirthankar, tirthankarList, tags]);
+  }, [selectedTirthankar, tirthankarList]);
 
   // Helper: Validate YouTube URL
   const isValidYouTubeURL = (url) => {
@@ -362,9 +345,7 @@ const SongFormDialog = ({
           </Button>
         </Box>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-      </DialogActions>
+
       <Snackbar
         open={openSnackbar}
         autoHideDuration={6000}

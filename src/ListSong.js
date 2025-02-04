@@ -250,8 +250,9 @@ const SongList = () => {
   };
 
   // Delete song handlers
+  // Delete song handlers
   const handleDeleteClick = (id) => {
-    setDeleteId(id);
+    setSelectedSongIds([id]); // Set the selected song IDs to the current song ID
     setDeleteDialogOpen(true);
   };
 
@@ -273,6 +274,7 @@ const SongList = () => {
       setDeleteDialogOpen(false);
     } catch (error) {
       console.error("Error deleting documents:", error);
+      alert("Error deleting the song. Please try again.");
     }
   };
 
