@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { createFilterOptions } from "@mui/material/Autocomplete";
 import { useNavigate } from "react-router-dom";
 import {
   Alert,
@@ -24,6 +25,8 @@ import firebase from "firebase/compat/app";
 import "firebase/firestore";
 import { firestore } from "./firebase";
 
+const filter = createFilterOptions();
+
 const SongFormDialog = ({
   open,
   onClose,
@@ -38,8 +41,7 @@ const SongFormDialog = ({
   // Fields
   const [title, setTitle] = useState(initialData?.title || "");
   const [artist, setArtist] = useState(initialData?.artist || "");
-  // Store tags as an array
-  const [tags, setTags] = useState(initialData?.tags || []);
+  const [tags, setTags] = useState(initialData?.tags || []); // tags stored as an array
   const [order, setOrder] = useState(initialData?.order ?? "");
   const [content, setContent] = useState(initialData?.content || "");
   const [youtube, setYoutube] = useState(initialData?.youtube || "");
@@ -47,7 +49,7 @@ const SongFormDialog = ({
   const [selectedCollection, setSelectedCollection] = useState(
     collectionName || "lyrics"
   );
-  // Instead of storing the whole object, store only the Tirthankar id.
+  // Only store Tirthankar id
   const [selectedTirthankar, setSelectedTirthankar] = useState(
     initialData?.tirthankarId || ""
   );
@@ -61,8 +63,8 @@ const SongFormDialog = ({
 
   // State for tag suggestions from Firebase "tags" collection
   const [tagsOptions, setTagsOptions] = useState([]);
-  // State for controlling the Autocomplete text input
-  const [tagsInputValue, setTagsInputValue] = useState("");
+  // State to control the current Tags input value
+  const [tagInput, setTagInput] = useState("");
 
   // Fetch artist options
   useEffect(() => {
@@ -72,8 +74,8 @@ const SongFormDialog = ({
         setArtistOptions(
           snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
         );
-      } catch (error) {
-        console.error("Error fetching artist options:", error);
+      } catch (err) {
+        console.error("Error fetching artist options:", err);
       }
     };
     fetchArtistOptions();
@@ -87,8 +89,8 @@ const SongFormDialog = ({
         setCollectionOptions(
           snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
         );
-      } catch (error) {
-        console.error("Error fetching collections:", error);
+      } catch (err) {
+        console.error("Error fetching collections:", err);
       }
     };
     fetchCollections();
@@ -108,8 +110,7 @@ const SongFormDialog = ({
         }));
         setTirthankarList(tirthData);
 
-        // If initialData contains tags, check if one matches a Tirthankar name.
-        // If so, set the selectedTirthankar (if not already set).
+        // If initialData contains tags and no Tirthankar is selected, try to find one
         if (initialData?.tags && !selectedTirthankar) {
           const initialTagsLower = initialData.tags.map((tag) =>
             tag.toLowerCase()
@@ -121,8 +122,8 @@ const SongFormDialog = ({
             setSelectedTirthankar(matching.id);
           }
         }
-      } catch (error) {
-        console.error("Error fetching Tirthankar list:", error);
+      } catch (err) {
+        console.error("Error fetching Tirthankar list:", err);
       }
     };
     fetchTirthankarList();
@@ -133,20 +134,18 @@ const SongFormDialog = ({
     const fetchTagsOptions = async () => {
       try {
         const snapshot = await firestore.collection("tags").get();
-        // Assumes each tag document has a "name" field.
         const firebaseTags = snapshot.docs.map((doc) => doc.data().name);
         setTagsOptions(firebaseTags);
-      } catch (error) {
-        console.error("Error fetching tags options:", error);
+      } catch (err) {
+        console.error("Error fetching tags options:", err);
       }
     };
     fetchTagsOptions();
   }, []);
 
-  // When a Tirthankar is selected, look up its data and add its name/displayName to tags.
+  // When a Tirthankar is selected, add its name and displayName to tags.
   useEffect(() => {
     if (selectedTirthankar) {
-      // Find the selected Tirthankar object by its id.
       const selectedObj = tirthankarList.find(
         (t) => t.id === selectedTirthankar
       );
@@ -163,7 +162,7 @@ const SongFormDialog = ({
     }
   }, [selectedTirthankar, tirthankarList, tags]);
 
-  // Combine suggestions from the Firebase "tags" collection and the Tirthankar names.
+  // Combine suggestions from Firebase "tags" collection and Tirthankar names.
   const combinedTagSuggestions = Array.from(
     new Set([
       ...tagsOptions,
@@ -178,8 +177,24 @@ const SongFormDialog = ({
     return regex.test(url);
   };
 
+  // Commit the current tagInput: split by comma, trim, and add non-empty tags.
+  const commitTagInput = () => {
+    const newTags = tagInput
+      .split(",")
+      .map((t) => t.trim())
+      .filter((t) => t !== "");
+    if (newTags.length > 0) {
+      setTags((prevTags) => [...prevTags, ...newTags]);
+    }
+    setTagInput("");
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // Commit any remaining tagInput before submitting.
+    if (tagInput.trim() !== "") {
+      commitTagInput();
+    }
     if (!selectedCollection || !title || !content) {
       setError("Please fill in all required fields.");
       setOpenSnackbar(true);
@@ -199,13 +214,12 @@ const SongFormDialog = ({
     const docData = {
       title,
       artist,
-      tags, // Already an array.
+      tags, // tags as an array
       content,
       youtube,
       order: parsedOrder,
       publishDate: firebase.firestore.Timestamp.now(),
       newFlag,
-      // Save the selected Tirthankar id.
       tirthankarId: selectedTirthankar,
     };
     if (mode === "edit" && initialData?.id) {
@@ -311,7 +325,7 @@ const SongFormDialog = ({
                 </Select>
               </FormControl>
             </Grid>
-            {/* Tags (combining suggestions from both collections) */}
+            {/* Tags – separate tags by comma */}
             <Grid item xs={12} md={6}>
               <Autocomplete
                 multiple
@@ -319,16 +333,60 @@ const SongFormDialog = ({
                 options={combinedTagSuggestions}
                 value={tags}
                 onChange={(event, newValue) => setTags(newValue)}
-                inputValue={tagsInputValue}
-                onInputChange={(event, newInputValue) =>
-                  setTagsInputValue(newInputValue)
-                }
+                inputValue={tagInput}
+                onInputChange={(event, newInputValue) => {
+                  // Automatically commit tags when comma is typed (before input changes)
+                  if (newInputValue.endsWith(",")) {
+                    const newTags = newInputValue
+                      .split(",")
+                      .map((t) => t.trim().replace(/,/g, "")) // Remove any commas and trim
+                      .filter((t) => t !== "");
+
+                    if (newTags.length > 0) {
+                      setTags((prev) => [...prev, ...newTags]);
+                      setTagInput(""); // Clear input after commit
+                      return;
+                    }
+                  }
+                  setTagInput(newInputValue);
+                }}
+                filterOptions={(options, params) => {
+                  const filtered = filter(options, params);
+                  const inputValue = params.inputValue.trim();
+
+                  // Add custom option for raw input (excluding last comma)
+                  if (
+                    inputValue &&
+                    !filtered.includes(inputValue.replace(/,/g, ""))
+                  ) {
+                    filtered.push(inputValue.replace(/,/g, ""));
+                  }
+
+                  return filtered;
+                }}
                 renderInput={(params) => (
                   <TextField
                     {...params}
                     label="Tags"
                     variant="outlined"
                     fullWidth
+                    helperText="Separate tags with commas"
+                    onKeyDown={(e) => {
+                      // Commit tag when pressing Enter or Tab
+                      if (e.key === "Enter" || e.key === "Tab") {
+                        if (tagInput.trim()) {
+                          setTags((prev) => [...prev, tagInput.trim()]);
+                          setTagInput("");
+                        }
+                        e.preventDefault();
+                      }
+                    }}
+                    onBlur={() => {
+                      if (tagInput.trim()) {
+                        setTags((prev) => [...prev, tagInput.trim()]);
+                        setTagInput("");
+                      }
+                    }}
                   />
                 )}
               />
