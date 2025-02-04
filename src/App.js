@@ -1,6 +1,5 @@
 import CollectionsIcon from "@mui/icons-material/Collections";
 import EditIcon from "@mui/icons-material/Edit";
-import EmojiObjectsIcon from "@mui/icons-material/EmojiObjects";
 import LabelIcon from "@mui/icons-material/Label";
 import LibraryMusicIcon from "@mui/icons-material/LibraryMusic";
 import MenuIcon from "@mui/icons-material/Menu";
@@ -27,9 +26,7 @@ import {
 import { onAuthStateChanged } from "firebase/auth";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
-import { auth } from "./firebase"; // Import Firebase auth
-
-import ArtistForm from "./ArtistForm";
+import { auth } from "./firebase";
 import CollectionForm from "./CollectionForm";
 import Form from "./Form";
 import SongList from "./ListSong";
@@ -228,7 +225,9 @@ const App = ({ darkMode, toggleTheme }) => {
           />
           <Route
             path="/artist-form"
-            element={user ? <ArtistForm /> : <Login />}
+            element={
+              user ? <CollectionForm collectionName="artists" /> : <Login />
+            }
           />
           <Route
             path="/collection"
