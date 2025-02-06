@@ -46,6 +46,7 @@ const SongFormDialog = ({
   const [content, setContent] = useState(initialData?.content || "");
   const [youtube, setYoutube] = useState(initialData?.youtube || "");
   const [newFlag, setNewFlag] = useState(initialData?.newFlag || false);
+  const [newTts, setNewTts] = useState(initialData?.newTts || false);
   const [selectedCollection, setSelectedCollection] = useState(
     collectionName || "lyrics"
   );
@@ -263,6 +264,7 @@ const SongFormDialog = ({
       order: parsedOrder,
       publishDate: firebase.firestore.Timestamp.now(),
       newFlag,
+      newTts,
       tirthankarId: selectedTirthankar,
     };
     if (mode === "edit" && initialData?.id) {
@@ -476,7 +478,7 @@ const SongFormDialog = ({
               />
             </Grid>
             {/* New flag */}
-            <Grid item xs={12}>
+            <Grid item xs={6}>
               <FormControlLabel
                 control={
                   <Checkbox
@@ -485,6 +487,17 @@ const SongFormDialog = ({
                   />
                 }
                 label="New"
+              />
+            </Grid>
+            <Grid item xs={6}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={newTts}
+                    onChange={(e) => setNewTts(e.target.checked)}
+                  />
+                }
+                label="TTS"
               />
             </Grid>
           </Grid>
