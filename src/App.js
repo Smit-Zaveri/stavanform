@@ -27,8 +27,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { auth } from "./firebase";
-import CollectionForm from "./CollectionForm";
-import Form from "./Form";
+import CollectionForm from "./components/CollectionForm";
 import SongList from "./ListSong";
 import Login from "./Login";
 import ResetPassword from "./ResetPassword";
@@ -74,17 +73,16 @@ const App = ({ darkMode, toggleTheme }) => {
 
   const navItems = useMemo(
     () => [
-      { label: "Form", icon: <EditIcon />, path: "/" },
-      { label: "Artist Form", icon: <MusicNoteIcon />, path: "/artist-form" },
-      { label: "Collection", icon: <CollectionsIcon />, path: "/collection" },
-      { label: "Tirth", icon: <CollectionsIcon />, path: "/tirth" },
-      { label: "Tirtankar", icon: <LibraryMusicIcon />, path: "/tirtankar" },
-      { label: "Tag", icon: <LabelIcon />, path: "/tag" },
       {
         label: "List Song",
         icon: <PlaylistAddCheckIcon />,
         path: "/list-song/lyrics",
       },
+      { label: "Artist Form", icon: <MusicNoteIcon />, path: "/artist-form" },
+      { label: "Collection", icon: <CollectionsIcon />, path: "/collection" },
+      { label: "Tirth", icon: <CollectionsIcon />, path: "/tirth" },
+      { label: "Tirtankar", icon: <LibraryMusicIcon />, path: "/tirtankar" },
+      { label: "Tag", icon: <LabelIcon />, path: "/tag" },
       {
         label: "Suggested Song",
         icon: <PlaylistAddCheckIcon />,
@@ -216,7 +214,6 @@ const App = ({ darkMode, toggleTheme }) => {
       >
         <Toolbar />
         <Routes>
-          <Route path="/" element={user ? <Form /> : <Login />} />
           <Route
             path="/tag"
             element={

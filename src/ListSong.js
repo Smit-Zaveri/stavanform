@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { SongFormDialog } from "./SongFormDialog";
+import { SongFormDialog } from "./components/SongFormDialog";
 import {
   Box,
   Button,

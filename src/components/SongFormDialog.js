@@ -23,7 +23,7 @@ import {
 } from "@mui/material";
 import firebase from "firebase/compat/app";
 import "firebase/firestore";
-import { firestore } from "./firebase";
+import { firestore } from "../firebase";
 
 const filter = createFilterOptions();
 
@@ -128,36 +128,37 @@ const SongFormDialog = ({
 
   // Updated useEffect to handle Tirthankar selection and tag management
   // 1. Update Tirthankar list fetch effect (remove selectedTirthankar dependency)
-  useEffect(() => {
-    const fetchTirthankarList = async () => {
-      try {
-        const snapshot = await firestore
-          .collection("tirtankar")
-          .orderBy("numbering")
-          .get();
-        const tirthData = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setTirthankarList(tirthData);
+ // Update dependency array to include selectedTirthankar
+useEffect(() => {
+  const fetchTirthankarList = async () => {
+    try {
+      const snapshot = await firestore
+        .collection("tirtankar")
+        .orderBy("numbering")
+        .get();
+      const tirthData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setTirthankarList(tirthData);
 
-        // Only set initial Tirthankar if not already set
-        if (initialData?.tags && !selectedTirthankar) {
-          const initialTagsLower = initialData.tags.map((tag) =>
-            tag.toLowerCase()
-          );
-          const matching = tirthData.find((t) =>
-            initialTagsLower.includes(t.name.toLowerCase())
-          );
-          // Use functional update to prevent overwriting user changes
-          setSelectedTirthankar((current) => current || matching?.id || "");
-        }
-      } catch (err) {
-        console.error("Error fetching Tirthankar list:", err);
+      // Only set initial Tirthankar if not already set
+      if (initialData?.tags && !selectedTirthankar) {
+        const initialTagsLower = initialData.tags.map((tag) =>
+          tag.toLowerCase()
+        );
+        const matching = tirthData.find((t) =>
+          initialTagsLower.includes(t.name.toLowerCase())
+        );
+        // Use functional update to prevent overwriting user changes
+        setSelectedTirthankar((current) => current || matching?.id || "");
       }
-    };
-    fetchTirthankarList();
-  }, [initialData?.tags]); // Only depends on initial tags
+    } catch (err) {
+      console.error("Error fetching Tirthankar list:", err);
+    }
+  };
+  fetchTirthankarList();
+}, [initialData?.tags, selectedTirthankar]);// Only depends on initial tags
 
   // 2. Enhanced tag cleanup effect
   useEffect(() => {
