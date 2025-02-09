@@ -14,7 +14,6 @@ import {
   IconButton,
   InputLabel,
   MenuItem,
-  Pagination,
   Paper,
   Select,
   LinearProgress,
@@ -26,17 +25,21 @@ import {
   TableRow,
   TextField,
   Typography,
+  TablePagination,
+  CircularProgress,
+  Snackbar,
+  Alert,
+  Fab,
 } from "@mui/material";
 import { Delete, FileUpload, Save, Add } from "@mui/icons-material";
+import ArrowUpward from "@mui/icons-material/ArrowUpward";
 import Papa from "papaparse";
 import firebase from "firebase/compat/app";
 import "firebase/firestore";
 import { firestore } from "./firebase";
 
-// Items per page for pagination
-const itemsPerPage = 10;
-
 const SongList = () => {
+  // State declarations
   const [songs, setSongs] = useState([]);
   const [artistOptions, setArtistOptions] = useState([]);
   const [selectedSongIds, setSelectedSongIds] = useState([]);
@@ -45,14 +48,19 @@ const SongList = () => {
   const [loading, setLoading] = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const [selectedCollection, setSelectedCollection] = useState("");
-  const [page, setPage] = useState(1);
+  // For TablePagination, page is zero-indexed.
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [songFormOpen, setSongFormOpen] = useState(false);
   const [songFormMode, setSongFormMode] = useState("new"); // "new" or "edit"
   const [songFormInitialData, setSongFormInitialData] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [resolveDialogOpen, setResolveDialogOpen] = useState(false);
-  const [deleteId, setDeleteId] = useState("");
   const [resolveReportId, setResolveReportId] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [importMessage, setImportMessage] = useState("");
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [showGoToTop, setShowGoToTop] = useState(false);
 
   const navigate = useNavigate();
   const { collectionName } = useParams();
@@ -66,10 +74,9 @@ const SongList = () => {
     );
   };
 
-  // Toggle selection for all songs in the current filtered list (or current page)
+  // Toggle selection for all songs in the current page
   const handleSelectAll = (event) => {
     if (event.target.checked) {
-      // Select all songs that are visible in the current page
       const newSelecteds = paginatedSongs.map((song) => song.id);
       setSelectedSongIds(newSelecteds);
     } else {
@@ -81,9 +88,7 @@ const SongList = () => {
   const fetchStaticData = useCallback(async () => {
     try {
       const artistSnapshot = await firestore.collection("artists").get();
-      const collectionSnapshot = await firestore
-        .collection("collections")
-        .get();
+      const collectionSnapshot = await firestore.collection("collections").get();
       setArtistOptions(
         artistSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
       );
@@ -101,9 +106,7 @@ const SongList = () => {
       const songSnapshot = await firestore.collection(selectedCollection).get();
       const reportSnapshot = await firestore.collection("reports").get();
       setSongs(songSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
-      setReports(
-        reportSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
-      );
+      setReports(reportSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
     } catch (error) {
       console.error("Error fetching dynamic data:", error);
     }
@@ -127,11 +130,26 @@ const SongList = () => {
     }
   }, [selectedCollection, fetchStaticData, fetchDynamicData]);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.pageYOffset > 200) {
+        setShowGoToTop(true);
+      } else {
+        setShowGoToTop(false);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   // --- Sorting songs ---
-  // First, move songs that have a report to the top.
-  // Then, if both songs have an order, sort by order ascending.
-  // If one has an order and the other does not, the one with order comes first.
-  // If neither has order, sort alphabetically by title.
+  // - Songs with a report come first.
+  // - Then sorted by order if available; otherwise alphabetically by title.
   const sortedSongs = [...songs].sort((a, b) => {
     const aReported = reports.some((r) => r.lyricsId === a.id);
     const bReported = reports.some((r) => r.lyricsId === b.id);
@@ -149,7 +167,7 @@ const SongList = () => {
     }
   });
 
-  // Filter by search input (by title or tag)
+  // Filter songs by search input (title or tags)
   const filteredSongs = sortedSongs.filter(
     (song) =>
       song.title.toLowerCase().includes(searchInput.toLowerCase()) ||
@@ -159,12 +177,13 @@ const SongList = () => {
         ))
   );
 
+  // --- Pagination: calculate the songs to display ---
   const paginatedSongs = filteredSongs.slice(
-    (page - 1) * itemsPerPage,
-    page * itemsPerPage
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
   );
 
-  // Determine if any of the displayed songs have a report.
+  // Check if any song (in the filtered list) has a report.
   const hasAnyReport = filteredSongs.some((song) =>
     reports.some((r) => r.lyricsId === song.id)
   );
@@ -204,10 +223,12 @@ const SongList = () => {
     document.body.removeChild(link);
   };
 
-  // CSV Import
+  // CSV Import with progress
   const handleImport = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    setImporting(true);
+    setImportMessage("Starting import...");
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
@@ -216,7 +237,9 @@ const SongList = () => {
           const collectionRef = firestore.collection(selectedCollection);
           const incomingSongs = results.data;
           let successCount = 0;
-          for (const row of incomingSongs) {
+          for (let i = 0; i < incomingSongs.length; i++) {
+            const row = incomingSongs[i];
+            setImportMessage(`Importing: ${row.Title}`);
             const existing = await collectionRef
               .where("title", "==", row.Title)
               .where("artist", "==", row.Artist)
@@ -226,8 +249,8 @@ const SongList = () => {
                 title: row.Title,
                 artist: row.Artist,
                 tags:
-                  row.Tags?.split(",").map((tag) => tag.trim().toLowerCase()) ||
-                  [],
+                  row.Tags?.split(",")
+                    .map((tag) => tag.trim().toLowerCase()) || [],
                 order: row.Order ? Number(row.Order) : null,
                 youtube: row.YouTube,
                 publishDate: firebase.firestore.Timestamp.now(),
@@ -236,32 +259,38 @@ const SongList = () => {
               successCount++;
             }
           }
-          if (successCount > 0) {
-            alert(`Imported ${successCount} song(s) successfully.`);
-            await fetchDynamicData();
-          }
+          setImportMessage(`Successfully imported ${successCount} song(s).`);
+          await fetchDynamicData();
+          setSnackbarOpen(true);
         } catch (error) {
           console.error("Error during import:", error);
-          alert("An error occurred during import. Please try again.");
+          setImportMessage("Error during import. Please try again.");
+          setSnackbarOpen(true);
+        } finally {
+          setImporting(false);
         }
       },
       error: (err) => {
         console.error("CSV parsing error:", err);
+        setImportMessage("Error parsing CSV file. Please check the file format.");
         alert("Error parsing CSV file. Please check the file format.");
+        setImporting(false);
       },
     });
   };
 
-  // Delete song handlers
+  const handleCloseSnackbar = () => {
+    setSnackbarOpen(false);
+  };
+
   // Delete song handlers
   const handleDeleteClick = (id) => {
-    setSelectedSongIds([id]); // Set the selected song IDs to the current song ID
+    setSelectedSongIds([id]);
     setDeleteDialogOpen(true);
   };
 
   const confirmDelete = async () => {
     try {
-      // Loop through selected songs and delete each one
       const batch = firestore.batch();
       selectedSongIds.forEach((id) => {
         const docRef = firestore.collection(selectedCollection).doc(id);
@@ -269,11 +298,10 @@ const SongList = () => {
       });
       await batch.commit();
 
-      // Update local state: remove the deleted songs
       setSongs((prev) =>
         prev.filter((song) => !selectedSongIds.includes(song.id))
       );
-      setSelectedSongIds([]); // Clear selection after deletion
+      setSelectedSongIds([]);
       setDeleteDialogOpen(false);
     } catch (error) {
       console.error("Error deleting documents:", error);
@@ -299,25 +327,24 @@ const SongList = () => {
     }
   };
 
-  // Open the song form dialog in "edit" mode with the song’s data.
+  // Open the song form dialog for editing
   const handleEditClick = (song) => {
     setSongFormMode("edit");
     setSongFormInitialData(song);
     setSongFormOpen(true);
   };
 
-  // Open the song form dialog in "new" mode.
+  // Open the song form dialog for a new song
   const handleAddNewClick = () => {
     setSongFormMode("new");
     setSongFormInitialData(null);
     setSongFormOpen(true);
   };
 
-  // After form submission (either add or edit) refresh the list.
+  // After form submission (either add or edit), refresh the list.
   const handleFormSubmit = async (data, mode) => {
     try {
       let collectionRef;
-      // Determine the collection reference.
       if (selectedCollection === "lyrics") {
         collectionRef = firestore.collection("lyrics");
       } else {
@@ -327,9 +354,7 @@ const SongList = () => {
       }
       if (mode === "new") {
         // (Optional) Check if title already exists across collections…
-        const collectionsSnapshot = await firestore
-          .collection("collections")
-          .get();
+        const collectionsSnapshot = await firestore.collection("collections").get();
         let titleExists = false;
         for (const doc of collectionsSnapshot.docs) {
           const collName = doc.data().name;
@@ -358,10 +383,20 @@ const SongList = () => {
     }
   };
 
+  // Handlers for TablePagination
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   if (loading) return <LinearProgress />;
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4, px: { xs: 2, sm: 4 } }}>
       <Box sx={{ mb: 3 }}>
         <Typography variant="h4" gutterBottom>
           Song Management
@@ -372,6 +407,7 @@ const SongList = () => {
       <Box
         sx={{
           display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
           flexWrap: "wrap",
           gap: 2,
           mb: 3,
@@ -394,13 +430,18 @@ const SongList = () => {
               ))}
           </Select>
         </FormControl>
+
         <TextField
           label="Search songs or tags"
           variant="outlined"
           value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
+          onChange={(e) => {
+            setSearchInput(e.target.value);
+            setPage(0);
+          }}
           sx={{ flexGrow: 1, minWidth: 200 }}
         />
+
         <Button variant="contained" startIcon={<Save />} onClick={exportData}>
           Export Songs
         </Button>
@@ -412,11 +453,7 @@ const SongList = () => {
           Import Songs
           <input type="file" accept=".csv" hidden onChange={handleImport} />
         </Button>
-        <Button
-          variant="contained"
-          startIcon={<Add />}
-          onClick={handleAddNewClick}
-        >
+        <Button variant="contained" startIcon={<Add />} onClick={handleAddNewClick}>
           Add New Song
         </Button>
         {selectedSongIds.length > 0 && (
@@ -430,118 +467,139 @@ const SongList = () => {
         )}
       </Box>
 
-      {/* Songs Table */}
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell padding="checkbox">
-                <Checkbox
-                  indeterminate={
-                    selectedSongIds.length > 0 &&
-                    selectedSongIds.length < paginatedSongs.length
-                  }
-                  checked={
-                    paginatedSongs.length > 0 &&
-                    selectedSongIds.length === paginatedSongs.length
-                  }
-                  onChange={handleSelectAll}
-                />
-              </TableCell>
-              {hasAnyReport && <TableCell>Report Text</TableCell>}
-              <TableCell>Order</TableCell>
-              <TableCell>Title</TableCell>
-              <TableCell>Tags</TableCell>
-              <TableCell>Actions</TableCell>
-            </TableRow>
-          </TableHead>
+      {/* Optionally display a loading indicator */}
+      {importing && (
+        <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+          <CircularProgress size={20} />
+          <Typography variant="body2" sx={{ ml: 1 }}>
+            {importMessage}
+          </Typography>
+        </Box>
+      )}
 
-          <TableBody>
-            {paginatedSongs.map((song) => {
-              const report = reports.find((r) => r.lyricsId === song.id);
-              const isItemSelected = selectedSongIds.includes(song.id);
-              return (
-                <TableRow
-                  key={song.id}
-                  sx={{ backgroundColor: report ? "red" : "inherit" }}
-                >
-                  <TableCell padding="checkbox">
-                    <Checkbox
-                      checked={isItemSelected}
-                      onChange={() => handleSelectSong(song.id)}
-                    />
-                  </TableCell>
-                  {hasAnyReport && (
-                    <TableCell>
-                      {report ? report.reportText || "—" : "—"}
+      {/* Table with horizontal scroll */}
+      <Box sx={{ overflowX: "auto" }}>
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell padding="checkbox">
+                  <Checkbox
+                    indeterminate={
+                      selectedSongIds.length > 0 &&
+                      selectedSongIds.length < paginatedSongs.length
+                    }
+                    checked={
+                      paginatedSongs.length > 0 &&
+                      selectedSongIds.length === paginatedSongs.length
+                    }
+                    onChange={handleSelectAll}
+                  />
+                </TableCell>
+                {hasAnyReport && <TableCell>Report Text</TableCell>}
+                <TableCell>Order</TableCell>
+                <TableCell>Title</TableCell>
+                <TableCell>Tags</TableCell>
+                <TableCell>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {paginatedSongs.map((song) => {
+                const report = reports.find((r) => r.lyricsId === song.id);
+                const isItemSelected = selectedSongIds.includes(song.id);
+                return (
+                  <TableRow
+                    key={song.id}
+                    sx={{
+                      backgroundColor: report
+                        ? "rgba(255,0,0,0.1)"
+                        : "inherit",
+                    }}
+                  >
+                    <TableCell padding="checkbox">
+                      <Checkbox
+                        checked={isItemSelected}
+                        onChange={() => handleSelectSong(song.id)}
+                      />
                     </TableCell>
-                  )}
-                  <TableCell>{song.order != null ? song.order : "—"}</TableCell>
-                  <TableCell>
-                    <Typography
-                      variant="subtitle1"
-                      sx={{
-                        maxWidth: "200px",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                    >
-                      {song.title}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        maxWidth: "150px",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                    >
-                      {song.tags ? song.tags.join(", ") : "—"}
-                    </Typography>
-                  </TableCell>
-                  <TableCell sx={{ display: "flex", gap: 1 }}>
-                    <Button
-                      variant="contained"
-                      size="small"
-                      onClick={() => handleEditClick(song)}
-                    >
-                      Edit
-                    </Button>
-                    <IconButton onClick={() => handleDeleteClick(song.id)}>
-                      <Delete />
-                    </IconButton>
-                    {report && (
+                    {hasAnyReport && (
+                      <TableCell>
+                        {report ? report.reportText || "—" : "—"}
+                      </TableCell>
+                    )}
+                    <TableCell>{song.order != null ? song.order : "—"}</TableCell>
+                    <TableCell>
+                      <Typography
+                        variant="subtitle1"
+                        sx={{
+                          maxWidth: "200px",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {song.title}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          maxWidth: "150px",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {song.tags ? song.tags.join(", ") : "—"}
+                      </Typography>
+                    </TableCell>
+                    <TableCell sx={{ display: "flex", gap: 1 }}>
                       <Button
                         variant="contained"
                         size="small"
-                        onClick={() => handleResolveClick(report.id)}
+                        onClick={() => handleEditClick(song)}
                       >
-                        Resolve
+                        Edit
                       </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      {/* Pagination */}
-      <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
-        <Pagination
-          count={Math.ceil(filteredSongs.length / itemsPerPage)}
-          page={page}
-          onChange={(e, value) => setPage(value)}
-          color="primary"
-        />
+                      <IconButton onClick={() => handleDeleteClick(song.id)}>
+                        <Delete />
+                      </IconButton>
+                      {report && (
+                        <Button
+                          variant="contained"
+                          size="small"
+                          onClick={() => handleResolveClick(report.id)}
+                        >
+                          Resolve
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </TableContainer>
       </Box>
 
-      {/* Song Form Dialog (for new and edit) */}
+      {/* TablePagination below the table */}
+      <TablePagination
+        rowsPerPageOptions={[
+          5,
+          10,
+          25,
+          { label: "All", value: filteredSongs.length },
+        ]}
+        component="div"
+        count={filteredSongs.length}
+        rowsPerPage={rowsPerPage}
+        page={page}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+      />
+
+      {/* Song Form Dialog */}
       {songFormOpen && (
         <SongFormDialog
           open={songFormOpen}
@@ -555,10 +613,7 @@ const SongList = () => {
       )}
 
       {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
-      >
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
           <Typography>Are you sure you want to delete this song?</Typography>
@@ -589,6 +644,27 @@ const SongList = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={importMessage.includes("Error") ? "error" : "success"} sx={{ width: '100%' }}>
+          {importMessage}
+        </Alert>
+      </Snackbar>
+
+      {showGoToTop && (
+        <Fab
+          color="primary"
+          size="small"
+          onClick={scrollToTop}
+          sx={{ position: "fixed", bottom: 16, right: 16, zIndex: 1000 }}
+        >
+          <ArrowUpward />
+        </Fab>
+      )}
     </Container>
   );
 };
