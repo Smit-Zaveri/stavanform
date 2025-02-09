@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { createFilterOptions } from "@mui/material/Autocomplete";
 import { useNavigate } from "react-router-dom";
 import {
   Alert,
@@ -24,8 +23,7 @@ import {
 import firebase from "firebase/compat/app";
 import "firebase/firestore";
 import { firestore } from "../firebase";
-
-const filter = createFilterOptions();
+import TagsInput from "./FormComponents/TagsInput";
 
 const SongFormDialog = ({
   open,
@@ -371,70 +369,14 @@ useEffect(() => {
                 </Select>
               </FormControl>
             </Grid>
-            {/* Tags – separate tags by comma */}
+            {/* Tags Input */}
             <Grid item xs={12} md={6}>
-              <Autocomplete
-                multiple
-                freeSolo
-                options={combinedTagSuggestions}
-                value={tags}
-                onChange={(event, newValue) => setTags(newValue)}
-                inputValue={tagInput}
-                onInputChange={(event, newInputValue) => {
-                  // Automatically commit tags when comma is typed (before input changes)
-                  if (newInputValue.endsWith(",")) {
-                    const newTags = newInputValue
-                      .split(",")
-                      .map((t) => t.trim().replace(/,/g, "")) // Remove any commas and trim
-                      .filter((t) => t !== "");
-
-                    if (newTags.length > 0) {
-                      setTags((prev) => [...prev, ...newTags]);
-                      setTagInput(""); // Clear input after commit
-                      return;
-                    }
-                  }
-                  setTagInput(newInputValue);
-                }}
-                filterOptions={(options, params) => {
-                  const filtered = filter(options, params);
-                  const inputValue = params.inputValue.trim();
-
-                  // Add custom option for raw input (excluding last comma)
-                  if (
-                    inputValue &&
-                    !filtered.includes(inputValue.replace(/,/g, ""))
-                  ) {
-                    filtered.push(inputValue.replace(/,/g, ""));
-                  }
-
-                  return filtered;
-                }}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Tags"
-                    variant="outlined"
-                    fullWidth
-                    helperText="Separate tags with commas"
-                    onKeyDown={(e) => {
-                      // Commit tag when pressing Enter or Tab
-                      if (e.key === "Enter" || e.key === "Tab") {
-                        if (tagInput.trim()) {
-                          setTags((prev) => [...prev, tagInput.trim()]);
-                          setTagInput("");
-                        }
-                        e.preventDefault();
-                      }
-                    }}
-                    onBlur={() => {
-                      if (tagInput.trim()) {
-                        setTags((prev) => [...prev, tagInput.trim()]);
-                        setTagInput("");
-                      }
-                    }}
-                  />
-                )}
+              <TagsInput
+                tags={tags}
+                setTags={setTags}
+                tagInput={tagInput}
+                setTagInput={setTagInput}
+                combinedTagSuggestions={combinedTagSuggestions}
               />
             </Grid>
             {/* YouTube */}

@@ -22,7 +22,6 @@ import { firestore } from "./firebase";
 const ListSong = () => {
   // State declarations
   const [songs, setSongs] = useState([]);
-  const [artistOptions, setArtistOptions] = useState([]);
   const [selectedSongIds, setSelectedSongIds] = useState([]);
   const [reports, setReports] = useState([]);
   const [collectionList, setCollectionList] = useState([]);
@@ -48,9 +47,8 @@ const ListSong = () => {
   // Data fetching
   const fetchStaticData = useCallback(async () => {
     try {
-      const artistSnapshot = await firestore.collection("artists").get();
+      await firestore.collection("artists").get(); // Remove unused variable
       const collectionSnapshot = await firestore.collection("collections").get();
-      setArtistOptions(artistSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
       setCollectionList(collectionSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
     } catch (error) {
       console.error("Error fetching static data:", error);
