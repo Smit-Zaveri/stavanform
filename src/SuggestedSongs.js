@@ -1,46 +1,163 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Alert,
   AppBar,
   Box,
   Button,
+  Card,
+  CardActions,
+  CardContent,
   CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
-  Divider,
-  Drawer,
   Grid,
   IconButton,
   Modal,
   Paper,
   Snackbar,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TablePagination,
-  TableRow,
+  Tab,
+  Tabs,
   TextField,
   Toolbar,
   Typography,
   useMediaQuery,
   Slide,
+  TablePagination,
+  InputAdornment,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
-import { Delete, Edit, Sort, Refresh } from "@mui/icons-material";
-import InfoIcon from "@mui/icons-material/Info";
+import {
+  Delete,
+  Edit,
+  Refresh,
+  Info as InfoIcon,
+  Close,
+  ArrowUpward,
+  ArrowDownward,
+} from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { firestore } from "./firebase";
 
-// Transition for Modal and Dialogs
+// --- Custom Hook for Debouncing ---
+function useDebounce(value, delay) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+  return debouncedValue;
+}
+
+// --- Transition for Modal and Dialogs ---
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
 
+// --- Collections Tabs Component ---
+const CollectionsTabs = ({ collections, selectedCollection, onSelectCollection }) => (
+  <Tabs
+    value={selectedCollection}
+    onChange={(e, newValue) => onSelectCollection(newValue)}
+    variant="scrollable"
+    scrollButtons="auto"
+    indicatorColor="primary"
+    textColor="primary"
+    sx={{ mb: 2 }}
+  >
+    {collections.map((collection) => (
+      <Tab key={collection} value={collection} label={collection} />
+    ))}
+  </Tabs>
+);
+
+// --- Suggestions Grid Component ---
+const SuggestionsGrid = ({ suggestions, onApply, onDelete, onOpenModal }) => (
+  <Grid container spacing={2}>
+    {suggestions.map((song) => (
+      <Grid item xs={12} sm={6} md={4} key={song.id}>
+        <Card elevation={3}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              {song.title}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {song.content.length > 100 ? song.content.substring(0, 100) + "..." : song.content}
+            </Typography>
+          </CardContent>
+          <CardActions>
+            <Button size="small" startIcon={<Edit />} onClick={() => onApply(song)}>
+              Apply
+            </Button>
+            <Button size="small" startIcon={<Delete />} onClick={() => onDelete(song)} color="error">
+              Delete
+            </Button>
+            <Button size="small" startIcon={<InfoIcon />} onClick={() => onOpenModal(song)}>
+              Info
+            </Button>
+          </CardActions>
+        </Card>
+      </Grid>
+    ))}
+  </Grid>
+);
+
+// --- Delete Confirmation Dialog ---
+const DeleteDialog = ({ open, onCancel, onConfirm, suggestionToDelete }) => (
+  <Dialog open={open} onClose={onCancel} TransitionComponent={Transition}>
+    <DialogTitle>Delete Suggestion</DialogTitle>
+    <DialogContent>
+      <DialogContentText>
+        Are you sure you want to delete the suggestion for "{suggestionToDelete?.title}"?
+      </DialogContentText>
+    </DialogContent>
+    <DialogActions>
+      <Button onClick={onCancel}>Cancel</Button>
+      <Button onClick={onConfirm} color="error">
+        Delete
+      </Button>
+    </DialogActions>
+  </Dialog>
+);
+
+// --- Song Modal Component ---
+const SongModal = ({ open, onClose, selectedSong }) => (
+  <Modal open={open} onClose={onClose} closeAfterTransition>
+    <Slide direction="up" in={open} mountOnEnter unmountOnExit>
+      <Box
+        sx={{
+          p: 4,
+          margin: "auto",
+          marginTop: 5,
+          width: "90%",
+          maxWidth: 600,
+          maxHeight: "80vh",
+          overflowY: "auto",
+          backgroundColor: "background.paper",
+          borderRadius: 2,
+          boxShadow: 24,
+        }}
+      >
+        <Typography variant="h5" gutterBottom>
+          {selectedSong.title}
+        </Typography>
+        <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
+          {selectedSong.content}
+        </Typography>
+        <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
+          <Button onClick={onClose} variant="contained">
+            Close
+          </Button>
+        </Box>
+      </Box>
+    </Slide>
+  </Modal>
+);
+
+// --- Main Component ---
 const SuggestedSongs = () => {
   const [loading, setLoading] = useState(true);
   const [groupedSuggestions, setGroupedSuggestions] = useState({});
@@ -49,21 +166,23 @@ const SuggestedSongs = () => {
   const [openModal, setOpenModal] = useState(false);
   const [selectedSong, setSelectedSong] = useState(null);
   const [suggestionToDelete, setSuggestionToDelete] = useState(null);
-  const [selectedCollection, setSelectedCollection] = useState(null);
+  const [selectedCollection, setSelectedCollection] = useState("");
   const [snackOpen, setSnackOpen] = useState(false);
   const [snackMessage, setSnackMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [rowsPerPage, setRowsPerPage] = useState(6);
   const [sortOrder, setSortOrder] = useState("asc");
 
   const navigate = useNavigate();
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
-  const [drawerOpen, setDrawerOpen] = useState(false);
 
-  // Function to fetch suggestions
-  const fetchSuggestions = async () => {
+  // Debounced search term
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
+  // --- Fetch Suggestions from Firestore ---
+  const fetchSuggestions = useCallback(async () => {
     setLoading(true);
     try {
       const snapshot = await firestore.collection("suggestions_new").get();
@@ -81,20 +200,22 @@ const SuggestedSongs = () => {
       }, {});
 
       setGroupedSuggestions(grouped);
-      if (Object.keys(grouped).length > 0) {
-        setSelectedCollection(Object.keys(grouped)[0]);
+      const collections = Object.keys(grouped);
+      if (collections.length > 0) {
+        setSelectedCollection(collections[0]);
       }
     } catch (err) {
       setError("Failed to fetch suggestions.");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchSuggestions();
-  }, []);
+  }, [fetchSuggestions]);
 
+  // --- Handlers ---
   const handleApplySuggestion = (suggestion) => {
     navigate("/", { state: { suggestion } });
   };
@@ -117,15 +238,12 @@ const SuggestedSongs = () => {
   const handleConfirmDelete = async () => {
     if (!suggestionToDelete) return;
     try {
-      await firestore
-        .collection("suggestions_new")
-        .doc(suggestionToDelete.id)
-        .delete();
+      await firestore.collection("suggestions_new").doc(suggestionToDelete.id).delete();
       setGroupedSuggestions((prev) => {
         const updated = { ...prev };
-        updated[suggestionToDelete.collection] = updated[
-          suggestionToDelete.collection
-        ].filter((s) => s.id !== suggestionToDelete.id);
+        updated[suggestionToDelete.collection] = updated[suggestionToDelete.collection].filter(
+          (s) => s.id !== suggestionToDelete.id
+        );
         if (!updated[suggestionToDelete.collection].length) {
           delete updated[suggestionToDelete.collection];
         }
@@ -149,26 +267,32 @@ const SuggestedSongs = () => {
 
   const handleSearchChange = (event) => {
     setSearchTerm(event.target.value);
-    setPage(0); // Reset to first page on search
+    setPage(0);
   };
 
-  // Sorting suggestions by title
-  const sortedSuggestions = (suggestions) => {
-    return suggestions.sort((a, b) => {
+  const toggleSortOrder = () => {
+    setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+  };
+
+  // --- Filter and Sort Suggestions ---
+  const filteredSuggestions = useMemo(() => {
+    if (!selectedCollection) return [];
+    const suggestions = groupedSuggestions[selectedCollection] || [];
+    const filtered = suggestions.filter((song) =>
+      song.title.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+    );
+    return filtered.sort((a, b) => {
       if (a.title < b.title) return sortOrder === "asc" ? -1 : 1;
       if (a.title > b.title) return sortOrder === "asc" ? 1 : -1;
       return 0;
     });
-  };
+  }, [debouncedSearchTerm, groupedSuggestions, selectedCollection, sortOrder]);
 
-  // Filter suggestions based on search and then sort them
-  const filteredSuggestions = useMemo(() => {
-    if (!selectedCollection) return [];
-    const filtered = groupedSuggestions[selectedCollection].filter((song) =>
-      song.title.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    return sortedSuggestions(filtered);
-  }, [searchTerm, groupedSuggestions, selectedCollection, sortedSuggestions]);
+  // --- Pagination ---
+  const paginatedSuggestions = useMemo(() => {
+    const start = page * rowsPerPage;
+    return filteredSuggestions.slice(start, start + rowsPerPage);
+  }, [filteredSuggestions, page, rowsPerPage]);
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -179,95 +303,108 @@ const SuggestedSongs = () => {
     setPage(0);
   };
 
-  const toggleSortOrder = () => {
-    setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
-  };
+  if (loading)
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+        <CircularProgress />
+      </Box>
+    );
+  if (error)
+    return (
+      <Box sx={{ p: 2 }}>
+        <Typography color="error">{error}</Typography>
+      </Box>
+    );
 
-  const handleDrawerToggle = () => {
-    setDrawerOpen((prev) => !prev);
-  };
-
-  if (loading) return <LoadingSpinner />;
-  if (error) return <ErrorAlert error={error} />;
+  const collections = Object.keys(groupedSuggestions);
 
   return (
     <Box sx={{ flexGrow: 1 }}>
-      {/* AppBar Header */}
-      <AppBar position="static" elevation={0}>
+      {/* --- AppBar Header --- */}
+      <AppBar position="static" elevation={1}>
         <Toolbar>
-          {isSmallScreen && (
-            <IconButton
-              edge="start"
-              onClick={handleDrawerToggle}
-              sx={{ mr: 2 }}
-              aria-label="menu"
-            >
-              <Sort />
-            </IconButton>
-          )}
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
             Suggested Songs
           </Typography>
-          <Button
-            color="inherit"
-            onClick={fetchSuggestions}
-            startIcon={<Refresh />}
-          >
+          <Button color="inherit" onClick={fetchSuggestions} startIcon={<Refresh />}>
             Refresh
           </Button>
         </Toolbar>
       </AppBar>
 
-      <Grid container>
-        {/* Sidebar as Drawer for small screens or a persistent sidebar for larger screens */}
-        {isSmallScreen ? (
-          <Drawer
-            variant="temporary"
-            open={drawerOpen}
-            onClose={handleDrawerToggle}
-            ModalProps={{ keepMounted: true }}
-          >
-            <Sidebar
-              collections={Object.keys(groupedSuggestions)}
-              selectedCollection={selectedCollection}
-              onSelectCollection={(collection) => {
-                setSelectedCollection(collection);
-                setDrawerOpen(false);
-              }}
-            />
-          </Drawer>
-        ) : (
-          <Grid item xs={12} sm={3} md={2}>
-            <Sidebar
-              collections={Object.keys(groupedSuggestions)}
-              selectedCollection={selectedCollection}
-              onSelectCollection={setSelectedCollection}
-            />
-          </Grid>
+      <Box sx={{ p: 2 }}>
+        {/* --- Search and Sort Controls --- */}
+        <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+          <TextField
+            variant="outlined"
+            placeholder="Search suggestions..."
+            value={searchTerm}
+            onChange={handleSearchChange}
+            fullWidth
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  {searchTerm && (
+                    <IconButton onClick={() => setSearchTerm("")}>
+                      <Close />
+                    </IconButton>
+                  )}
+                </InputAdornment>
+              ),
+            }}
+          />
+          <IconButton onClick={toggleSortOrder} sx={{ ml: 1 }}>
+            {sortOrder === "asc" ? <ArrowUpward /> : <ArrowDownward />}
+          </IconButton>
+        </Box>
+
+        {/* --- Collections Tabs --- */}
+        {collections.length > 0 && (
+          <CollectionsTabs
+            collections={collections}
+            selectedCollection={selectedCollection}
+            onSelectCollection={(newCollection) => {
+              setSelectedCollection(newCollection);
+              setPage(0);
+            }}
+          />
         )}
 
-        {/* Main Content */}
-        <Grid item xs={12} sm={9} md={10}>
-          <MainContent
-            selectedCollection={selectedCollection}
-            groupedSuggestions={groupedSuggestions}
-            onApply={handleApplySuggestion}
-            onDelete={handleDeleteClick}
-            onOpenModal={handleOpenModal}
-            searchTerm={searchTerm}
-            onSearchChange={handleSearchChange}
-            filteredSuggestions={filteredSuggestions}
-            page={page}
-            rowsPerPage={rowsPerPage}
-            onChangePage={handleChangePage}
-            onChangeRowsPerPage={handleChangeRowsPerPage}
-            toggleSortOrder={toggleSortOrder}
-            sortOrder={sortOrder}
-          />
-        </Grid>
-      </Grid>
+        {/* --- Suggestions Grid --- */}
+        {selectedCollection ? (
+          filteredSuggestions.length > 0 ? (
+            <>
+              <SuggestionsGrid
+                suggestions={paginatedSuggestions}
+                onApply={handleApplySuggestion}
+                onDelete={handleDeleteClick}
+                onOpenModal={handleOpenModal}
+              />
+              <Paper sx={{ mt: 2 }}>
+                <TablePagination
+                  component="div"
+                  count={filteredSuggestions.length}
+                  page={page}
+                  onPageChange={handleChangePage}
+                  rowsPerPage={rowsPerPage}
+                  onRowsPerPageChange={handleChangeRowsPerPage}
+                  rowsPerPageOptions={[6, 12, 24]}
+                />
+              </Paper>
+            </>
+          ) : (
+            <Typography variant="body1" align="center" sx={{ mt: 4 }}>
+              No suggestions available in this collection.
+            </Typography>
+          )
+        ) : (
+          <Typography variant="body1" align="center" sx={{ mt: 4 }}>
+            Please select a collection.
+          </Typography>
+        )}
+      </Box>
 
-      {/* Delete Confirmation Dialog */}
+      {/* --- Delete Confirmation Dialog --- */}
       <DeleteDialog
         open={openDialog}
         onCancel={handleCancelDelete}
@@ -275,232 +412,25 @@ const SuggestedSongs = () => {
         suggestionToDelete={suggestionToDelete}
       />
 
-      {/* Full Song Content Modal */}
+      {/* --- Song Modal --- */}
       {selectedSong && (
-        <SongModal
-          open={openModal}
-          onClose={handleCloseModal}
-          selectedSong={selectedSong}
-        />
+        <SongModal open={openModal} onClose={handleCloseModal} selectedSong={selectedSong} />
       )}
 
-      {/* Snackbar for notifications */}
+      {/* --- Snackbar for Notifications --- */}
       <Snackbar
         open={snackOpen}
         autoHideDuration={6000}
         onClose={() => setSnackOpen(false)}
         message={snackMessage}
+        action={
+          <IconButton size="small" aria-label="close" color="inherit" onClick={() => setSnackOpen(false)}>
+            <Close fontSize="small" />
+          </IconButton>
+        }
       />
     </Box>
   );
 };
-
-// Sidebar Component
-const Sidebar = ({ collections, selectedCollection, onSelectCollection }) => (
-  <Box sx={{ width: { xs: 250, sm: 200 }, p: 2 }}>
-    <Typography variant="h6" gutterBottom>
-      Collections
-    </Typography>
-    <Divider sx={{ mb: 1 }} />
-    {collections.map((collectionName) => (
-      <Button
-        key={collectionName}
-        onClick={() => onSelectCollection(collectionName)}
-        fullWidth
-        sx={{
-          justifyContent: "flex-start",
-          mb: 1,
-          fontSize: { xs: "0.9rem", sm: "1rem" },
-          // No extra background or text colors added.
-        }}
-      >
-        {collectionName}
-      </Button>
-    ))}
-  </Box>
-);
-
-// Main Content Component
-const MainContent = ({
-  selectedCollection,
-  groupedSuggestions,
-  onApply,
-  onDelete,
-  onOpenModal,
-  searchTerm,
-  onSearchChange,
-  filteredSuggestions,
-  page,
-  rowsPerPage,
-  onChangePage,
-  onChangeRowsPerPage,
-  toggleSortOrder,
-  sortOrder,
-}) => (
-  <Box sx={{ p: 2 }}>
-    <Typography variant="h5" gutterBottom align="center" sx={{ mb: 3 }}>
-      {selectedCollection
-        ? `Collection: ${selectedCollection}`
-        : "Suggested Songs"}
-    </Typography>
-
-    <TextField
-      variant="outlined"
-      placeholder="Search..."
-      value={searchTerm}
-      onChange={onSearchChange}
-      fullWidth
-      sx={{ mb: 2 }}
-    />
-
-    {selectedCollection ? (
-      filteredSuggestions.length > 0 ? (
-        <CollectionTable
-          collectionName={selectedCollection}
-          suggestions={filteredSuggestions}
-          onApply={onApply}
-          onDelete={onDelete}
-          onOpenModal={onOpenModal}
-          page={page}
-          rowsPerPage={rowsPerPage}
-          onChangePage={onChangePage}
-          onChangeRowsPerPage={onChangeRowsPerPage}
-          toggleSortOrder={toggleSortOrder}
-          sortOrder={sortOrder}
-        />
-      ) : (
-        <Typography variant="body1" align="center">
-          No suggestions available for this collection.
-        </Typography>
-      )
-    ) : (
-      <Typography variant="body1" align="center">
-        Please select a collection.
-      </Typography>
-    )}
-  </Box>
-);
-
-// Collection Table Component
-const CollectionTable = ({
-  collectionName,
-  suggestions,
-  onApply,
-  onDelete,
-  onOpenModal,
-  page,
-  rowsPerPage,
-  onChangePage,
-  onChangeRowsPerPage,
-  toggleSortOrder,
-  sortOrder,
-}) => (
-  <TableContainer component={Paper}>
-    <Table>
-      <TableHead>
-        <TableRow>
-          <TableCell onClick={toggleSortOrder} sx={{ cursor: "pointer" }}>
-            Title {sortOrder === "asc" ? "▲" : "▼"}
-          </TableCell>
-          <TableCell align="right">Actions</TableCell>
-        </TableRow>
-      </TableHead>
-      <TableBody>
-        {suggestions
-          .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-          .map((song) => (
-            <TableRow key={song.id}>
-              <TableCell>{song.title}</TableCell>
-              <TableCell align="right">
-                <IconButton onClick={() => onApply(song)} aria-label="apply">
-                  <Edit />
-                </IconButton>
-                <IconButton onClick={() => onDelete(song)} aria-label="delete">
-                  <Delete />
-                </IconButton>
-                <IconButton onClick={() => onOpenModal(song)} aria-label="info">
-                  <InfoIcon />
-                </IconButton>
-              </TableCell>
-            </TableRow>
-          ))}
-      </TableBody>
-    </Table>
-    <TablePagination
-      rowsPerPageOptions={[5, 10, 25]}
-      component="div"
-      count={suggestions.length}
-      rowsPerPage={rowsPerPage}
-      page={page}
-      onPageChange={onChangePage}
-      onRowsPerPageChange={onChangeRowsPerPage}
-    />
-  </TableContainer>
-);
-
-// Loading Spinner Component
-const LoadingSpinner = () => (
-  <Box
-    sx={{
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      height: "100vh",
-    }}
-  >
-    <CircularProgress />
-  </Box>
-);
-
-// Error Alert Component
-const ErrorAlert = ({ error }) => (
-  <Box sx={{ p: 2 }}>
-    <Alert severity="error">{error}</Alert>
-  </Box>
-);
-
-// Delete Confirmation Dialog Component
-const DeleteDialog = ({ open, onCancel, onConfirm, suggestionToDelete }) => (
-  <Dialog open={open} onClose={onCancel} TransitionComponent={Transition}>
-    <DialogTitle>Delete Suggestion</DialogTitle>
-    <DialogContent>
-      <DialogContentText>
-        Are you sure you want to delete the suggestion for "
-        {suggestionToDelete?.title}"?
-      </DialogContentText>
-    </DialogContent>
-    <DialogActions>
-      <Button onClick={onCancel}>Cancel</Button>
-      <Button onClick={onConfirm}>Delete</Button>
-    </DialogActions>
-  </Dialog>
-);
-
-// Song Modal Component
-const SongModal = ({ open, onClose, selectedSong }) => (
-  <Modal open={open} onClose={onClose} closeAfterTransition>
-    <Slide direction="up" in={open} mountOnEnter unmountOnExit>
-      <Box
-        sx={{
-          p: 4,
-          margin: "auto",
-          mt: 5,
-          width: { xs: "90%", sm: "70%", md: "50%" },
-          maxHeight: "80vh",
-          overflowY: "auto",
-          outline: "none",
-        }}
-      >
-        <Typography variant="h5" gutterBottom>
-          {selectedSong.title}
-        </Typography>
-        <Typography variant="body1">{selectedSong.content}</Typography>
-        <Box sx={{ textAlign: "right", mt: 2 }}>
-          <Button onClick={onClose}>Close</Button>
-        </Box>
-      </Box>
-    </Slide>
-  </Modal>
-);
 
 export default SuggestedSongs;

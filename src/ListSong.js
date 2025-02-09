@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { SongFormDialog } from "./components/SongFormDialog";
 import SongTable from "./components/TableComponents/SongTable";
 import SongControls from "./components/TableComponents/SongControls";
@@ -43,6 +43,7 @@ const ListSong = () => {
 
   const navigate = useNavigate();
   const { collectionName } = useParams();
+  const location = useLocation();
 
   // Data fetching
   const fetchStaticData = useCallback(async () => {
@@ -69,7 +70,20 @@ const ListSong = () => {
   // Effects
   useEffect(() => {
     if (collectionName) setSelectedCollection(collectionName);
-  }, [collectionName]);
+    
+    // Refresh if navigated from suggestion application
+    if (location.state?.refresh) {
+      fetchDynamicData();
+      // Clear the navigation state
+      navigate(location.pathname, { replace: true, state: {} });
+      
+      // If there's a new song ID, show success message
+      if (location.state.newSongId) {
+        setSnackbarOpen(true);
+        setImportMessage("Song successfully added from suggestion!");
+      }
+    }
+  }, [collectionName, location.state, navigate]);
 
   useEffect(() => {
     const fetchData = async () => {
