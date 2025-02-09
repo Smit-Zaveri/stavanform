@@ -11,25 +11,16 @@ const TagsInput = ({
   setTagInput,
   combinedTagSuggestions
 }) => {
-  // eslint-disable-next-line no-unused-vars
-  const commitTagInput = () => {
-    const newTags = tagInput
-      .split(",")
-      .map((t) => t.trim())
-      .filter((t) => t !== "");
-    if (newTags.length > 0) {
-      setTags((prevTags) => [...prevTags, ...newTags]);
-    }
-    setTagInput("");
-  };
-
   return (
     <Autocomplete
       multiple
       freeSolo
       options={combinedTagSuggestions}
       value={tags}
-      onChange={(event, newValue) => setTags(newValue)}
+      onChange={(event, newValue) => {
+        // This handles both deletion and editing of tags
+        setTags(newValue);
+      }}
       inputValue={tagInput}
       onInputChange={(event, newInputValue) => {
         if (newInputValue.endsWith(",")) {
@@ -62,7 +53,7 @@ const TagsInput = ({
           label="Tags"
           variant="outlined"
           fullWidth
-          helperText="Separate tags with commas"
+          helperText="Separate tags with commas."
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === "Tab") {
               if (tagInput.trim()) {

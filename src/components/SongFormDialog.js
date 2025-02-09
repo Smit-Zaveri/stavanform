@@ -289,6 +289,43 @@ useEffect(() => {
     navigate(`/artist-form`, { state: { name: newArtist } });
   };
 
+  // Reset form state when initialData or mode changes
+  useEffect(() => {
+    if (initialData) {
+      setTitle(initialData.title || "");
+      setArtist(initialData.artist || "");
+      setTags(initialData.tags || []);
+      setOrder(initialData.order || "");
+      setContent(initialData.content || "");
+      setYoutube(initialData.youtube || "");
+      setNewFlag(initialData.newFlag || false);
+      setNewTts(initialData.newTts || false);
+      setSelectedTirthankar(initialData.tirthankarId || "");
+    } else {
+      // Reset all form fields when initialData is null (new song mode)
+      setTitle("");
+      setArtist("");
+      setTags([]);
+      setOrder("");
+      setContent("");
+      setYoutube("");
+      setNewFlag(false);
+      setNewTts(false);
+      setSelectedTirthankar("");
+      setTagInput("");
+    }
+  }, [initialData, mode]);
+
+  // Reset form when dialog is closed
+  useEffect(() => {
+    if (!open) {
+      setError("");
+      setOpenSnackbar(false);
+      setOpenDialog(false);
+      setNewArtist("");
+    }
+  }, [open]);
+
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
       <DialogTitle>{mode === "new" ? "Add New Song" : "Edit Song"}</DialogTitle>
