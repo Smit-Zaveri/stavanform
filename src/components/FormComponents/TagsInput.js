@@ -1,5 +1,5 @@
 import React from 'react';
-import { Autocomplete, TextField } from '@mui/material';
+import { Autocomplete, TextField, Chip } from '@mui/material';
 import { createFilterOptions } from "@mui/material/Autocomplete";
 
 const filter = createFilterOptions();
@@ -18,7 +18,6 @@ const TagsInput = ({
       options={combinedTagSuggestions}
       value={tags}
       onChange={(event, newValue) => {
-        // This handles both deletion and editing of tags
         setTags(newValue);
       }}
       inputValue={tagInput}
@@ -47,6 +46,17 @@ const TagsInput = ({
 
         return filtered;
       }}
+      renderTags={(value, getTagProps) =>
+        value.map((option, index) => (
+          <Chip
+            {...getTagProps({ index })}
+            label={option}
+            color="secondary"
+            variant="outlined"
+            size="small"
+          />
+        ))
+      }
       renderInput={(params) => (
         <TextField
           {...params}

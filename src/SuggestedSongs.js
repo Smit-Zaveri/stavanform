@@ -22,12 +22,10 @@ import {
   TextField,
   Toolbar,
   Typography,
-  useMediaQuery,
   Slide,
   TablePagination,
   InputAdornment,
 } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
 import {
   Delete,
   Edit,
@@ -84,9 +82,9 @@ const SuggestionsGrid = ({ suggestions, onApply, onDelete, onOpenModal }) => (
             <Typography variant="h6" gutterBottom>
               {song.title}
             </Typography>
-            {song.artist && (
+            {song.artistName && (
               <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-                By: {song.artist}
+                By: {song.artistName}
               </Typography>
             )}
             <Typography variant="body2" color="text.secondary">
@@ -150,9 +148,9 @@ const SongModal = ({ open, onClose, selectedSong }) => (
           {selectedSong.title}
         </Typography>
 
-        {selectedSong.artist && (
+        {selectedSong.artistName && (
           <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-            Artist: {selectedSong.artist}
+            Artist: {selectedSong.artistName}
           </Typography>
         )}
         <Typography variant="body1" sx={{ whiteSpace: "pre-wrap", mt: 2 }}>
@@ -186,8 +184,6 @@ const SuggestedSongs = () => {
   const [sortOrder, setSortOrder] = useState("asc");
 
   const navigate = useNavigate();
-  const theme = useTheme();
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
   // Debounced search term
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -233,7 +229,7 @@ const SuggestedSongs = () => {
       title: suggestion.title,
       content: suggestion.content,
       // Pass artist directly instead of mapping to artistName here
-      artist: suggestion.artist || "",
+      artist: suggestion.artistName || "",
       tags: suggestion.tags || [],
       order: suggestion.order || "",
       youtube: suggestion.youtube || "",

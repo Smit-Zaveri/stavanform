@@ -7,7 +7,7 @@ import {
   CircularProgress,
   TextField,
   Typography,
-  useTheme, // Import useTheme
+  useTheme,
 } from "@mui/material";
 import React, { useState } from "react";
 import { useNavigate } from 'react-router-dom';
@@ -19,7 +19,7 @@ const Login = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const theme = useTheme(); // Access the theme
+  const theme = useTheme();
 
   const handleLogin = async () => {
     setLoading(true);
@@ -41,18 +41,56 @@ const Login = () => {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        height: "83.5vh",
-        backgroundColor: theme.palette.background.default, // Use theme background color
+        minHeight: "100vh",
+        width: "100%",
+        padding: { 
+          xs: 2,  // 16px padding on extra-small screens
+          sm: 3,  // 24px padding on small screens
+          md: 4   // 32px padding on medium screens
+        },
       }}
     >
-      <Card sx={{ maxWidth: 400, width: '100%', p: 2, boxShadow: 3 }}>
+      <Card 
+        sx={{ 
+          width: {
+            xs: '100%',    // Full width on mobile
+            sm: '450px',   // Fixed width on small screens
+            md: '500px'    // Slightly larger on medium screens
+          },
+          p: { 
+            xs: 2,
+            sm: 3 
+          },
+          borderRadius: 1,
+        }}
+      >
         <CardContent>
-          <Typography variant="h4" gutterBottom align="center">
-            Login
+          <Typography 
+            variant="h4" 
+            gutterBottom 
+            align="center"
+            sx={{
+              fontSize: {
+                xs: '1.5rem',
+                sm: '2rem'
+              },
+              mb: 3
+            }}
+          >
+            Welcome Back
           </Typography>
 
-          {/* Display error message if exists */}
-          {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
+          {error && (
+            <Alert 
+              severity="error" 
+              sx={{ 
+                mb: 2,
+                borderRadius: 1
+              }}
+            >
+              {error}
+            </Alert>
+          )}
 
           <TextField
             label="Email"
@@ -60,7 +98,9 @@ const Login = () => {
             fullWidth
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            sx={{ mt: 3 }}
+            sx={{
+              mb: 2
+            }}
           />
 
           <TextField
@@ -70,22 +110,41 @@ const Login = () => {
             fullWidth
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            sx={{ mt: 3 }}
+            sx={{
+              mb: 3
+            }}
           />
 
           <Button
             variant="contained"
-            color="primary"
             fullWidth
             onClick={handleLogin}
-            sx={{ mt: 3, py: 1.5 }}
+            sx={{
+              py: { 
+                xs: 1,
+                sm: 1.5 
+              },
+              fontSize: {
+                xs: '0.9rem',
+                sm: '1rem'
+              }
+            }}
             disabled={loading}
           >
-            {loading ? <CircularProgress size={24} color="inherit" /> : "Login"}
+            {loading ? <CircularProgress size={24} /> : "Sign In"}
           </Button>
 
-          {/* Optionally, you can add a link to "forgot password" or "sign up" */}
-          <Typography variant="body2" align="center" sx={{ mt: 2 }}>
+          <Typography 
+            variant="body2" 
+            align="center" 
+            sx={{ 
+              mt: 3,
+              fontSize: {
+                xs: '0.8rem',
+                sm: '0.875rem'
+              }
+            }}
+          >
             Forgot your password? <a href="/reset-password">Reset it here</a>
           </Typography>
         </CardContent>

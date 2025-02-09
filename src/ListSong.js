@@ -174,7 +174,7 @@ const ListSong = () => {
       delete formattedData.artist;
 
       if (mode === "new") {
-        const docRef = await collectionRef.add(formattedData);
+        await collectionRef.add(formattedData);
         // If this came from suggestions, delete the original suggestion
         if (location.state?.suggestionId) {
           await firestore.collection("suggestions_new").doc(location.state.suggestionId).delete();
