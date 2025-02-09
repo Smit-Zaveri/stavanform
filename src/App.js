@@ -91,9 +91,14 @@ const App = () => {
     const savedDarkMode = localStorage.getItem('darkMode');
     const savedThemeColor = localStorage.getItem('themeColor');
     
-    if (savedDarkMode !== null) {
+    // Set dark mode as default if no preference is saved
+    if (savedDarkMode === null) {
+      setDarkMode(true);
+      localStorage.setItem('darkMode', 'true');
+    } else {
       setDarkMode(JSON.parse(savedDarkMode));
     }
+
     if (savedThemeColor) {
       setThemeColor(savedThemeColor);
     }

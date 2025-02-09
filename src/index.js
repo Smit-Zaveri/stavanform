@@ -7,7 +7,7 @@ import { Analytics } from '@vercel/analytics/react';
 
 // Main AppWrapper component to manage theme and routing
 const AppWrapper = () => {
-  const [darkMode, setDarkMode] = useState(false); // State for dark mode
+  const [darkMode, setDarkMode] = useState(true); // Set default to true
 
   // Load theme preference from localStorage on mount
   useEffect(() => {
