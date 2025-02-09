@@ -3,7 +3,6 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AppBar,
   Avatar,
-  Badge,
   Box,
   Button,
   CircularProgress,
@@ -19,23 +18,24 @@ import {
   MenuItem,
   Toolbar,
   Typography,
+  Tooltip,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
 
 // MUI Icons
+import HomeIcon from '@mui/icons-material/Home';
 import CollectionsIcon from "@mui/icons-material/Collections";
 import LabelIcon from "@mui/icons-material/Label";
 import LibraryMusicIcon from "@mui/icons-material/LibraryMusic";
 import MenuIcon from "@mui/icons-material/Menu";
 import MusicNoteIcon from "@mui/icons-material/MusicNote";
 import PlaylistAddCheckIcon from "@mui/icons-material/PlaylistAddCheck";
-import NotificationsIcon from "@mui/icons-material/Notifications";
 
 import { onAuthStateChanged } from "firebase/auth";
 import { Route, Routes, useLocation, useNavigate, Navigate } from "react-router-dom";
 
-import { auth } from "./firebase";
+import { auth, firestore } from "./firebase";
 import CollectionForm from "./components/CollectionForm";
 import SongList from "./ListSong";
 import Login from "./Login";
@@ -49,10 +49,11 @@ import Help from "./components/Help";
 
 const drawerWidth = 245;
 
-const App = ({ darkMode, toggleTheme }) => {
+const App = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [companyName, setCompanyName] = useState("");
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const navigate = useNavigate();
@@ -67,19 +68,21 @@ const App = ({ darkMode, toggleTheme }) => {
     setAnchorElProfile(null);
   };
 
-  // Notifications menu state and dummy notifications data
-  const [anchorElNotification, setAnchorElNotification] = useState(null);
-  const handleNotificationMenuOpen = (event) => {
-    setAnchorElNotification(event.currentTarget);
-  };
-  const handleNotificationMenuClose = () => {
-    setAnchorElNotification(null);
-  };
-  const notifications = [
-    { id: 1, message: "New message from Admin" },
-    { id: 2, message: "Your collection has been updated" },
-    { id: 3, message: "Reminder: Check new songs" },
-  ];
+  // Load company name from settings
+  useEffect(() => {
+    const loadCompanyName = async () => {
+      try {
+        const settingsDoc = await firestore.collection("settings").doc("general").get();
+        if (settingsDoc.exists) {
+          setCompanyName(settingsDoc.data().companyName || "Dashboard");
+        }
+      } catch (err) {
+        console.error("Error loading company name:", err);
+        setCompanyName("Dashboard");
+      }
+    };
+    loadCompanyName();
+  }, []);
 
   // Function to handle logout
   const handleLogout = useCallback(async () => {
@@ -120,6 +123,12 @@ const App = ({ darkMode, toggleTheme }) => {
   );
 
   const handleDrawerToggle = useCallback(() => setMobileOpen((prev) => !prev), []);
+
+  const handleCompanyNameClick = useCallback(() => {
+    if (user) {
+      navigate("/list-song/lyrics");
+    }
+  }, [user, navigate]);
 
   const drawerContent = useMemo(
     () => (
@@ -186,19 +195,30 @@ const App = ({ darkMode, toggleTheme }) => {
               <MenuIcon />
             </IconButton>
           )}
-          <Typography variant="h6" noWrap sx={{ flexGrow: 1 }}>
-            Dashboard
-          </Typography>
-          <Button color="inherit" onClick={toggleTheme}>
-            {darkMode ? "Light Mode" : "Dark Mode"}
-          </Button>
-          {user && (
-            <IconButton color="inherit" onClick={handleNotificationMenuOpen}>
-              <Badge badgeContent={notifications.length} color="error">
-                <NotificationsIcon />
-              </Badge>
-            </IconButton>
-          )}
+          <Tooltip title="Go to home page" arrow placement="bottom">
+            <Typography 
+              variant="h6" 
+              noWrap 
+              component="div"
+              sx={{ 
+                flexGrow: 1,
+                cursor: 'pointer',
+                userSelect: 'none',
+                '&:hover': {
+                  opacity: 0.85,
+                },
+                '&:active': {
+                  opacity: 0.7,
+                },
+                display: 'flex',
+                alignItems: 'center',
+                transition: 'opacity 0.2s ease',
+              }}
+              onClick={handleCompanyNameClick}
+            >
+              {companyName}
+            </Typography>
+          </Tooltip>
           {user && (
             <IconButton
               edge="end"
@@ -268,33 +288,6 @@ const App = ({ darkMode, toggleTheme }) => {
               Sign Out
             </MenuItem>
           </Menu>
-          <Menu
-            id="notification-menu"
-            anchorEl={anchorElNotification}
-            keepMounted
-            open={Boolean(anchorElNotification)}
-            onClose={handleNotificationMenuClose}
-            anchorOrigin={{
-              vertical: "top",
-              horizontal: "right",
-            }}
-            transformOrigin={{
-              vertical: "top",
-              horizontal: "right",
-            }}
-          >
-            {notifications.length > 0 ? (
-              notifications.map((notification) => (
-                <MenuItem key={notification.id} onClick={handleNotificationMenuClose}>
-                  {notification.message}
-                </MenuItem>
-              ))
-            ) : (
-              <MenuItem onClick={handleNotificationMenuClose}>
-                No new notifications
-              </MenuItem>
-            )}
-          </Menu>
         </Toolbar>
       </AppBar>
 
@@ -344,7 +337,7 @@ const App = ({ darkMode, toggleTheme }) => {
           <Route path="/login" element={<Login />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/profile" element={user ? <Profile /> : <Login />} />
-          <Route path="/settings" element={user ? <Settings darkMode={darkMode} toggleTheme={toggleTheme} /> : <Login />} />
+          <Route path="/settings" element={user ? <Settings /> : <Login />} />
           <Route path="/help" element={user ? <Help /> : <Login />} />
         </Routes>
       </Box>
