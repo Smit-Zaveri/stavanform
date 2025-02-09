@@ -37,14 +37,48 @@ const SongFormDialog = ({
   const navigate = useNavigate();
 
   // Fields
-  const [title, setTitle] = useState(initialData?.title || "");
-  const [artist, setArtist] = useState(initialData?.artist || "");
-  const [tags, setTags] = useState(initialData?.tags || []); // tags stored as an array
-  const [order, setOrder] = useState(initialData?.order ?? "");
-  const [content, setContent] = useState(initialData?.content || "");
-  const [youtube, setYoutube] = useState(initialData?.youtube || "");
-  const [newFlag, setNewFlag] = useState(initialData?.newFlag || false);
-  const [newTts, setNewTts] = useState(initialData?.newTts || false);
+  const [formValues, setFormValues] = useState({
+    title: initialData?.title || "",
+    artist: initialData?.artist || "", // Important: Initialize artist properly
+    tags: initialData?.tags || [],
+    order: initialData?.order ?? "",
+    content: initialData?.content || "",
+    youtube: initialData?.youtube || "",
+    newFlag: initialData?.newFlag || false,
+    newTts: initialData?.newTts || false,
+    tirthankarId: initialData?.tirthankarId || ""
+  });
+
+  // Update form values when initialData changes
+  useEffect(() => {
+    if (initialData) {
+      setFormValues({
+        title: initialData.title || "",
+        artist: initialData.artist || "", // Ensure artist is set from initialData
+        tags: initialData.tags || [],
+        order: initialData.order || "",
+        content: initialData.content || "",
+        youtube: initialData.youtube || "",
+        newFlag: initialData.newFlag || false,
+        newTts: initialData.newTts || false,
+        tirthankarId: initialData.tirthankarId || ""
+      });
+    } else {
+      // Reset form when there's no initialData
+      setFormValues({
+        title: "",
+        artist: "",
+        tags: [],
+        order: "",
+        content: "",
+        youtube: "",
+        newFlag: false,
+        newTts: false,
+        tirthankarId: ""
+      });
+    }
+  }, [initialData]);
+
   const [selectedCollection, setSelectedCollection] = useState(
     collectionName || "lyrics"
   );
@@ -179,7 +213,7 @@ useEffect(() => {
         );
 
         // Filter out any tags from other Tirthankars
-        const filteredTags = tags.filter((tag) => {
+        const filteredTags = formValues.tags.filter((tag) => {
           const lowerTag = tag.toLowerCase();
           return (
             !allTirthTags.has(lowerTag) ||
@@ -195,21 +229,27 @@ useEffect(() => {
 
         const newTags = [...filteredTags, ...missingTags];
 
-        if (JSON.stringify(newTags) !== JSON.stringify(tags)) {
-          setTags(newTags);
+        if (JSON.stringify(newTags) !== JSON.stringify(formValues.tags)) {
+          setFormValues(prev => ({
+            ...prev,
+            tags: newTags
+          }));
         }
       }
     } else {
       // When no Tirthankar selected, remove ALL Tirthankar-related tags
-      const filteredTags = tags.filter(
+      const filteredTags = formValues.tags.filter(
         (tag) => !allTirthTags.has(tag.toLowerCase())
       );
 
-      if (JSON.stringify(filteredTags) !== JSON.stringify(tags)) {
-        setTags(filteredTags);
+      if (JSON.stringify(filteredTags) !== JSON.stringify(formValues.tags)) {
+        setFormValues(prev => ({
+          ...prev,
+          tags: filteredTags
+        }));
       }
     }
-  }, [selectedTirthankar, tirthankarList, tags]);
+  }, [selectedTirthankar, tirthankarList, formValues.tags]);
 
   // Combine suggestions from Firebase "tags" collection and Tirthankar names.
   const combinedTagSuggestions = Array.from(new Set([...tagsOptions]));
@@ -227,7 +267,10 @@ useEffect(() => {
       .map((t) => t.trim())
       .filter((t) => t !== "");
     if (newTags.length > 0) {
-      setTags((prevTags) => [...prevTags, ...newTags]);
+      setFormValues(prev => ({
+        ...prev,
+        tags: [...prev.tags, ...newTags]
+      }));
     }
     setTagInput("");
   };
@@ -238,33 +281,33 @@ useEffect(() => {
     if (tagInput.trim() !== "") {
       commitTagInput();
     }
-    if (!selectedCollection || !title || !content) {
+    if (!selectedCollection || !formValues.title || !formValues.content) {
       setError("Please fill in all required fields.");
       setOpenSnackbar(true);
       return;
     }
-    if (youtube && !isValidYouTubeURL(youtube)) {
+    if (formValues.youtube && !isValidYouTubeURL(formValues.youtube)) {
       setError("Please enter a valid YouTube URL.");
       setOpenSnackbar(true);
       return;
     }
-    const parsedOrder = order ? Number(order) : null;
-    if (order && isNaN(parsedOrder)) {
+    const parsedOrder = formValues.order ? Number(formValues.order) : null;
+    if (formValues.order && isNaN(parsedOrder)) {
       setError("Please enter a valid number for the order field.");
       setOpenSnackbar(true);
       return;
     }
     const docData = {
-      title,
-      artist,
-      tags, // tags as an array
-      content,
-      youtube,
+      title: formValues.title,
+      artist: formValues.artist,
+      tags: formValues.tags, // tags as an array
+      content: formValues.content,
+      youtube: formValues.youtube,
       order: parsedOrder,
       publishDate: firebase.firestore.Timestamp.now(),
-      newFlag,
-      newTts,
-      tirthankarId: selectedTirthankar,
+      newFlag: formValues.newFlag,
+      newTts: formValues.newTts,
+      tirthankarId: formValues.tirthankarId,
     };
     if (mode === "edit" && initialData?.id) {
       docData.id = initialData.id;
@@ -278,8 +321,8 @@ useEffect(() => {
   };
 
   const handleArtistInputBlur = () => {
-    if (artist && !artistOptions.some((option) => option.name === artist)) {
-      setNewArtist(artist);
+    if (formValues.artist && !artistOptions.some((option) => option.name === formValues.artist)) {
+      setNewArtist(formValues.artist);
       setOpenDialog(true);
     }
   };
@@ -288,33 +331,6 @@ useEffect(() => {
     setOpenDialog(false);
     navigate(`/artist-form`, { state: { name: newArtist } });
   };
-
-  // Reset form state when initialData or mode changes
-  useEffect(() => {
-    if (initialData) {
-      setTitle(initialData.title || "");
-      setArtist(initialData.artist || "");
-      setTags(initialData.tags || []);
-      setOrder(initialData.order || "");
-      setContent(initialData.content || "");
-      setYoutube(initialData.youtube || "");
-      setNewFlag(initialData.newFlag || false);
-      setNewTts(initialData.newTts || false);
-      setSelectedTirthankar(initialData.tirthankarId || "");
-    } else {
-      // Reset all form fields when initialData is null (new song mode)
-      setTitle("");
-      setArtist("");
-      setTags([]);
-      setOrder("");
-      setContent("");
-      setYoutube("");
-      setNewFlag(false);
-      setNewTts(false);
-      setSelectedTirthankar("");
-      setTagInput("");
-    }
-  }, [initialData, mode]);
 
   // Reset form when dialog is closed
   useEffect(() => {
@@ -325,6 +341,13 @@ useEffect(() => {
       setNewArtist("");
     }
   }, [open]);
+
+  const handleFormChange = (field, value) => {
+    setFormValues(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
@@ -363,9 +386,9 @@ useEffect(() => {
                 variant="outlined"
                 fullWidth
                 required
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                error={!title && !!error}
+                value={formValues.title}
+                onChange={(e) => handleFormChange('title', e.target.value)}
+                error={!formValues.title && !!error}
               />
             </Grid>
             {/* Artist */}
@@ -373,8 +396,8 @@ useEffect(() => {
               <Autocomplete
                 freeSolo
                 options={artistOptions.map((opt) => opt.name)}
-                value={artist}
-                onInputChange={(event, newValue) => setArtist(newValue)}
+                value={formValues.artist}
+                onInputChange={(event, newValue) => handleFormChange('artist', newValue)}
                 onBlur={handleArtistInputBlur}
                 renderInput={(params) => (
                   <TextField
@@ -409,8 +432,8 @@ useEffect(() => {
             {/* Tags Input */}
             <Grid item xs={12} md={6}>
               <TagsInput
-                tags={tags}
-                setTags={setTags}
+                tags={formValues.tags}
+                setTags={(newTags) => handleFormChange('tags', newTags)}
                 tagInput={tagInput}
                 setTagInput={setTagInput}
                 combinedTagSuggestions={combinedTagSuggestions}
@@ -422,11 +445,11 @@ useEffect(() => {
                 label="YouTube Link"
                 variant="outlined"
                 fullWidth
-                value={youtube}
-                onChange={(e) => setYoutube(e.target.value)}
-                error={youtube && !isValidYouTubeURL(youtube)}
+                value={formValues.youtube}
+                onChange={(e) => handleFormChange('youtube', e.target.value)}
+                error={formValues.youtube && !isValidYouTubeURL(formValues.youtube)}
                 helperText={
-                  youtube && !isValidYouTubeURL(youtube)
+                  formValues.youtube && !isValidYouTubeURL(formValues.youtube)
                     ? "Invalid YouTube URL"
                     : ""
                 }
@@ -438,9 +461,9 @@ useEffect(() => {
                 label="Order"
                 variant="outlined"
                 fullWidth
-                value={order}
-                onChange={(e) => setOrder(e.target.value)}
-                error={order && isNaN(Number(order))}
+                value={formValues.order}
+                onChange={(e) => handleFormChange('order', e.target.value)}
+                error={formValues.order && isNaN(Number(formValues.order))}
               />
             </Grid>
             {/* Content */}
@@ -452,9 +475,9 @@ useEffect(() => {
                 required
                 multiline
                 rows={4}
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                error={!content && !!error}
+                value={formValues.content}
+                onChange={(e) => handleFormChange('content', e.target.value)}
+                error={!formValues.content && !!error}
               />
             </Grid>
             {/* New flag */}
@@ -462,8 +485,8 @@ useEffect(() => {
               <FormControlLabel
                 control={
                   <Checkbox
-                    checked={newFlag}
-                    onChange={(e) => setNewFlag(e.target.checked)}
+                    checked={formValues.newFlag}
+                    onChange={(e) => handleFormChange('newFlag', e.target.checked)}
                   />
                 }
                 label="New"
@@ -473,8 +496,8 @@ useEffect(() => {
               <FormControlLabel
                 control={
                   <Checkbox
-                    checked={newTts}
-                    onChange={(e) => setNewTts(e.target.checked)}
+                    checked={formValues.newTts}
+                    onChange={(e) => handleFormChange('newTts', e.target.checked)}
                   />
                 }
                 label="TTS"

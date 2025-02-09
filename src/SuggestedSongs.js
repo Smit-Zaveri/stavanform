@@ -84,6 +84,11 @@ const SuggestionsGrid = ({ suggestions, onApply, onDelete, onOpenModal }) => (
             <Typography variant="h6" gutterBottom>
               {song.title}
             </Typography>
+            {song.artist && (
+              <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                By: {song.artist}
+              </Typography>
+            )}
             <Typography variant="body2" color="text.secondary">
               {song.content.length > 100 ? song.content.substring(0, 100) + "..." : song.content}
             </Typography>
@@ -144,7 +149,13 @@ const SongModal = ({ open, onClose, selectedSong }) => (
         <Typography variant="h5" gutterBottom>
           {selectedSong.title}
         </Typography>
-        <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
+
+        {selectedSong.artist && (
+          <Typography variant="subtitle1" color="text.secondary" gutterBottom>
+            Artist: {selectedSong.artist}
+          </Typography>
+        )}
+        <Typography variant="body1" sx={{ whiteSpace: "pre-wrap", mt: 2 }}>
           {selectedSong.content}
         </Typography>
         <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
@@ -216,8 +227,60 @@ const SuggestedSongs = () => {
   }, [fetchSuggestions]);
 
   // --- Handlers ---
-  const handleApplySuggestion = (suggestion) => {
-    navigate("/", { state: { suggestion } });
+  const handleApplySuggestion = async (suggestion) => {
+    // Format the suggestion data to match the song form structure
+    const formattedSuggestion = {
+      title: suggestion.title,
+      content: suggestion.content,
+      // Pass artist directly instead of mapping to artistName here
+      artist: suggestion.artist || "",
+      tags: suggestion.tags || [],
+      order: suggestion.order || "",
+      youtube: suggestion.youtube || "",
+      newFlag: false,
+      newTts: false,
+      collection: suggestion.collection
+    };
+    
+    try {
+      // Check if song already exists in target collection
+      const targetCollection = firestore.collection(suggestion.collection);
+      const existingQuery = await targetCollection
+        .where("title", "==", suggestion.title)
+        .get();
+
+      if (!existingQuery.empty) {
+        await firestore.collection("suggestions_new").doc(suggestion.id).delete();
+        setGroupedSuggestions((prev) => {
+          const updated = { ...prev };
+          updated[suggestion.collection] = updated[suggestion.collection].filter(
+            (s) => s.id !== suggestion.id
+          );
+          if (!updated[suggestion.collection].length) {
+            delete updated[suggestion.collection];
+          }
+          return updated;
+        });
+      }
+
+      // Navigate to add the song
+      navigate(`/list-song/${suggestion.collection}`, { 
+        state: { 
+          suggestion: formattedSuggestion,
+          fromSuggestions: true,
+          suggestionId: suggestion.id
+        } 
+      });
+    } catch (error) {
+      console.error("Error checking/deleting suggestion:", error);
+      navigate(`/list-song/${suggestion.collection}`, { 
+        state: { 
+          suggestion: formattedSuggestion,
+          fromSuggestions: true,
+          suggestionId: suggestion.id
+        } 
+      });
+    }
   };
 
   const handleOpenModal = (song) => {

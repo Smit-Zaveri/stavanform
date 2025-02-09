@@ -69,19 +69,41 @@ const ListSong = () => {
 
   // Effects
   useEffect(() => {
-    if (collectionName) setSelectedCollection(collectionName);
+    if (collectionName) {
+      setSelectedCollection(collectionName);
+    }
     
-    // Refresh if navigated from suggestion application
-    if (location.state?.refresh) {
-      fetchDynamicData();
-      // Clear the navigation state
-      navigate(location.pathname, { replace: true, state: {} });
+    // Handle suggestion data if coming from suggestion page
+    if (location.state?.suggestion && location.state?.fromSuggestions) {
+      const suggestion = location.state.suggestion;
       
-      // If there's a new song ID, show success message
-      if (location.state.newSongId) {
-        setSnackbarOpen(true);
-        setImportMessage("Song successfully added from suggestion!");
-      }
+      // Set the collection based on suggestion's collection
+      setSelectedCollection(suggestion.collection);
+      
+      // Format the data for the form
+      const formData = {
+        ...suggestion,
+        // Preserve the artist field as is
+        artist: suggestion.artist,
+        // Ensure tags is an array
+        tags: Array.isArray(suggestion.tags) ? suggestion.tags : suggestion.tags ? suggestion.tags.split(',').map(t => t.trim()) : [],
+        // Convert order to string if it exists
+        order: suggestion.order?.toString() || "",
+        youtube: suggestion.youtube || "",
+        newFlag: Boolean(suggestion.newFlag),
+        newTts: Boolean(suggestion.newTts),
+        tirthankarId: suggestion.tirthankarId || ""
+      };
+
+      // Delay opening the form slightly to ensure collection is set
+      setTimeout(() => {
+        setSongFormMode("new");
+        setSongFormInitialData(formData);
+        setSongFormOpen(true);
+      }, 100);
+
+      // Clear the navigation state after processing
+      navigate(`/list-song/${suggestion.collection}`, { replace: true });
     }
   }, [collectionName, location.state, navigate]);
 
@@ -143,18 +165,36 @@ const ListSong = () => {
   const handleFormSubmit = async (data, mode) => {
     try {
       const collectionRef = firestore.collection(selectedCollection);
+
+      // Format data to use artistName when saving to database
+      const formattedData = {
+        ...data,
+        artistName: data.artist || "",
+      };
+      delete formattedData.artist;
+
       if (mode === "new") {
-        await collectionRef.add(data);
+        const docRef = await collectionRef.add(formattedData);
+        // If this came from suggestions, delete the original suggestion
+        if (location.state?.suggestionId) {
+          await firestore.collection("suggestions_new").doc(location.state.suggestionId).delete();
+          navigate(location.pathname, { replace: true });
+        }
       } else if (mode === "edit") {
-        const { id, ...updateData } = data;
+        const { id, ...updateData } = formattedData;
         await collectionRef.doc(id).update(updateData);
       }
+      
       setSongFormOpen(false);
-      setSongFormInitialData(null); // Clear form data after submission
+      setSongFormInitialData(null);
       await fetchDynamicData();
+      
+      setImportMessage(mode === "new" ? "Song added successfully" : "Song updated successfully");
+      setSnackbarOpen(true);
     } catch (error) {
       console.error("Error in form submission:", error);
-      alert("Error submitting the form.");
+      setImportMessage("Error submitting the form");
+      setSnackbarOpen(true);
     }
   };
 
@@ -164,17 +204,16 @@ const ListSong = () => {
     // Convert the song data to match the form fields
     const formData = {
       ...song,
-      // Ensure tags is an array
+      // Map artistName back to artist for the form
+      artist: song.artistName || "",
       tags: Array.isArray(song.tags) ? song.tags : song.tags ? song.tags.split(',').map(t => t.trim()) : [],
-      // Convert order to string if it exists
       order: song.order?.toString() || "",
-      // Ensure other fields are properly formatted
-      artist: song.artist || "",
       youtube: song.youtube || "",
       newFlag: Boolean(song.newFlag),
       newTts: Boolean(song.newTts),
       tirthankarId: song.tirthankarId || ""
     };
+    delete formData.artistName; // Remove artistName as we're using artist in the form
     setSongFormInitialData(formData);
     setSongFormOpen(true);
   };
