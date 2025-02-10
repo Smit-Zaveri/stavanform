@@ -19,4 +19,19 @@ export const firestore = firebase.firestore();
 export const auth = firebase.auth();
 export const storage = firebase.storage(); // Export the 'storage' module
 
+// Add sidebar configuration collection reference
+export const sidebarConfigRef = firestore.collection('sidebarConfig');
+
+// Helper function to check if user is super admin
+export const checkSuperAdmin = async (uid) => {
+  if (!uid) return false;
+  try {
+    const userDoc = await firestore.collection('users').doc(uid).get();
+    return userDoc.exists && userDoc.data().role === 'superadmin';
+  } catch (error) {
+    console.error('Error checking admin status:', error);
+    return false;
+  }
+};
+
 export default firebase;

@@ -13,7 +13,7 @@ import {
 import { onAuthStateChanged } from "firebase/auth";
 import { Route, Routes, useLocation, useNavigate, Navigate } from "react-router-dom";
 import { themeColors } from "./utils/themeConfig";
-import { auth, firestore } from "./firebase";
+import { auth, firestore, checkSuperAdmin } from "./firebase";
 
 // Components
 import Header from "./components/layout/Header";
@@ -26,6 +26,7 @@ import SuggestedSongs from "./SuggestedSongs";
 import Profile from "./components/Profile";
 import Settings from "./components/Settings";
 import Help from "./components/Help";
+import AdminDashboard from "./components/AdminDashboard";
 
 const drawerWidth = 245;
 
@@ -38,6 +39,7 @@ const App = () => {
   const [darkMode, setDarkMode] = useState(false);
   const [themeColor, setThemeColor] = useState('default');
   const [anchorElProfile, setAnchorElProfile] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   
   // Theme and responsiveness
   const customTheme = useMemo(() => {
@@ -113,8 +115,12 @@ const App = () => {
   }, [navigate]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
+      if (currentUser) {
+        const adminStatus = await checkSuperAdmin(currentUser.uid);
+        setIsAdmin(adminStatus);
+      }
       setLoading(false);
       const publicRoutes = ["/login", "/reset-password"];
       if (!currentUser && !publicRoutes.includes(location.pathname)) {
@@ -232,6 +238,16 @@ const App = () => {
               } 
             />
             <Route path="/help" element={user ? <Help /> : <Login />} />
+            <Route 
+              path="/admin" 
+              element={
+                user && isAdmin ? (
+                  <AdminDashboard />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              } 
+            />
           </Routes>
         </Box>
       </Box>
