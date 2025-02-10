@@ -19,9 +19,12 @@ import {
   Snackbar,
   TextField,
   Typography,
+  IconButton,
 } from "@mui/material";
+import { CloudUpload as UploadIcon } from '@mui/icons-material';
 import firebase from "firebase/compat/app";
 import "firebase/firestore";
+import "firebase/storage";
 import { firestore } from "../firebase";
 import TagsInput from "./FormComponents/TagsInput";
 
@@ -46,8 +49,11 @@ const SongFormDialog = ({
     youtube: initialData?.youtube || "",
     newFlag: initialData?.newFlag || false,
     newTts: initialData?.newTts || false,
-    tirthankarId: initialData?.tirthankarId || ""
+    tirthankarId: initialData?.tirthankarId || "",
+    mp3URL: initialData?.mp3URL || "",
   });
+
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   // Update form values when initialData changes
   useEffect(() => {
@@ -61,7 +67,8 @@ const SongFormDialog = ({
         youtube: initialData.youtube || "",
         newFlag: initialData.newFlag || false,
         newTts: initialData.newTts || false,
-        tirthankarId: initialData.tirthankarId || ""
+        tirthankarId: initialData.tirthankarId || "",
+        mp3URL: initialData.mp3URL || "",
       });
     } else {
       // Reset form when there's no initialData
@@ -74,7 +81,8 @@ const SongFormDialog = ({
         youtube: "",
         newFlag: false,
         newTts: false,
-        tirthankarId: ""
+        tirthankarId: "",
+        mp3URL: "",
       });
     }
   }, [initialData]);
@@ -297,6 +305,7 @@ useEffect(() => {
       setOpenSnackbar(true);
       return;
     }
+
     const docData = {
       title: formValues.title,
       artist: formValues.artist,
@@ -308,6 +317,7 @@ useEffect(() => {
       newFlag: formValues.newFlag,
       newTts: formValues.newTts,
       tirthankarId: formValues.tirthankarId,
+      mp3URL: formValues.mp3URL,
     };
     if (mode === "edit" && initialData?.id) {
       docData.id = initialData.id;
@@ -502,6 +512,25 @@ useEffect(() => {
                 }
                 label="TTS"
               />
+            </Grid>
+            {/* MP3 URL input */}
+            <Grid item xs={12} md={6}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <TextField
+                  label="MP3 URL"
+                  variant="outlined"
+                  fullWidth
+                  value={formValues.mp3URL}
+                  onChange={(e) => handleFormChange('mp3URL', e.target.value)}
+                  placeholder="Enter MP3 URL"
+                />
+                {formValues.mp3URL && (
+                  <audio controls style={{ width: '100%' }}>
+                    <source src={formValues.mp3URL} type="audio/mpeg" />
+                    Your browser does not support the audio element.
+                  </audio>
+                )}
+              </Box>
             </Grid>
           </Grid>
           <Button variant="contained" type="submit" fullWidth sx={{ mt: 3 }}>
