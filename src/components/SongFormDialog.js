@@ -179,7 +179,7 @@ export const SongFormDialog = ({
               selectedCollection={selectedCollection}
               setSelectedCollection={setSelectedCollection}
               handleArtistInputBlur={handleArtistInputBlur}
-              mode={mode}  {/* Add the mode prop here */}
+              mode={mode}
             />
             <Button variant="contained" type="submit" fullWidth sx={{ mt: 3 }}>
               Submit
