@@ -18,6 +18,7 @@ import {
 } from "@mui/material";
 import ArrowUpward from "@mui/icons-material/ArrowUpward";
 import { firestore } from "./firebase";
+import firebase from 'firebase/compat/app';
 
 const ListSong = () => {
   // State declarations
@@ -60,7 +61,26 @@ const ListSong = () => {
     try {
       const songSnapshot = await firestore.collection(selectedCollection).get();
       const reportSnapshot = await firestore.collection("reports").get();
-      setSongs(songSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+      
+      // Map song data ensuring all fields are included
+      const songData = songSnapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          title: data.title || '',
+          artistName: data.artistName || '',
+          content: data.content || '',
+          tags: Array.isArray(data.tags) ? data.tags : [],
+          order: data.order || '',
+          youtube: data.youtube || '',
+          newFlag: Boolean(data.newFlag),
+          newTts: Boolean(data.newTts),
+          tirthankarId: data.tirthankarId || '',
+          publishDate: data.publishDate || null
+        };
+      });
+      
+      setSongs(songData);
       setReports(reportSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
     } catch (error) {
       console.error("Error fetching dynamic data:", error);
@@ -168,26 +188,31 @@ const ListSong = () => {
 
       // Format data to use artistName when saving to database
       const formattedData = {
-        ...data,
+        title: data.title,
         artistName: data.artist || "",
+        content: data.content,
+        tags: Array.isArray(data.tags) ? data.tags : [],
+        order: data.order ? Number(data.order) : null,
+        youtube: data.youtube || "",
+        newFlag: Boolean(data.newFlag),
+        newTts: Boolean(data.newTts),
+        tirthankarId: data.selectedTirthankar || "",
+        publishDate: firebase.firestore.Timestamp.now(),
       };
-      delete formattedData.artist;
 
       if (mode === "new") {
         await collectionRef.add(formattedData);
-        // If this came from suggestions, delete the original suggestion
         if (location.state?.suggestionId) {
           await firestore.collection("suggestions_new").doc(location.state.suggestionId).delete();
           navigate(location.pathname, { replace: true });
         }
       } else if (mode === "edit") {
-        const { id, ...updateData } = formattedData;
-        await collectionRef.doc(id).update(updateData);
+        await collectionRef.doc(data.id).update(formattedData);
       }
       
       setSongFormOpen(false);
       setSongFormInitialData(null);
-      await fetchDynamicData();
+      await fetchDynamicData(); // Refresh the data
       
       setImportMessage(mode === "new" ? "Song added successfully" : "Song updated successfully");
       setSnackbarOpen(true);
@@ -201,20 +226,22 @@ const ListSong = () => {
   // Handle edit click with proper data passing
   const handleEditClick = (song) => {
     setSongFormMode("edit");
-    // Convert the song data to match the form fields
+    // First set the song data
     const formData = {
-      ...song,
-      // Map artistName back to artist for the form
-      artist: song.artistName || "",
+      id: song.id,
+      title: song.title || "",
+      artist: song.artistName || "",  // Map artistName to artist for form
+      content: song.content || "",
       tags: Array.isArray(song.tags) ? song.tags : song.tags ? song.tags.split(',').map(t => t.trim()) : [],
       order: song.order?.toString() || "",
       youtube: song.youtube || "",
       newFlag: Boolean(song.newFlag),
       newTts: Boolean(song.newTts),
-      tirthankarId: song.tirthankarId || ""
+      tirthankarId: song.tirthankarId || "",
+      collection: selectedCollection // Add collection to form data
     };
-    delete formData.artistName; // Remove artistName as we're using artist in the form
     setSongFormInitialData(formData);
+    // Then open the form
     setSongFormOpen(true);
   };
 

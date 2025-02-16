@@ -35,7 +35,7 @@ export const filterSongs = (songs, searchInput) => {
 export const exportSongsToCSV = (songs, selectedCollection) => {
   const exportData = songs.map((song) => ({
     Title: song.title,
-    Artist: song.artist,
+    Artist: song.artistName || song.artist || "",  // Handle both fields
     Tags: song.tags ? song.tags.join(", ") : "",
     Order: song.order,
     YouTube: song.youtube,
@@ -78,13 +78,13 @@ export const importSongsFromCSV = async (file, collectionName, onProgress) => {
             
             const existing = await collectionRef
               .where("title", "==", row.Title)
-              .where("artist", "==", row.Artist)
+              .where("artistName", "==", row.Artist)  // Update query to use artistName
               .get();
 
             if (existing.empty) {
               await collectionRef.add({
                 title: row.Title,
-                artist: row.Artist,
+                artistName: row.Artist,  // Save as artistName in Firestore
                 tags: row.Tags?.split(",").map((tag) => tag.trim().toLowerCase()) || [],
                 order: row.Order ? Number(row.Order) : null,
                 youtube: row.YouTube,
