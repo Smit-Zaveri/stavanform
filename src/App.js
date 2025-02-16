@@ -22,11 +22,11 @@ import CollectionForm from "./components/CollectionForm";
 import SongList from "./ListSong";
 import Login from "./Login";
 import ResetPassword from "./ResetPassword";
-import SuggestedSongs from "./SuggestedSongs";
 import Profile from "./components/Profile";
 import Settings from "./components/Settings";
 import Help from "./components/Help";
 import AdminDashboard from "./components/AdminDashboard";
+import MainContent from "./components/SuggestedSongs/MainContent";
 
 const drawerWidth = 245;
 
@@ -218,7 +218,7 @@ const App = () => {
             <Route path="/tirth" element={user ? <CollectionForm collectionName="tirth" /> : <Login />} />
             <Route path="/list-song/:collectionName" element={user ? <SongList /> : <Login />} />
             <Route path="/tirtankar" element={user ? <CollectionForm collectionName="tirtankar" /> : <Login />} />
-            <Route path="/suggestedsongs" element={user ? <SuggestedSongs /> : <Login />} />
+            <Route path="/suggestedsongs" element={user ? <MainContent /> : <Login />} />
             <Route path="/login" element={<Login />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/profile" element={user ? <Profile /> : <Login />} />
