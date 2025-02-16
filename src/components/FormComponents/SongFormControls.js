@@ -10,7 +10,10 @@ import {
   FormControlLabel,
   Checkbox,
   Chip,
-  Paper
+  Paper,
+  Card,
+  CardContent,
+  Typography
 } from '@mui/material';
 import { createFilterOptions } from '@mui/material/Autocomplete';
 import { isValidYouTubeURL } from '../../utils/validators';
@@ -71,244 +74,261 @@ export const SongFormControls = ({
   const handleTagChange = (event, newValue) => {
     // Ensure newValue is always an array and clean up tags
     const cleanedTags = (newValue || [])
-      .map(tag => typeof tag === 'string' ? tag.trim() : tag)
+      .map(tag => (typeof tag === 'string' ? tag.trim() : tag))
       .filter(Boolean);
     setTags(cleanedTags);
   };
 
   return (
-    <Grid container spacing={{ xs: 1, md: 2 }}>
-      <Grid item xs={12} md={6}>
-        <FormControl fullWidth required error={!selectedCollection && !!error}>
-          <InputLabel>Select Collection</InputLabel>
-          <Select
-            value={selectedCollection}
-            onChange={(e) => setSelectedCollection(e.target.value)}
-            label="Select Collection"
-          >
-            <MenuItem value=""><em>Select a collection</em></MenuItem>
-            {collectionOptions.map((coll) => (
-              <MenuItem key={coll.id} value={coll.name}>
-                {coll.name.charAt(0).toUpperCase() + coll.name.slice(1)}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Grid>
+    <Card     
+    >
+      <CardContent>
+        <Typography variant="h6" gutterBottom>
+          Song Details
+        </Typography>
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={6}>
+            <FormControl fullWidth required error={!selectedCollection && !!error}>
+              <InputLabel>Select Collection</InputLabel>
+              <Select
+                value={selectedCollection}
+                onChange={(e) => setSelectedCollection(e.target.value)}
+                label="Select Collection"
+              >
+                <MenuItem value="">
+                  <em>Select a collection</em>
+                </MenuItem>
+                {collectionOptions.map((coll) => (
+                  <MenuItem key={coll.id} value={coll.name}>
+                    {coll.name.charAt(0).toUpperCase() + coll.name.slice(1)}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
 
-      <Grid item xs={12} md={6}>
-        <TextField
-          label="Title"
-          variant="outlined"
-          fullWidth
-          required
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          error={!title && !!error}
-        />
-      </Grid>
-
-      <Grid item xs={12} md={6}>
-        <Autocomplete
-          freeSolo
-          options={artistOptions.map(opt => opt.name)}
-          value={artist || ''}
-          onChange={(event, newValue) => setArtist(newValue || '')}
-          onBlur={handleArtistInputBlur}
-          renderInput={(params) => (
-            <TextField {...params} label="Artist" variant="outlined" fullWidth />
-          )}
-        />
-      </Grid>
-
-      <Grid item xs={12} md={6}>
-        <FormControl fullWidth>
-          <InputLabel>Select Tirthankar</InputLabel>
-          <Select
-            value={selectedTirthankar}
-            onChange={(e) => setSelectedTirthankar(e.target.value)}
-            label="Select Tirthankar"
-          >
-            <MenuItem value=""><em>Clear Selection</em></MenuItem>
-            {tirthankarList.map((tirth) => (
-              <MenuItem key={tirth.id} value={tirth.id}>
-                {tirth.numbering}. {tirth.name} ({tirth.displayName})
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Grid>
-
-      <Grid item xs={12} md={6}>
-        <Autocomplete
-          multiple
-          freeSolo
-          ChipProps={{ 
-            deleteIcon: <CancelIcon />,
-            variant: "filled"
-          }}
-          options={combinedTagSuggestions}
-          value={tags || []}
-          onChange={handleTagChange}
-          inputValue={tagInput || ''}
-          onInputChange={(event, newValue, reason) => {
-            if (reason === 'reset') {
-              setTagInput('');
-              return;
-            }
-            
-            // Handle comma-separated input
-            if (newValue?.includes(',')) {
-              const newTags = newValue
-                .split(',')
-                .map(t => t.trim())
-                .filter(Boolean);
-              
-              if (newTags.length > 0) {
-                setTags(prev => [...prev, ...newTags]);
-                setTagInput('');
-                return;
-              }
-            }
-            
-            setTagInput(newValue || '');
-          }}
-          filterOptions={(options, params) => {
-            const filtered = filter(options, params);
-            const inputValue = params.inputValue?.trim() || '';
-            if (inputValue && !filtered.includes(inputValue)) {
-              filtered.push(inputValue);
-            }
-            return filtered;
-          }}
-          PaperComponent={props => (
-            <Paper {...props} sx={{ maxHeight: 200, overflowY: 'auto' }} />
-          )}
-          renderInput={(params) => (
+          <Grid item xs={12} md={6}>
             <TextField
-              {...params}
-              label="Tags"
+              label="Title"
               variant="outlined"
               fullWidth
-              helperText="Separate tags with commas or press enter"
-              onKeyDown={(e) => {
-                if ((e.key === 'Enter' || e.key === 'Tab') && tagInput?.trim()) {
-                  e.preventDefault();
-                  const newTag = tagInput.trim();
-                  if (!tags.includes(newTag)) {
-                    setTags([...tags, newTag]);
-                  }
+              required
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              error={!title && !!error}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <Autocomplete
+              freeSolo
+              options={artistOptions.map((opt) => opt.name)}
+              value={artist || ''}
+              onChange={(event, newValue) => setArtist(newValue || '')}
+              onBlur={handleArtistInputBlur}
+              renderInput={(params) => (
+                <TextField {...params} label="Artist" variant="outlined" fullWidth />
+              )}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <FormControl fullWidth>
+              <InputLabel>Select Tirthankar</InputLabel>
+              <Select
+                value={selectedTirthankar}
+                onChange={(e) => setSelectedTirthankar(e.target.value)}
+                label="Select Tirthankar"
+              >
+                <MenuItem value="">
+                  <em>Clear Selection</em>
+                </MenuItem>
+                {tirthankarList.map((tirth) => (
+                  <MenuItem key={tirth.id} value={tirth.id}>
+                    {tirth.numbering}. {tirth.name} ({tirth.displayName})
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <Autocomplete
+              multiple
+              freeSolo
+              ChipProps={{
+                deleteIcon: <CancelIcon />,
+                variant: 'filled'
+              }}
+              options={combinedTagSuggestions}
+              value={tags || []}
+              onChange={handleTagChange}
+              inputValue={tagInput || ''}
+              onInputChange={(event, newValue, reason) => {
+                if (reason === 'reset') {
                   setTagInput('');
+                  return;
                 }
-              }}
-              onBlur={() => {
-                if (tagInput?.trim()) {
-                  const newTag = tagInput.trim();
-                  if (!tags.includes(newTag)) {
-                    setTags([...tags, newTag]);
+
+                // Handle comma-separated input
+                if (newValue?.includes(',')) {
+                  const newTags = newValue
+                    .split(',')
+                    .map((t) => t.trim())
+                    .filter(Boolean);
+
+                  if (newTags.length > 0) {
+                    setTags((prev) => [...prev, ...newTags]);
+                    setTagInput('');
+                    return;
                   }
-                  setTagInput('');
                 }
+
+                setTagInput(newValue || '');
               }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  padding: '4px',
-                  flexWrap: 'wrap',
-                  gap: 0.5,
-                  '& .MuiChip-root': {
-                    margin: '2px',
-                  },
-                },
+              filterOptions={(options, params) => {
+                const filtered = filter(options, params);
+                const inputValue = params.inputValue?.trim() || '';
+                if (inputValue && !filtered.includes(inputValue)) {
+                  filtered.push(inputValue);
+                }
+                return filtered;
               }}
+              PaperComponent={(props) => (
+                <Paper {...props} sx={{ maxHeight: 200, overflowY: 'auto' }} />
+              )}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Tags"
+                  variant="outlined"
+                  fullWidth
+                  helperText="Separate tags with commas or press enter"
+                  onKeyDown={(e) => {
+                    if ((e.key === 'Enter' || e.key === 'Tab') && tagInput?.trim()) {
+                      e.preventDefault();
+                      const newTag = tagInput.trim();
+                      if (!tags.includes(newTag)) {
+                        setTags([...tags, newTag]);
+                      }
+                      setTagInput('');
+                    }
+                  }}
+                  onBlur={() => {
+                    if (tagInput?.trim()) {
+                      const newTag = tagInput.trim();
+                      if (!tags.includes(newTag)) {
+                        setTags([...tags, newTag]);
+                      }
+                      setTagInput('');
+                    }
+                  }}
+                  sx={{
+                    // Removed custom padding to match other fields
+                    '& .MuiOutlinedInput-root': {
+                      flexWrap: 'wrap',
+                      gap: 0.5,
+                      '& .MuiChip-root': {
+                        margin: '2px'
+                      }
+                    }
+                  }}
+                />
+              )}
+              renderTags={(value, getTagProps) =>
+                value.map((option, index) => (
+                  <Chip
+                    {...getTagProps({ index })}
+                    key={index}
+                    label={option}
+                    onDelete={() => {
+                      const newTags = tags.filter((_, i) => i !== index);
+                      setTags(newTags);
+                    }}
+                    sx={{
+                      m: 0.5,
+                      borderRadius: '16px',
+                      '& .MuiChip-deleteIcon': {
+                        color: 'rgba(0, 0, 0, 0.6)',
+                        '&:hover': {
+                          color: 'rgba(0, 0, 0, 0.87)'
+                        }
+                      }
+                    }}
+                  />
+                ))
+              }
             />
-          )}
-          renderTags={(value, getTagProps) =>
-            value.map((option, index) => (
-              <Chip
-                {...getTagProps({ index })}
-                key={index}
-                label={option}
-                onDelete={() => {
-                  const newTags = tags.filter((_, i) => i !== index);
-                  setTags(newTags);
-                }}
-                sx={{
-                  m: 0.5,
-                  borderRadius: '16px',
-                  '& .MuiChip-deleteIcon': {
-                    color: 'rgba(0, 0, 0, 0.6)',
-                    '&:hover': {
-                      color: 'rgba(0, 0, 0, 0.87)',
-                    },
-                  },
-                }}
-              />
-            ))
-          }
-        />
-      </Grid>
+          </Grid>
 
-      <Grid item xs={12} md={6}>
-        <TextField
-          label="YouTube Link"
-          variant="outlined"
-          fullWidth
-          value={youtube}
-          onChange={(e) => setYoutube(e.target.value)}
-          error={youtube && !isValidYouTubeURL(youtube)}
-          helperText={youtube && !isValidYouTubeURL(youtube) ? "Invalid YouTube URL" : ""}
-        />
-      </Grid>
-
-      <Grid item xs={12} md={6}>
-        <TextField
-          label="Order"
-          variant="outlined"
-          fullWidth
-          value={order}
-          onChange={(e) => setOrder(e.target.value)}
-          error={order && isNaN(Number(order))}
-        />
-      </Grid>
-
-      <Grid item xs={12}>
-        <TextField
-          label="Content"
-          variant="outlined"
-          fullWidth
-          required
-          multiline
-          rows={4}
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          error={!content && !!error}
-        />
-      </Grid>
-
-      <Grid item xs={6}>
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={newFlag}
-              onChange={(e) => setNewFlag(e.target.checked)}
+          <Grid item xs={12} md={6}>
+            <TextField
+              label="YouTube Link"
+              variant="outlined"
+              fullWidth
+              value={youtube}
+              onChange={(e) => setYoutube(e.target.value)}
+              error={youtube && !isValidYouTubeURL(youtube)}
+              helperText={youtube && !isValidYouTubeURL(youtube) ? 'Invalid YouTube URL' : ''}
             />
-          }
-          label="New"
-        />
-      </Grid>
+          </Grid>
 
-      <Grid item xs={6}>
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={newTts}
-              onChange={(e) => setNewTts(e.target.checked)}
+          <Grid item xs={12} md={6}>
+            <TextField
+              label="Order"
+              variant="outlined"
+              fullWidth
+              value={order}
+              onChange={(e) => setOrder(e.target.value)}
+              error={order && isNaN(Number(order))}
             />
-          }
-          label="TTS"
-        />
-      </Grid>
-    </Grid>
+          </Grid>
+
+          <Grid item xs={12}>
+            <TextField
+              label="Content"
+              variant="outlined"
+              fullWidth
+              required
+              multiline
+              rows={4}
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              error={!content && !!error}
+            />
+          </Grid>
+
+          <Grid
+            item
+            xs={12}
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap'
+            }}
+          >
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={newFlag}
+                  onChange={(e) => setNewFlag(e.target.checked)}
+                />
+              }
+              label="New"
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={newTts}
+                  onChange={(e) => setNewTts(e.target.checked)}
+                />
+              }
+              label="TTS"
+            />
+          </Grid>
+        </Grid>
+      </CardContent>
+    </Card>
   );
 };
 
