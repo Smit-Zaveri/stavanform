@@ -18,7 +18,7 @@ import { auth, firestore, checkSuperAdmin } from "./firebase";
 // Components
 import Header from "./components/layout/Header";
 import Navigation from "./components/layout/Navigation";
-import CollectionForm from "./components/CollectionForm";
+import CollectionForm from "./components/CollectionForm/CollectionForm";
 import SongList from "./ListSong";
 import Login from "./Login";
 import ResetPassword from "./ResetPassword";
