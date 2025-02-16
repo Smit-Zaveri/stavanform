@@ -47,19 +47,7 @@ const SongTableRow = ({
           {song.title}
         </Typography>
       </TableCell>
-      <TableCell>
-        <Typography
-          variant="body2"
-          sx={{
-            maxWidth: "150px",
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
-        >
-          {song.artistName || "—"}
-        </Typography>
-      </TableCell>
+      
       <TableCell>
         <Typography
           variant="body2"

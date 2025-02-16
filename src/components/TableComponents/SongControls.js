@@ -23,20 +23,29 @@ const SongControls = ({
   setDeleteDialogOpen,
   collectionList,
 }) => {
+  const controlHeight = '56px'; // Common height for controls
+
   return (
     <Box
       sx={{
         display: 'flex',
         flexDirection: { xs: 'column', sm: 'row' },
         flexWrap: 'wrap',
+        alignItems: 'center',
         gap: 2,
         mb: 3,
-        alignItems: 'center',
       }}
     >
-      <FormControl sx={{ minWidth: 200 }}>
-        <InputLabel>Collection</InputLabel>
+      <FormControl
+        size="medium"
+        sx={{
+          minWidth: 200,
+          '& .MuiOutlinedInput-root': { height: controlHeight },
+        }}
+      >
+        <InputLabel id="collection-select-label">Collection</InputLabel>
         <Select
+          labelId="collection-select-label"
           value={selectedCollection}
           onChange={handleCollectionChange}
           label="Collection"
@@ -54,29 +63,53 @@ const SongControls = ({
       <TextField
         label="Search songs or tags"
         variant="outlined"
+        size="medium"
         value={searchInput}
         onChange={(e) => {
           setSearchInput(e.target.value);
           setPage(0);
         }}
-        sx={{ flexGrow: 1, minWidth: 200 }}
+        sx={{
+          flexGrow: 1,
+          minWidth: 200,
+          '& .MuiOutlinedInput-root': { height: controlHeight },
+        }}
       />
 
-      <Button variant="contained" startIcon={<Save />} onClick={exportData}>
+      <Button
+        variant="contained"
+        startIcon={<Save />}
+        onClick={exportData}
+        sx={{ height: controlHeight }}
+      >
         Export Songs
       </Button>
-      <Button variant="contained" component="label" startIcon={<FileUpload />}>
+
+      <Button
+        variant="contained"
+        component="label"
+        startIcon={<FileUpload />}
+        sx={{ height: controlHeight }}
+      >
         Import Songs
         <input type="file" accept=".csv" hidden onChange={handleImport} />
       </Button>
-      <Button variant="contained" startIcon={<Add />} onClick={handleAddNewClick}>
+
+      <Button
+        variant="contained"
+        startIcon={<Add />}
+        onClick={handleAddNewClick}
+        sx={{ height: controlHeight }}
+      >
         Add New Song
       </Button>
+
       {selectedSongIds.length > 0 && (
         <Button
           variant="contained"
           color="error"
           onClick={() => setDeleteDialogOpen(true)}
+          sx={{ height: controlHeight }}
         >
           Delete Selected ({selectedSongIds.length})
         </Button>
