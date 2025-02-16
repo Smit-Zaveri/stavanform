@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
+import { useLocation } from 'react-router-dom';
 import {
   Box,
   Button,
@@ -41,6 +42,7 @@ import CollectionFormFields from "./CollectionFormFields";
 import CollectionList from "./CollectionList";
 
 const CollectionForm = ({ collectionName }) => {
+  const location = useLocation();
   const {
     collections,
     loading,
@@ -60,7 +62,7 @@ const CollectionForm = ({ collectionName }) => {
     resetForm,
     setEditData,
     validateForm,
-  } = useCollectionForm(collections);
+  } = useCollectionForm(collectionName);  // Pass collectionName here
 
   const { exportToCSV, parseCSVData } = useCSVOperations(collectionName, collections);
 
@@ -81,6 +83,18 @@ const CollectionForm = ({ collectionName }) => {
     fetchCollections();
   }, [fetchCollections]);
 
+  // Add URL change detection
+  useEffect(() => {
+    resetForm();
+  }, [location.pathname]);
+
+  // Add function to get next order number
+  const getNextOrderNumber = () => {
+    if (!collections || collections.length === 0) return 1;
+    const maxOrder = Math.max(...collections.map(c => parseInt(c.order) || 0));
+    return maxOrder + 1;
+  };
+
   // Handle form submission for add/edit
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -95,7 +109,12 @@ const CollectionForm = ({ collectionName }) => {
           severity: "success",
         });
       } else {
-        await addCollection(formData);
+        // Set the order number for new collections
+        const newFormData = {
+          ...formData,
+          order: getNextOrderNumber().toString()
+        };
+        await addCollection(newFormData);
         setSnackbar({
           open: true,
           message: "Collection added successfully.",
@@ -220,6 +239,12 @@ const CollectionForm = ({ collectionName }) => {
     setSnackbar({ ...snackbar, open: false });
   };
 
+  // Modified setEditData handler to include scroll to top
+  const handleEdit = (data) => {
+    setEditData(data);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
       <CollectionFormFields
@@ -312,7 +337,7 @@ const CollectionForm = ({ collectionName }) => {
         selectedIds={selectedIds}
         onToggleSelect={toggleSelect}
         onToggleSelectAll={toggleSelectAll}
-        onEdit={setEditData}
+        onEdit={handleEdit}
         onDelete={handleDeleteCollection}
         collectionName={collectionName}
       />
