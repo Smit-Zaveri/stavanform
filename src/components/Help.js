@@ -21,7 +21,7 @@ const Help = () => (
     </Typography>
     
     <Box sx={{ maxWidth: 800, margin: "0 auto" }}>
-      <Accordion defaultExpanded>
+      <Accordion>
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography variant="h6">Getting Started</Typography>
         </AccordionSummary>

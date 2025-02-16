@@ -38,12 +38,20 @@ const SongFormDialog = ({
   onSubmit,
 }) => {
   const navigate = useNavigate();
+  
+  const [uploadProgress, setUploadProgress] = useState(0);
 
-  // Fields
+  const parseTags = (tags) => {
+    if (!tags) return [];
+    return Array.isArray(tags)
+      ? tags
+      : tags.split(",").map((t) => t.trim()).filter(Boolean);
+  };
+  
   const [formValues, setFormValues] = useState({
     title: initialData?.title || "",
-    artist: initialData?.artist || "", // Important: Initialize artist properly
-    tags: initialData?.tags || [],
+    artist: initialData?.artist || "",
+    tags: parseTags(initialData?.tags),
     order: initialData?.order ?? "",
     content: initialData?.content || "",
     youtube: initialData?.youtube || "",
@@ -52,16 +60,13 @@ const SongFormDialog = ({
     tirthankarId: initialData?.tirthankarId || "",
     mp3URL: initialData?.mp3URL || "",
   });
-
-  const [uploadProgress, setUploadProgress] = useState(0);
-
-  // Update form values when initialData changes
+  
   useEffect(() => {
     if (initialData) {
       setFormValues({
         title: initialData.title || "",
-        artist: initialData.artist || "", // Ensure artist is set from initialData
-        tags: initialData.tags || [],
+        artist: initialData.artist || "",
+        tags: parseTags(initialData.tags),
         order: initialData.order || "",
         content: initialData.content || "",
         youtube: initialData.youtube || "",
@@ -71,7 +76,6 @@ const SongFormDialog = ({
         mp3URL: initialData.mp3URL || "",
       });
     } else {
-      // Reset form when there's no initialData
       setFormValues({
         title: "",
         artist: "",
@@ -86,6 +90,7 @@ const SongFormDialog = ({
       });
     }
   }, [initialData]);
+  
 
   const [selectedCollection, setSelectedCollection] = useState(
     collectionName || "lyrics"
@@ -441,13 +446,14 @@ useEffect(() => {
             </Grid>
             {/* Tags Input */}
             <Grid item xs={12} md={6}>
-              <TagsInput
-                tags={formValues.tags}
-                setTags={(newTags) => handleFormChange('tags', newTags)}
-                tagInput={tagInput}
-                setTagInput={setTagInput}
-                combinedTagSuggestions={combinedTagSuggestions}
-              />
+            <TagsInput
+              tags={Array.isArray(formValues.tags) ? formValues.tags : []}
+              setTags={(newTags) => setFormValues(prev => ({ ...prev, tags: newTags }))}
+              tagInput={tagInput}
+              setTagInput={setTagInput}
+              combinedTagSuggestions={combinedTagSuggestions}
+            />
+
             </Grid>
             {/* YouTube */}
             <Grid item xs={12} md={6}>
