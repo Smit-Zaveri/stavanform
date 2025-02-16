@@ -180,6 +180,7 @@ export const SongFormDialog = ({
               setSelectedCollection={setSelectedCollection}
               handleArtistInputBlur={handleArtistInputBlur}
               mode={mode}
+              previousCollection={previousCollection}
             />
             <Button variant="contained" type="submit" fullWidth sx={{ mt: 3 }}>
               Submit
