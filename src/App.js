@@ -212,16 +212,12 @@ const App = () => {
           <Toolbar />
           <Routes>
             <Route path="/" element={user ? <Navigate to="/list-song/lyrics" replace /> : <Login />} />
-            <Route path="/tag" element={user ? <CollectionForm collectionName="tags" /> : <Login />} />
-            <Route path="/artist-form" element={user ? <CollectionForm collectionName="artists" /> : <Login />} />
-            <Route path="/collection" element={user ? <CollectionForm collectionName="collections" /> : <Login />} />
-            <Route path="/tirth" element={user ? <CollectionForm collectionName="tirth" /> : <Login />} />
             <Route path="/list-song/:collectionName" element={user ? <SongList /> : <Login />} />
-            <Route path="/tirtankar" element={user ? <CollectionForm collectionName="tirtankar" /> : <Login />} />
             <Route path="/suggestedsongs" element={user ? <MainContent /> : <Login />} />
             <Route path="/login" element={<Login />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/profile" element={user ? <Profile /> : <Login />} />
+            <Route path="/:path" element={user ? <CollectionForm collectionName={window.location.pathname.substring(1)} /> : <Login />} />
             <Route 
               path="/settings" 
               element={
