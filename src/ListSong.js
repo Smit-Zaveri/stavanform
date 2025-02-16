@@ -151,6 +151,7 @@ const ListSong = () => {
   const handleCollectionChange = (e) => {
     const newCollection = e.target.value;
     setSelectedCollection(newCollection);
+    setPage(0); // Reset to first page when changing collection
     navigate(`/list-song/${newCollection}`);
   };
 
@@ -182,37 +183,21 @@ const ListSong = () => {
     }
   };
 
-  const handleFormSubmit = async (data, mode) => {
+  const handleFormSubmit = async (data, mode, collectionInfo) => {
     try {
-      const collectionRef = firestore.collection(selectedCollection);
-
-      // Format data to use artistName when saving to database
-      const formattedData = {
-        title: data.title,
-        artistName: data.artist || "",
-        content: data.content,
-        tags: Array.isArray(data.tags) ? data.tags : [],
-        order: data.order ? Number(data.order) : null,
-        youtube: data.youtube || "",
-        newFlag: Boolean(data.newFlag),
-        newTts: Boolean(data.newTts),
-        tirthankarId: data.selectedTirthankar || "",
-        publishDate: firebase.firestore.Timestamp.now(),
-      };
-
-      if (mode === "new") {
-        await collectionRef.add(formattedData);
-        if (location.state?.suggestionId) {
-          await firestore.collection("suggestions_new").doc(location.state.suggestionId).delete();
-          navigate(location.pathname, { replace: true });
-        }
-      } else if (mode === "edit") {
-        await collectionRef.doc(data.id).update(formattedData);
-      }
-      
+      // No need to handle the Firestore operations here as they're now handled in SongFormDialog
       setSongFormOpen(false);
       setSongFormInitialData(null);
-      await fetchDynamicData(); // Refresh the data
+
+      // If collection was changed, fetch data for both collections
+      if (collectionInfo && collectionInfo.previousCollection !== collectionInfo.newCollection) {
+        setSelectedCollection(collectionInfo.newCollection);
+        await fetchDynamicData();
+        // Navigate to new collection URL
+        navigate(`/list-song/${collectionInfo.newCollection}`);
+      } else {
+        await fetchDynamicData();
+      }
       
       setImportMessage(mode === "new" ? "Song added successfully" : "Song updated successfully");
       setSnackbarOpen(true);

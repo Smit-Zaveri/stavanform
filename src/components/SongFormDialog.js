@@ -33,6 +33,7 @@ export const SongFormDialog = ({
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const [newArtist, setNewArtist] = useState("");
+  const [previousCollection, setPreviousCollection] = useState(collectionName || "lyrics");
 
   const {
     formData,
@@ -47,8 +48,10 @@ export const SongFormDialog = ({
   useEffect(() => {
     if (initialData && initialData.collection) {
       setSelectedCollection(initialData.collection);
+      setPreviousCollection(initialData.collection);
     } else if (collectionName) {
       setSelectedCollection(collectionName);
+      setPreviousCollection(collectionName);
     }
   }, [initialData, collectionName]);
 
@@ -81,7 +84,6 @@ export const SongFormDialog = ({
     e.preventDefault();
     setters.commitTagInput();
 
-    // Clean up tags before validation
     const cleanedTags = formData.tags
       ? formData.tags.map(tag => tag.trim()).filter(Boolean)
       : [];
@@ -89,7 +91,9 @@ export const SongFormDialog = ({
     const dataToValidate = {
       ...formData,
       tags: cleanedTags,
-      selectedCollection
+      selectedCollection,
+      previousCollection,
+      mode
     };
 
     const validationError = validateSongForm(dataToValidate);
@@ -107,13 +111,36 @@ export const SongFormDialog = ({
       publishDate: firebase.firestore.Timestamp.now(),
     };
 
-    if (mode === "edit" && initialData?.id) {
-      docData.id = initialData.id;
-    }
-
     try {
-      await onSubmit(docData, mode);
-      onClose();
+      if (mode === "edit" && initialData?.id) {
+        if (selectedCollection !== previousCollection) {
+          // Show loading message
+          setError("Moving song to new collection...");
+          setOpenSnackbar(true);
+          
+          // Delete from old collection and add to new collection
+          await firestore.collection(previousCollection).doc(initialData.id).delete();
+          await firestore.collection(selectedCollection).add(docData);
+          
+          // Show success message
+          setError(`Successfully moved song to ${selectedCollection}`);
+        } else {
+          // Update in same collection
+          await firestore.collection(selectedCollection).doc(initialData.id).update(docData);
+          setError("Successfully updated song");
+        }
+      } else {
+        // New song - add to selected collection
+        await firestore.collection(selectedCollection).add(docData);
+        setError("Successfully added new song");
+      }
+
+      // Show success message
+      setOpenSnackbar(true);
+      setTimeout(() => {
+        onSubmit(docData, mode, { previousCollection, newCollection: selectedCollection });
+        onClose();
+      }, 1000);
     } catch (error) {
       console.error("Error submitting form:", error);
       setError("Failed to save changes. Please try again.");
@@ -130,7 +157,14 @@ export const SongFormDialog = ({
         maxWidth="md"
         keepMounted={false} // Force re-render on close
       >
-        <DialogTitle>{mode === "new" ? "Add New Song" : "Edit Song"}</DialogTitle>
+        <DialogTitle>
+          {mode === "new" ? "Add New Song" : "Edit Song"}
+          {mode === "edit" && selectedCollection !== previousCollection && (
+            <Typography variant="caption" color="text.secondary" display="block">
+              Moving song from {previousCollection} to {selectedCollection}
+            </Typography>
+          )}
+        </DialogTitle>
         <DialogContent>
           <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
             <SongFormControls
@@ -145,6 +179,7 @@ export const SongFormDialog = ({
               selectedCollection={selectedCollection}
               setSelectedCollection={setSelectedCollection}
               handleArtistInputBlur={handleArtistInputBlur}
+              mode={mode}  {/* Add the mode prop here */}
             />
             <Button variant="contained" type="submit" fullWidth sx={{ mt: 3 }}>
               Submit
@@ -160,7 +195,7 @@ export const SongFormDialog = ({
       >
         <Alert
           onClose={() => setOpenSnackbar(false)}
-          severity="error"
+          severity={error.includes("Success") ? "success" : "error"}
           sx={{ width: "100%" }}
         >
           {error}

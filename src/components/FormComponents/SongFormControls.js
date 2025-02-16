@@ -13,7 +13,8 @@ import {
   Paper,
   Card,
   CardContent,
-  Typography
+  Typography,
+  Alert
 } from '@mui/material';
 import { createFilterOptions } from '@mui/material/Autocomplete';
 import { isValidYouTubeURL } from '../../utils/validators';
@@ -32,7 +33,8 @@ export const SongFormControls = ({
   collectionOptions,
   selectedCollection,
   setSelectedCollection,
-  handleArtistInputBlur
+  handleArtistInputBlur,
+  mode
 }) => {
   const {
     title,
@@ -79,20 +81,35 @@ export const SongFormControls = ({
     setTags(cleanedTags);
   };
 
+  const handleCollectionChange = (e) => {
+    const newCollection = e.target.value;
+    if (mode === 'edit' && newCollection !== selectedCollection) {
+      if (window.confirm('Changing collection will move this song to the new collection. Continue?')) {
+        setSelectedCollection(newCollection);
+      }
+    } else {
+      setSelectedCollection(newCollection);
+    }
+  };
+
   return (
-    <Card     
-    >
+    <Card>
       <CardContent>
         <Typography variant="h6" gutterBottom>
           Song Details
         </Typography>
+        {mode === 'edit' && selectedCollection !== previousCollection && (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            This song will be moved from "{previousCollection}" to "{selectedCollection}"
+          </Alert>
+        )}
         <Grid container spacing={3}>
           <Grid item xs={12} md={6}>
             <FormControl fullWidth required error={!selectedCollection && !!error}>
               <InputLabel>Select Collection</InputLabel>
               <Select
                 value={selectedCollection}
-                onChange={(e) => setSelectedCollection(e.target.value)}
+                onChange={handleCollectionChange}
                 label="Select Collection"
               >
                 <MenuItem value="">
@@ -104,6 +121,11 @@ export const SongFormControls = ({
                   </MenuItem>
                 ))}
               </Select>
+              {mode === 'edit' && (
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+                  Changing collection will move this song to the selected collection
+                </Typography>
+              )}
             </FormControl>
           </Grid>
 

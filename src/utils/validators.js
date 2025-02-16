@@ -4,7 +4,7 @@ export const isValidYouTubeURL = (url) => {
   return regex.test(url);
 };
 
-export const validateSongForm = ({ title, content, selectedCollection, youtube, order, tags = [] }) => {
+export const validateSongForm = ({ title, content, selectedCollection, youtube, order, tags = [], previousCollection, mode }) => {
   if (!selectedCollection || !title || !content) {
     return "Please fill in all required fields.";
   }
@@ -16,6 +16,12 @@ export const validateSongForm = ({ title, content, selectedCollection, youtube, 
   }
   if (!Array.isArray(tags)) {
     return "Invalid tags format. Tags must be an array.";
+  }
+  if (mode === 'edit' && selectedCollection !== previousCollection) {
+    // Additional validation for collection change
+    if (!selectedCollection || !previousCollection) {
+      return "Both old and new collection must be specified when moving a song.";
+    }
   }
   return null;
 };
