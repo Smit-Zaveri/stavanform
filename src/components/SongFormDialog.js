@@ -10,6 +10,7 @@ import {
   DialogTitle,
   Typography,
   Snackbar,
+  DialogContentText,
 } from "@mui/material";
 import { firestore } from "../firebase";
 import firebase from "firebase/compat/app";
@@ -34,6 +35,9 @@ export const SongFormDialog = ({
   const [openDialog, setOpenDialog] = useState(false);
   const [newArtist, setNewArtist] = useState("");
   const [previousCollection, setPreviousCollection] = useState(collectionName || "lyrics");
+  const [openDuplicateDialog, setOpenDuplicateDialog] = useState(false);
+  const [duplicateAction, setDuplicateAction] = useState('');
+  const [pendingDocData, setPendingDocData] = useState(null);
 
   const {
     formData,
@@ -112,39 +116,74 @@ export const SongFormDialog = ({
     };
 
     try {
+      // Check for duplicates
+      const duplicateQuery = await firestore.collection(selectedCollection)
+        .where("title", "==", formData.title)
+        .get();
+
+      if (!duplicateQuery.empty && mode === "new") {
+        setPendingDocData(docData);
+        setOpenDuplicateDialog(true);
+        return;
+      }
+
+      await saveSong(docData);
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      setError("Failed to save changes. Please try again.");
+      setOpenSnackbar(true);
+    }
+  };
+
+  const saveSong = async (docData) => {
+    try {
       if (mode === "edit" && initialData?.id) {
         if (selectedCollection !== previousCollection) {
-          // Show loading message
           setError("Moving song to new collection...");
           setOpenSnackbar(true);
           
-          // Delete from old collection and add to new collection
           await firestore.collection(previousCollection).doc(initialData.id).delete();
           await firestore.collection(selectedCollection).add(docData);
           
-          // Show success message
           setError(`Successfully moved song to ${selectedCollection}`);
         } else {
-          // Update in same collection
           await firestore.collection(selectedCollection).doc(initialData.id).update(docData);
           setError("Successfully updated song");
         }
       } else {
-        // New song - add to selected collection
-        await firestore.collection(selectedCollection).add(docData);
+        if (duplicateAction === 'replace') {
+          const duplicateDoc = await firestore.collection(selectedCollection)
+            .where("title", "==", docData.title)
+            .get();
+          await firestore.collection(selectedCollection).doc(duplicateDoc.docs[0].id).set(docData);
+        } else {
+          await firestore.collection(selectedCollection).add(docData);
+        }
         setError("Successfully added new song");
       }
 
-      // Show success message
       setOpenSnackbar(true);
       setTimeout(() => {
         onSubmit(docData, mode, { previousCollection, newCollection: selectedCollection });
         onClose();
       }, 1000);
     } catch (error) {
-      console.error("Error submitting form:", error);
+      console.error("Error saving song:", error);
       setError("Failed to save changes. Please try again.");
       setOpenSnackbar(true);
+    }
+  };
+
+  const handleDuplicateAction = (action) => {
+    setDuplicateAction(action);
+    setOpenDuplicateDialog(false);
+    if (action === 'skip') {
+      setError("Song upload skipped - duplicate found");
+      setOpenSnackbar(true);
+      return;
+    }
+    if (pendingDocData) {
+      saveSong(pendingDocData);
     }
   };
 
@@ -187,6 +226,20 @@ export const SongFormDialog = ({
             </Button>
           </Box>
         </DialogContent>
+      </Dialog>
+
+      <Dialog open={openDuplicateDialog} onClose={() => setOpenDuplicateDialog(false)}>
+        <DialogTitle>Duplicate Song Found</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            A song with the title "{formData.title}" already exists in this collection. What would you like to do?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => handleDuplicateAction('skip')}>Skip This</Button>
+          <Button onClick={() => handleDuplicateAction('replace')} color="warning">Replace Existing</Button>
+          <Button onClick={() => handleDuplicateAction('add')} color="primary">Add as New</Button>
+        </DialogActions>
       </Dialog>
 
       <Snackbar

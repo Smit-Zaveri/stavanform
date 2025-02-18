@@ -26,6 +26,12 @@ export const useMenuManagement = () => {
   const [error, setError] = useState(null);
   const dragItemIndex = useRef(null);
 
+  // Add the missing handleEditClick function
+  const handleEditClick = useCallback((item) => {
+    setEditingItem({ ...item });
+    setIsEditDialogOpen(true);
+  }, []);
+
   const loadNavItems = useCallback(async () => {
     setLoading(true);
     try {
@@ -157,6 +163,7 @@ export const useMenuManagement = () => {
     handleDragStart,
     handleDragOver,
     handleDrop,
+    handleEditClick,  // Add the new function to the return object
     defaultMenuItem
   };
 };

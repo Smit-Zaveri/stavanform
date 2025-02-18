@@ -4,7 +4,7 @@ import { SongFormDialog } from "./components/SongFormDialog";
 import SongTable from "./components/TableComponents/SongTable";
 import SongControls from "./components/TableComponents/SongControls";
 import { DeleteDialog, ResolveDialog } from "./components/DialogComponents/SongDialogs";
-import { sortSongs, filterSongs, exportSongsToCSV, importSongsFromCSV } from "./utils/songUtils";
+import { sortSongs, filterSongs, exportSongsToCSV, importSongsFromCSV, handleSingleDuplicate, processRemainingImports } from "./utils/songUtils";
 import {
   Box,
   Container,
@@ -15,6 +15,12 @@ import {
   Alert,
   Fab,
   Typography,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Button,
 } from "@mui/material";
 import ArrowUpward from "@mui/icons-material/ArrowUpward";
 import { firestore } from "./firebase";
@@ -41,6 +47,16 @@ const ListSong = () => {
   const [importMessage, setImportMessage] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [showGoToTop, setShowGoToTop] = useState(false);
+  const [duplicatesDialogOpen, setDuplicatesDialogOpen] = useState(false);
+  const [duplicateSongs, setDuplicateSongs] = useState([]);
+  const [importFile, setImportFile] = useState(null);
+
+  const [currentDuplicate, setCurrentDuplicate] = useState(null);
+  const [remainingImports, setRemainingImports] = useState(null);
+  const [importProgress, setImportProgress] = useState({ processed: 0, total: 0 });
+  const [singleDuplicateDialogOpen, setSingleDuplicateDialogOpen] = useState(false);
+  const [applyToAll, setApplyToAll] = useState(false);
+  const [savedAction, setSavedAction] = useState(null);
 
   const navigate = useNavigate();
   const { collectionName } = useParams();
@@ -166,13 +182,160 @@ const ListSong = () => {
     if (!file) return;
     setImporting(true);
     setImportMessage("Starting import...");
+    
     try {
-      const successCount = await importSongsFromCSV(
+      const result = await importSongsFromCSV(
         file,
         selectedCollection,
         setImportMessage
       );
-      setImportMessage(`Successfully imported ${successCount} song(s).`);
+
+      if (result.duplicateFound) {
+        setCurrentDuplicate({
+          songData: result.songData,
+          existingDoc: result.existingDoc
+        });
+        setRemainingImports(result.remainingSongs);
+        setImportProgress({
+          processed: result.processedCount || 0,
+          total: result.remainingSongs.length + 1
+        });
+        setSingleDuplicateDialogOpen(true);
+        return;
+      }
+
+      setImportMessage(`Successfully imported ${result.count} song(s).`);
+      await fetchDynamicData();
+    } catch (error) {
+      console.error("Error during import:", error);
+      setImportMessage("Error during import. Please try again.");
+    } finally {
+      if (!currentDuplicate) {
+        setImporting(false);
+        setSnackbarOpen(true);
+      }
+    }
+  };
+
+  const handleSingleDuplicateAction = async (action, shouldApplyToAll = false) => {
+    setSingleDuplicateDialogOpen(false);
+    
+    try {
+      let processedCount = importProgress.processed;
+
+      // If applying to all, process current and all remaining songs at once
+      if (shouldApplyToAll) {
+        const allRemainingFiles = [currentDuplicate.songData, ...remainingImports.map(song => ({
+          title: song.Title,
+          artistName: song.Artist,
+          tags: song.Tags?.split(",").map((tag) => tag.trim().toLowerCase()) || [],
+          order: song.Order ? Number(song.Order) : null,
+          youtube: song.YouTube,
+          publishDate: firebase.firestore.Timestamp.now(),
+          content: song.Content,
+        }))];
+
+        if (action === 'skip') {
+          // Skip all remaining songs immediately
+          setImportMessage(`Skipped ${allRemainingFiles.length} songs with duplicates.`);
+        } else {
+          // Process all files with the chosen action
+          for (const songData of allRemainingFiles) {
+            setImportMessage(`Processing: ${songData.title}`);
+            
+            const existing = await firestore.collection(selectedCollection)
+              .where("title", "==", songData.title)
+              .get();
+
+            if (!existing.empty) {
+              await handleSingleDuplicate(action, songData, existing.docs[0], selectedCollection);
+            } else {
+              await firestore.collection(selectedCollection).add(songData);
+            }
+            processedCount++;
+          }
+          setImportMessage(`Successfully processed ${processedCount} songs.`);
+        }
+
+        await fetchDynamicData();
+        setImporting(false);
+        setCurrentDuplicate(null);
+        setRemainingImports(null);
+        setImportProgress({ processed: 0, total: 0 });
+        setApplyToAll(false);
+        setSavedAction(null);
+        setSnackbarOpen(true);
+        return;
+      }
+
+      // Handle single item action
+      if (action !== 'skip') {
+        await handleSingleDuplicate(
+          action, 
+          currentDuplicate.songData, 
+          currentDuplicate.existingDoc, 
+          selectedCollection
+        );
+      }
+      processedCount++;
+
+      if (remainingImports && remainingImports.length > 0) {
+        const result = await processRemainingImports(
+          remainingImports,
+          selectedCollection,
+          setImportMessage
+        );
+
+        if (result.duplicateFound) {
+          setCurrentDuplicate({
+            songData: result.songData,
+            existingDoc: result.existingDoc
+          });
+          setRemainingImports(result.remainingSongs);
+          setImportProgress({ processed: processedCount, total: processedCount + result.remainingSongs.length + 1 });
+          setSingleDuplicateDialogOpen(true);
+          return;
+        }
+
+        processedCount += result.count;
+      }
+
+      setImportMessage(`Import completed. Processed ${processedCount} songs.`);
+      await fetchDynamicData();
+      setImporting(false);
+      setCurrentDuplicate(null);
+      setRemainingImports(null);
+      setImportProgress({ processed: 0, total: 0 });
+      
+    } catch (error) {
+      console.error("Error handling duplicates:", error);
+      setImportMessage("Error during import. Please try again.");
+      setImporting(false);
+    } finally {
+      setSnackbarOpen(true);
+    }
+  };
+
+  const handleImportWithDuplicateAction = async (action) => {
+    setDuplicatesDialogOpen(false);
+    if (action === 'skip') {
+      setImportMessage("Import cancelled.");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    setImporting(true);
+    setImportMessage("Starting import...");
+
+    try {
+      const result = await importSongsFromCSV(
+        importFile,
+        selectedCollection,
+        setImportMessage,
+        action
+      );
+
+      setImportMessage(`Successfully imported ${result.count} song(s).`);
       await fetchDynamicData();
     } catch (error) {
       console.error("Error during import:", error);
@@ -180,6 +343,7 @@ const ListSong = () => {
     } finally {
       setImporting(false);
       setSnackbarOpen(true);
+      setImportFile(null);
     }
   };
 
@@ -364,6 +528,62 @@ const ListSong = () => {
           }
         }}
       />
+
+      <Dialog open={duplicatesDialogOpen} onClose={() => setDuplicatesDialogOpen(false)}>
+        <DialogTitle>Duplicate Songs Found</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {duplicateSongs.length} song(s) with the same titles were found in the collection:
+            <Box component="ul" sx={{ mt: 1, maxHeight: 200, overflow: 'auto' }}>
+              {duplicateSongs.map((song, idx) => (
+                <li key={idx}>{song.title}</li>
+              ))}
+            </Box>
+            What would you like to do with these duplicates?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => handleImportWithDuplicateAction('skip')}>Skip All</Button>
+          <Button onClick={() => handleImportWithDuplicateAction('replace')} color="warning">Replace All</Button>
+          <Button onClick={() => handleImportWithDuplicateAction('add')} color="primary">Add All as New</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog 
+        open={singleDuplicateDialogOpen} 
+        onClose={() => setSingleDuplicateDialogOpen(false)}
+      >
+        <DialogTitle>Duplicate Song Found ({importProgress.processed + 1} of {importProgress.total})</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            A song with the title "{currentDuplicate?.songData.title}" already exists in this collection. What would you like to do?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ flexDirection: 'column', alignItems: 'stretch', gap: 1 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+            <Button onClick={() => handleSingleDuplicateAction('skip')}>
+              Skip This
+            </Button>
+            <Button onClick={() => handleSingleDuplicateAction('replace')} color="warning">
+              Replace Existing
+            </Button>
+            <Button onClick={() => handleSingleDuplicateAction('add')} color="primary">
+              Add as New
+            </Button>
+          </Box>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, borderTop: 1, pt: 1, borderColor: 'divider' }}>
+            <Button onClick={() => handleSingleDuplicateAction('skip', true)}>
+              Skip All
+            </Button>
+            <Button onClick={() => handleSingleDuplicateAction('replace', true)} color="warning">
+              Replace All
+            </Button>
+            <Button onClick={() => handleSingleDuplicateAction('add', true)} color="primary">
+              Add All as New
+            </Button>
+          </Box>
+        </DialogActions>
+      </Dialog>
 
       <Snackbar
         open={snackbarOpen}

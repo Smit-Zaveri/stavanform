@@ -61,6 +61,47 @@ export const exportSongsToCSV = (songs, selectedCollection) => {
   document.body.removeChild(link);
 };
 
+export const processRemainingImports = async (remainingSongs, collectionName, onProgress) => {
+  const collectionRef = firestore.collection(collectionName);
+  let successCount = 0;
+
+  for (const song of remainingSongs) {
+    onProgress(`Processing: ${song.Title}`);
+    
+    const existing = await collectionRef
+      .where("title", "==", song.Title)
+      .get();
+    
+    const songData = {
+      title: song.Title,
+      artistName: song.Artist,
+      tags: song.Tags?.split(",").map((tag) => tag.trim().toLowerCase()) || [],
+      order: song.Order ? Number(song.Order) : null,
+      youtube: song.YouTube,
+      publishDate: firebase.firestore.Timestamp.now(),
+      content: song.Content,
+    };
+
+    if (!existing.empty) {
+      // Return for next individual confirmation, including total remaining count
+      return { 
+        duplicateFound: true, 
+        songData,
+        existingDoc: existing.docs[0],
+        remainingSongs: remainingSongs.slice(1),
+        processedCount: successCount,
+        totalRemaining: remainingSongs.length
+      };
+    }
+
+    // If no duplicate, add the song
+    await collectionRef.add(songData);
+    successCount++;
+  }
+
+  return { success: true, count: successCount };
+};
+
 export const importSongsFromCSV = async (file, collectionName, onProgress) => {
   return new Promise((resolve, reject) => {
     Papa.parse(file, {
@@ -68,33 +109,8 @@ export const importSongsFromCSV = async (file, collectionName, onProgress) => {
       skipEmptyLines: true,
       complete: async (results) => {
         try {
-          const collectionRef = firestore.collection(collectionName);
-          const incomingSongs = results.data;
-          let successCount = 0;
-
-          for (let i = 0; i < incomingSongs.length; i++) {
-            const row = incomingSongs[i];
-            onProgress(`Importing: ${row.Title}`);
-            
-            const existing = await collectionRef
-              .where("title", "==", row.Title)
-              .where("artistName", "==", row.Artist)  // Update query to use artistName
-              .get();
-
-            if (existing.empty) {
-              await collectionRef.add({
-                title: row.Title,
-                artistName: row.Artist,  // Save as artistName in Firestore
-                tags: row.Tags?.split(",").map((tag) => tag.trim().toLowerCase()) || [],
-                order: row.Order ? Number(row.Order) : null,
-                youtube: row.YouTube,
-                publishDate: firebase.firestore.Timestamp.now(),
-                content: row.Content,
-              });
-              successCount++;
-            }
-          }
-          resolve(successCount);
+          const result = await processRemainingImports(results.data, collectionName, onProgress);
+          resolve(result);
         } catch (error) {
           reject(error);
         }
@@ -102,4 +118,21 @@ export const importSongsFromCSV = async (file, collectionName, onProgress) => {
       error: reject,
     });
   });
+};
+
+export const handleSingleDuplicate = async (action, songData, existingDoc, collectionName) => {
+  const collectionRef = firestore.collection(collectionName);
+  
+  switch (action) {
+    case 'replace':
+      await existingDoc.ref.set(songData);
+      return true;
+    case 'add':
+      await collectionRef.add(songData);
+      return true;
+    case 'skip':
+      return true; // Return true for skip to indicate successful handling
+    default:
+      return false;
+  }
 };
