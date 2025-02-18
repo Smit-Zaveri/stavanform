@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { SongFormDialog } from "./components/SongFormDialog";
 import SongTable from "./components/TableComponents/SongTable";
+import SongCard from "./components/TableComponents/SongCard";
 import SongControls from "./components/TableComponents/SongControls";
 import { DeleteDialog, ResolveDialog } from "./components/DialogComponents/SongDialogs";
 import { sortSongs, filterSongs, exportSongsToCSV, importSongsFromCSV, handleSingleDuplicate, processRemainingImports } from "./utils/songUtils";
@@ -21,6 +22,9 @@ import {
   DialogContentText,
   DialogActions,
   Button,
+  useMediaQuery,
+  useTheme,
+  Checkbox,
 } from "@mui/material";
 import ArrowUpward from "@mui/icons-material/ArrowUpward";
 import { firestore } from "./firebase";
@@ -61,6 +65,9 @@ const ListSong = () => {
   const navigate = useNavigate();
   const { collectionName } = useParams();
   const location = useLocation();
+
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   // Data fetching
   const fetchStaticData = useCallback(async () => {
@@ -394,6 +401,14 @@ const ListSong = () => {
     setSongFormOpen(true);
   };
 
+  const handleSelectSong = (id) => {
+    setSelectedSongIds((prev) =>
+      prev.includes(id)
+        ? prev.filter((songId) => songId !== id)
+        : [...prev, id]
+    );
+  };
+
   // Computed values
   const sortedSongs = sortSongs(songs, reports);
   const filteredSongs = filterSongs(sortedSongs, searchInput);
@@ -438,35 +453,80 @@ const ListSong = () => {
         </Box>
       )}
 
-      <SongTable
-        hasAnyReport={hasAnyReport}
-        paginatedSongs={paginatedSongs}
-        selectedSongIds={selectedSongIds}
-        reports={reports}
-        handleSelectAll={(event) => {
-          if (event.target.checked) {
-            setSelectedSongIds(paginatedSongs.map((song) => song.id));
-          } else {
-            setSelectedSongIds([]);
-          }
-        }}
-        handleSelectSong={(id) => {
-          setSelectedSongIds((prev) =>
-            prev.includes(id)
-              ? prev.filter((songId) => songId !== id)
-              : [...prev, id]
-          );
-        }}
-        handleEditClick={handleEditClick}
-        handleDeleteClick={(id) => {
-          setSelectedSongIds([id]);
-          setDeleteDialogOpen(true);
-        }}
-        handleResolveClick={(reportId) => {
-          setResolveReportId(reportId);
-          setResolveDialogOpen(true);
-        }}
-      />
+      {isMobile ? (
+        // Mobile card view
+        <Box>
+          <Box sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
+            <Checkbox
+              checked={paginatedSongs.length > 0 && selectedSongIds.length === paginatedSongs.length}
+              indeterminate={selectedSongIds.length > 0 && selectedSongIds.length < paginatedSongs.length}
+              onChange={(event) => {
+                if (event.target.checked) {
+                  setSelectedSongIds(paginatedSongs.map((song) => song.id));
+                } else {
+                  setSelectedSongIds([]);
+                }
+              }}
+            />
+            <Typography variant="body1">
+              Select All ({selectedSongIds.length}/{paginatedSongs.length})
+            </Typography>
+          </Box>
+          {paginatedSongs.map((song) => {
+            const report = reports.find((r) => r.lyricsId === song.id);
+            const isItemSelected = selectedSongIds.includes(song.id);
+            return (
+              <SongCard
+                key={song.id}
+                song={song}
+                report={report}
+                isItemSelected={isItemSelected}
+                handleSelectSong={handleSelectSong}
+                handleEditClick={handleEditClick}
+                handleDeleteClick={(id) => {
+                  setSelectedSongIds([id]);
+                  setDeleteDialogOpen(true);
+                }}
+                handleResolveClick={(reportId) => {
+                  setResolveReportId(reportId);
+                  setResolveDialogOpen(true);
+                }}
+              />
+            );
+          })}
+        </Box>
+      ) : (
+        // Desktop table view
+        <SongTable
+          hasAnyReport={hasAnyReport}
+          paginatedSongs={paginatedSongs}
+          selectedSongIds={selectedSongIds}
+          reports={reports}
+          handleSelectAll={(event) => {
+            if (event.target.checked) {
+              setSelectedSongIds(paginatedSongs.map((song) => song.id));
+            } else {
+              setSelectedSongIds([]);
+            }
+          }}
+          handleSelectSong={(id) => {
+            setSelectedSongIds((prev) =>
+              prev.includes(id)
+                ? prev.filter((songId) => songId !== id)
+                : [...prev, id]
+            );
+          }}
+          handleEditClick={handleEditClick}
+          handleDeleteClick={(id) => {
+            setSelectedSongIds([id]);
+            setDeleteDialogOpen(true);
+          }}
+          handleResolveClick={(reportId) => {
+            setResolveReportId(reportId);
+            setResolveDialogOpen(true);
+          }}
+        />
+      )}
 
       <TablePagination
         rowsPerPageOptions={[5, 10, 25, { label: "All", value: filteredSongs.length }]}
