@@ -34,16 +34,20 @@ export const filterSongs = (songs, searchInput) => {
 
 export const exportSongsToCSV = (songs, selectedCollection) => {
   const exportData = songs.map((song) => ({
-    Title: song.title,
-    Artist: song.artistName || song.artist || "",  // Handle both fields
-    Tags: song.tags ? song.tags.join(", ") : "",
-    Order: song.order,
-    YouTube: song.youtube,
-    Content: song.content,
+    Title: song.title || "",
+    Artist: song.artistName || "",
+    Content: song.content || "",
+    Order: song.order || "",
+    Tags: Array.isArray(song.tags) ? song.tags.join(", ") : "",
+    YouTube: song.youtube || "",
+    NewFlag: song.newFlag || false,
+    NewTTS: song.newTts || false,
+    PublishDate: song.publishDate ? song.publishDate.toDate().toISOString() : "",
+    TirthankarId: song.tirthankarId || song.selectedTirthankar || ""
   }));
 
   const csv = Papa.unparse({
-    fields: ["Title", "Artist", "Tags", "Order", "YouTube", "Content"],
+    fields: ["Title", "Artist", "Content", "Order", "Tags", "YouTube", "NewFlag", "NewTTS", "PublishDate", "TirthankarId"],
     data: exportData,
   });
 
