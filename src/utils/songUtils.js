@@ -17,20 +17,37 @@ export const sortSongs = (songs, reports) => {
     } else if (b.order != null) {
       return 1;
     } else {
-      return a.title.localeCompare(b.title);
+      // Get primary title (first in array or direct string)
+      const aTitle = Array.isArray(a.title) ? a.title[0] : a.title;
+      const bTitle = Array.isArray(b.title) ? b.title[0] : b.title;
+      return aTitle.localeCompare(bTitle);
     }
   });
 };
 
 export const filterSongs = (songs, searchInput) => {
-  return songs.filter(
-    (song) =>
-      song.title.toLowerCase().includes(searchInput.toLowerCase()) ||
-      (song.tags &&
-        song.tags.some((tag) =>
-          tag.toLowerCase().includes(searchInput.toLowerCase())
-        ))
-  );
+  if (!searchInput) return songs;
+  
+  const searchLower = searchInput.toLowerCase();
+  
+  return songs.filter((song) => {
+    // Check if title matches (handling both string and array formats)
+    if (Array.isArray(song.title)) {
+      // Check all language versions of the title
+      if (song.title.some(titleVersion => 
+        titleVersion && titleVersion.toLowerCase().includes(searchLower)
+      )) {
+        return true;
+      }
+    } else if (typeof song.title === 'string' && song.title.toLowerCase().includes(searchLower)) {
+      return true;
+    }
+    
+    // Check if any tag matches
+    return song.tags && song.tags.some((tag) => 
+      tag.toLowerCase().includes(searchLower)
+    );
+  });
 };
 
 export const exportSongsToCSV = (songs, selectedCollection) => {
@@ -49,8 +66,24 @@ export const exportSongsToCSV = (songs, selectedCollection) => {
       gujaratiContent = song.content || "";
     }
 
+    // Handle title based on whether it's an array or string
+    let gujaratiTitle = "";
+    let hindiTitle = "";
+    let englishTitle = "";
+
+    if (Array.isArray(song.title)) {
+      gujaratiTitle = song.title[0] || "";
+      hindiTitle = song.title[1] || "";
+      englishTitle = song.title[2] || "";
+    } else {
+      // Legacy format - put in Gujarati title
+      gujaratiTitle = song.title || "";
+    }
+
     return {
-      Title: song.title || "",
+      Title: gujaratiTitle,
+      TitleHindi: hindiTitle,
+      TitleEnglish: englishTitle,
       Artist: song.artistName || "",
       ContentGujarati: gujaratiContent,
       ContentHindi: hindiContent,
@@ -67,6 +100,8 @@ export const exportSongsToCSV = (songs, selectedCollection) => {
   const csv = Papa.unparse({
     fields: [
       "Title",
+      "TitleHindi",
+      "TitleEnglish",
       "Artist",
       "ContentGujarati",
       "ContentHindi",
@@ -100,10 +135,14 @@ export const processRemainingImports = async (remainingSongs, collectionName, on
   let successCount = 0;
 
   for (const song of remainingSongs) {
-    onProgress(`Processing: ${song.Title}`);
+    onProgress(`Processing: ${song.Title || song.title}`);
 
+    // Create a title query to check for duplicates
+    // Use primary title (Gujarati) for duplicate check
+    const titleToCheck = song.Title || song.title || "";
+    
     const existing = await collectionRef
-      .where("title", "==", song.Title)
+      .where("title", "==", titleToCheck)
       .get();
 
     // Handle multilingual content from import
@@ -113,22 +152,38 @@ export const processRemainingImports = async (remainingSongs, collectionName, on
       contentArray[0] = song.ContentGujarati || "";
       contentArray[1] = song.ContentHindi || "";
       contentArray[2] = song.ContentEnglish || "";
-
     } else if (song.Content) {
       // Legacy format - put in first position (Gujarati)
       contentArray[0] = song.Content || "";
     }
 
+    // Handle multilingual title from import
+    const titleArray = [];
+    let finalTitle = "";
+    
+    if (song.Title !== undefined || song.TitleHindi !== undefined || song.TitleEnglish !== undefined) {
+      // New format with separate language columns
+      titleArray[0] = song.Title || "";  // Gujarati title
+      titleArray[1] = song.TitleHindi || "";  // Hindi title
+      titleArray[2] = song.TitleEnglish || "";  // English title
+      
+      // If we only have one non-empty title (the primary one), use string format for backward compatibility
+      finalTitle = (!titleArray[1] && !titleArray[2]) ? titleArray[0] : titleArray;
+    } else {
+      // Legacy format with single title field
+      finalTitle = song.title || "";
+    }
+
     const songData = {
-      title: song.Title,
-      artistName: song.Artist,
-      tags: song.Tags?.split(",").map((tag) => tag.trim().toLowerCase()) || [],
-      order: song.Order ? Number(song.Order) : null,
-      youtube: song.YouTube,
+      title: finalTitle,
+      artistName: song.Artist || song.artist || "",
+      tags: (song.Tags || song.tags || "").toString().split(",").map((tag) => tag.trim().toLowerCase()).filter(Boolean),
+      order: song.Order || song.order ? Number(song.Order || song.order) : null,
+      youtube: song.YouTube || song.youtube || "",
       publishDate: firebase.firestore.Timestamp.now(),
-      content: contentArray.length > 0 ? contentArray : song.Content || "",
-      newFlag: Boolean(song.NewFlag === "true" || song.NewFlag === true),
-      tirthankarId: song.TirthankarId || ""
+      content: contentArray.length > 0 ? contentArray : (song.Content || song.content || ""),
+      newFlag: Boolean(song.NewFlag === "true" || song.NewFlag === true || song.newFlag === true),
+      tirthankarId: song.TirthankarId || song.tirthankarId || ""
     };
 
     if (!existing.empty) {

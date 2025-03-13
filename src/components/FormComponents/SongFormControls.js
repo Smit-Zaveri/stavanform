@@ -22,13 +22,32 @@ import {
   Button,
   DialogContentText,
   Tabs,
-  Tab
+  Tab,
+  Box,
+  Badge,
+  Stack
 } from '@mui/material';
 import { createFilterOptions } from '@mui/material/Autocomplete';
 import { isValidYouTubeURL } from '../../utils/validators';
 import CancelIcon from '@mui/icons-material/Cancel';
+import TranslateIcon from '@mui/icons-material/Translate';
 
 const filter = createFilterOptions();
+
+const LanguageIndicator = ({ filled }) => (
+  <Badge 
+    variant="dot"
+    color={filled ? "success" : "default"}
+    sx={{ 
+      '& .MuiBadge-badge': {
+        right: -4,
+        top: 13,
+      }
+    }}
+  >
+    <div style={{ width: 12, height: 12 }} />
+  </Badge>
+);
 
 export const SongFormControls = ({
   formData,
@@ -71,6 +90,7 @@ export const SongFormControls = ({
   const [openChangeCollectionDialog, setOpenChangeCollectionDialog] = useState(false);
   const [pendingCollectionChange, setPendingCollectionChange] = useState('');
   const [selectedLangTab, setSelectedLangTab] = useState(0);
+  const [selectedTitleLangTab, setSelectedTitleLangTab] = useState(0);
 
   // Get content for current language or empty string
   const getContentByLanguage = (langIndex) => {
@@ -82,6 +102,28 @@ export const SongFormControls = ({
       return content;
     }
     return '';
+  };
+
+  // Get title for current language or empty string
+  const getTitleByLanguage = (langIndex) => {
+    // Handle title whether it's an array or string
+    if (Array.isArray(title)) {
+      return title[langIndex] || '';
+    } else if (langIndex === 0 && typeof title === 'string') {
+      // If we have legacy title (string), show it in the first tab
+      return title;
+    }
+    return '';
+  };
+
+  // Check if a title exists for a specific language
+  const hasTitleForLanguage = (langIndex) => {
+    return getTitleByLanguage(langIndex)?.trim().length > 0;
+  };
+
+  // Check if content exists for a specific language
+  const hasContentForLanguage = (langIndex) => {
+    return getContentByLanguage(langIndex)?.trim().length > 0;
   };
 
   // Update content for a specific language
@@ -109,6 +151,33 @@ export const SongFormControls = ({
     }
     
     setContent(newContent);
+  };
+
+  // Update title for a specific language
+  const handleTitleChange = (e, langIndex) => {
+    const newValue = e.target.value;
+    let newTitle;
+    
+    if (Array.isArray(title)) {
+      // Create a copy of the existing title array
+      newTitle = [...title];
+      // Ensure the array has enough elements
+      while (newTitle.length <= langIndex) {
+        newTitle.push('');
+      }
+      // Update the specific language
+      newTitle[langIndex] = newValue;
+    } else {
+      // Convert from string to array format
+      newTitle = ['', '', ''];
+      if (typeof title === 'string') {
+        // Preserve existing title in first language slot
+        newTitle[0] = title;
+      }
+      newTitle[langIndex] = newValue;
+    }
+    
+    setTitle(newTitle);
   };
 
   // Memoize the combined tags to prevent unnecessary recalculations
@@ -154,6 +223,15 @@ export const SongFormControls = ({
     setSelectedLangTab(newValue);
   };
 
+  const handleTitleLanguageTabChange = (event, newValue) => {
+    setSelectedTitleLangTab(newValue);
+  };
+
+  const getLanguageName = (index) => {
+    const languages = ['Gujarati', 'Hindi', 'English'];
+    return languages[index] || '';
+  };
+
   return (
     <>
       <Card>
@@ -191,17 +269,99 @@ export const SongFormControls = ({
                 )}
               </FormControl>
             </Grid>
+            
+            <Grid item xs={12}>
+              <Card variant="outlined" sx={{ mb: 2, overflow: 'visible' }}>
+                <CardContent sx={{ pb: 1 }}>
+                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
+                    <TranslateIcon color="primary" />
+                    <Typography variant="subtitle1" fontWeight="medium">
+                      Song Title in Multiple Languages
+                    </Typography>
+                  </Stack>
+                  
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Tabs 
+                      value={selectedTitleLangTab} 
+                      onChange={handleTitleLanguageTabChange} 
+                      variant="scrollable"
+                      scrollButtons="auto"
+                      textColor="primary"
+                      indicatorColor="primary"
+                      sx={{ 
+                        borderBottom: 1, 
+                        borderColor: 'divider',
+                        minHeight: '48px',
+                        flex: 1
+                      }}
+                    >
+                      <Tab 
+                        icon={
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <span>Gujarati</span>
+                            <LanguageIndicator filled={hasTitleForLanguage(0)} />
+                          </Box>
+                        } 
+                        sx={{ minHeight: '48px' }}
+                      />
+                      <Tab 
+                        icon={
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <span>Hindi</span>
+                            <LanguageIndicator filled={hasTitleForLanguage(1)} />
+                          </Box>
+                        } 
+                        sx={{ minHeight: '48px' }}
+                      />
+                      <Tab 
+                        icon={
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <span>English</span>
+                            <LanguageIndicator filled={hasTitleForLanguage(2)} />
+                          </Box>
+                        } 
+                        sx={{ minHeight: '48px' }}
+                      />
+                    </Tabs>
+                  </Box>
 
-            <Grid item xs={12} md={6}>
-              <TextField
-                label="Title"
-                variant="outlined"
-                fullWidth
-                required
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                error={!title && !!error}
-              />
+                  <Box sx={{ p: 1 }}>
+                    {selectedTitleLangTab === 0 && (
+                      <TextField
+                        label={`${getLanguageName(selectedTitleLangTab)} Title`}
+                        variant="outlined"
+                        fullWidth
+                        required={selectedTitleLangTab === 0}
+                        value={getTitleByLanguage(0)}
+                        onChange={(e) => handleTitleChange(e, 0)}
+                        error={(!getTitleByLanguage(0) && selectedTitleLangTab === 0) && !!error}
+                        helperText={(!getTitleByLanguage(0) && selectedTitleLangTab === 0 && !!error) ? 
+                          "Gujarati title is required" : "Primary title (required)"}
+                      />
+                    )}
+                    {selectedTitleLangTab === 1 && (
+                      <TextField
+                        label={`${getLanguageName(selectedTitleLangTab)} Title`}
+                        variant="outlined"
+                        fullWidth
+                        value={getTitleByLanguage(1)}
+                        onChange={(e) => handleTitleChange(e, 1)}
+                        helperText="Optional Hindi title"
+                      />
+                    )}
+                    {selectedTitleLangTab === 2 && (
+                      <TextField
+                        label={`${getLanguageName(selectedTitleLangTab)} Title`}
+                        variant="outlined"
+                        fullWidth
+                        value={getTitleByLanguage(2)}
+                        onChange={(e) => handleTitleChange(e, 2)}
+                        helperText="Optional English title"
+                      />
+                    )}
+                  </Box>
+                </CardContent>
+              </Card>
             </Grid>
 
             <Grid item xs={12} md={6}>
@@ -370,56 +530,103 @@ export const SongFormControls = ({
             </Grid>
 
             <Grid item xs={12}>
-              <Typography variant="subtitle1" gutterBottom>
-                Content in Multiple Languages
-              </Typography>
-              
-              <Tabs 
-                value={selectedLangTab} 
-                onChange={handleLanguageTabChange} 
-                variant="fullWidth"
-                sx={{ mb: 2, borderBottom: 1, borderColor: 'divider' }}
-              >
-                <Tab label="Gujarati" />
-                <Tab label="Hindi" />
-                <Tab label="English" />
-              </Tabs>
+              <Card variant="outlined" sx={{ mb: 2, overflow: 'visible' }}>
+                <CardContent sx={{ pb: 1 }}>
+                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
+                    <TranslateIcon color="primary" />
+                    <Typography variant="subtitle1" fontWeight="medium">
+                      Content in Multiple Languages
+                    </Typography>
+                  </Stack>
+                  
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Tabs 
+                      value={selectedLangTab} 
+                      onChange={handleLanguageTabChange} 
+                      variant="scrollable"
+                      scrollButtons="auto"
+                      textColor="primary"
+                      indicatorColor="primary"
+                      sx={{ 
+                        borderBottom: 1, 
+                        borderColor: 'divider',
+                        minHeight: '48px',
+                        flex: 1
+                      }}
+                    >
+                      <Tab 
+                        icon={
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <span>Gujarati</span>
+                            <LanguageIndicator filled={hasContentForLanguage(0)} />
+                          </Box>
+                        } 
+                        sx={{ minHeight: '48px' }}
+                      />
+                      <Tab 
+                        icon={
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <span>Hindi</span>
+                            <LanguageIndicator filled={hasContentForLanguage(1)} />
+                          </Box>
+                        } 
+                        sx={{ minHeight: '48px' }}
+                      />
+                      <Tab 
+                        icon={
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <span>English</span>
+                            <LanguageIndicator filled={hasContentForLanguage(2)} />
+                          </Box>
+                        } 
+                        sx={{ minHeight: '48px' }}
+                      />
+                    </Tabs>
+                  </Box>
 
-              {selectedLangTab === 0 && (
-                <TextField
-                  label="Gujarati Content"
-                  variant="outlined"
-                  fullWidth
-                  required={selectedLangTab === 0}
-                  multiline
-                  rows={4}
-                  value={getContentByLanguage(0)}
-                  onChange={(e) => handleContentChange(e, 0)}
-                  error={(!getContentByLanguage(0) && selectedLangTab === 0) && !!error}
-                />
-              )}
-              {selectedLangTab === 1 && (
-                <TextField
-                  label="Hindi Content"
-                  variant="outlined"
-                  fullWidth
-                  multiline
-                  rows={4}
-                  value={getContentByLanguage(1)}
-                  onChange={(e) => handleContentChange(e, 1)}
-                />
-              )}
-              {selectedLangTab === 2 && (
-                <TextField
-                  label="English Content"
-                  variant="outlined"
-                  fullWidth
-                  multiline
-                  rows={4}
-                  value={getContentByLanguage(2)}
-                  onChange={(e) => handleContentChange(e, 2)}
-                />
-              )}
+                  <Box sx={{ p: 1 }}>
+                    {selectedLangTab === 0 && (
+                      <TextField
+                        label={`${getLanguageName(selectedLangTab)} Content`}
+                        variant="outlined"
+                        fullWidth
+                        required={selectedLangTab === 0}
+                        multiline
+                        rows={4}
+                        value={getContentByLanguage(0)}
+                        onChange={(e) => handleContentChange(e, 0)}
+                        error={(!getContentByLanguage(0) && selectedLangTab === 0) && !!error}
+                        helperText={(!getContentByLanguage(0) && selectedLangTab === 0 && !!error) ? 
+                          "Gujarati content is required" : "Primary content (required)"}
+                      />
+                    )}
+                    {selectedLangTab === 1 && (
+                      <TextField
+                        label={`${getLanguageName(selectedLangTab)} Content`}
+                        variant="outlined"
+                        fullWidth
+                        multiline
+                        rows={4}
+                        value={getContentByLanguage(1)}
+                        onChange={(e) => handleContentChange(e, 1)}
+                        helperText="Optional Hindi content"
+                      />
+                    )}
+                    {selectedLangTab === 2 && (
+                      <TextField
+                        label={`${getLanguageName(selectedLangTab)} Content`}
+                        variant="outlined"
+                        fullWidth
+                        multiline
+                        rows={4}
+                        value={getContentByLanguage(2)}
+                        onChange={(e) => handleContentChange(e, 2)}
+                        helperText="Optional English content"
+                      />
+                    )}
+                  </Box>
+                </CardContent>
+              </Card>
             </Grid>
 
             <Grid
