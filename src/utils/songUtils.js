@@ -4,8 +4,9 @@ import Papa from 'papaparse';
 
 export const sortSongs = (songs, reports) => {
   return [...songs].sort((a, b) => {
-    const aReported = reports.some((r) => r.lyricsId === a.id);
-    const bReported = reports.some((r) => r.lyricsId === b.id);
+    // Compare reports by title instead of lyricsId
+    const aReported = reports.some((r) => r.lyricsTitle === a.title);
+    const bReported = reports.some((r) => r.lyricsTitle === b.title);
     if (aReported && !bReported) return -1;
     if (!aReported && bReported) return 1;
 

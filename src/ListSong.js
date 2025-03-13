@@ -423,8 +423,9 @@ const ListSong = () => {
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
+  // Update report check to compare by title instead of lyricsId
   const hasAnyReport = filteredSongs.some((song) =>
-    reports.some((r) => r.lyricsId === song.id)
+    reports.some((r) => r.title === song.title)
   );
 
   if (loading) return <LinearProgress />;
@@ -480,7 +481,8 @@ const ListSong = () => {
             </Typography>
           </Box>
           {paginatedSongs.map((song) => {
-            const report = reports.find((r) => r.lyricsId === song.id);
+            // Update to find report by title instead of lyricsId
+            const report = reports.find((r) => r.lyricsTitle === song.title);
             const isItemSelected = selectedSongIds.includes(song.id);
             return (
               <SongCard
