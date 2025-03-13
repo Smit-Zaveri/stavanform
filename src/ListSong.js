@@ -52,15 +52,12 @@ const ListSong = () => {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [showGoToTop, setShowGoToTop] = useState(false);
   const [duplicatesDialogOpen, setDuplicatesDialogOpen] = useState(false);
-  const [duplicateSongs, setDuplicateSongs] = useState([]);
   const [importFile, setImportFile] = useState(null);
 
   const [currentDuplicate, setCurrentDuplicate] = useState(null);
   const [remainingImports, setRemainingImports] = useState(null);
   const [importProgress, setImportProgress] = useState({ processed: 0, total: 0 });
   const [singleDuplicateDialogOpen, setSingleDuplicateDialogOpen] = useState(false);
-  const [applyToAll, setApplyToAll] = useState(false);
-  const [savedAction, setSavedAction] = useState(null);
 
   const navigate = useNavigate();
   const { collectionName } = useParams();
@@ -97,7 +94,6 @@ const ListSong = () => {
           order: data.order || '',
           youtube: data.youtube || '',
           newFlag: Boolean(data.newFlag),
-          newTts: Boolean(data.newTts),
           tirthankarId: data.tirthankarId || '',
           publishDate: data.publishDate || null
         };
@@ -134,7 +130,6 @@ const ListSong = () => {
         order: suggestion.order?.toString() || "",
         youtube: suggestion.youtube || "",
         newFlag: Boolean(suggestion.newFlag),
-        newTts: Boolean(suggestion.newTts),
         tirthankarId: suggestion.tirthankarId || ""
       };
 
@@ -232,15 +227,30 @@ const ListSong = () => {
 
       // If applying to all, process current and all remaining songs at once
       if (shouldApplyToAll) {
-        const allRemainingFiles = [currentDuplicate.songData, ...remainingImports.map(song => ({
-          title: song.Title,
-          artistName: song.Artist,
-          tags: song.Tags?.split(",").map((tag) => tag.trim().toLowerCase()) || [],
-          order: song.Order ? Number(song.Order) : null,
-          youtube: song.YouTube,
-          publishDate: firebase.firestore.Timestamp.now(),
-          content: song.Content,
-        }))];
+        const allRemainingFiles = [currentDuplicate.songData, ...remainingImports.map(song => {
+          // Handle multilingual content from import
+          const contentArray = [];
+          if (song.ContentGujarati !== undefined || song.ContentHindi !== undefined || song.ContentEnglish !== undefined) {
+            // New format with separate language columns
+            contentArray[0] = song.ContentGujarati || "";
+            contentArray[1] = song.ContentHindi || "";
+            contentArray[2] = song.ContentEnglish || "";
+          } else if (song.Content) {
+            // Legacy format - put in first position (Gujarati)
+            contentArray[0] = song.Content || "";
+          }
+          
+          return {
+            title: song.Title,
+            artistName: song.Artist,
+            tags: song.Tags?.split(",").map((tag) => tag.trim().toLowerCase()) || [],
+            order: song.Order ? Number(song.Order) : null,
+            youtube: song.YouTube,
+            publishDate: firebase.firestore.Timestamp.now(),
+            content: contentArray.length > 0 ? contentArray : song.Content,
+            newFlag: Boolean(song.NewFlag === "true" || song.NewFlag === true),
+          };
+        })];
 
         if (action === 'skip') {
           // Skip all remaining songs immediately
@@ -269,8 +279,6 @@ const ListSong = () => {
         setCurrentDuplicate(null);
         setRemainingImports(null);
         setImportProgress({ processed: 0, total: 0 });
-        setApplyToAll(false);
-        setSavedAction(null);
         setSnackbarOpen(true);
         return;
       }
@@ -392,7 +400,6 @@ const ListSong = () => {
       order: song.order?.toString() || "",
       youtube: song.youtube || "",
       newFlag: Boolean(song.newFlag),
-      newTts: Boolean(song.newTts),
       tirthankarId: song.tirthankarId || "",
       collection: selectedCollection // Add collection to form data
     };
@@ -593,12 +600,8 @@ const ListSong = () => {
         <DialogTitle>Duplicate Songs Found</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            {duplicateSongs.length} song(s) with the same titles were found in the collection:
-            <Box component="ul" sx={{ mt: 1, maxHeight: 200, overflow: 'auto' }}>
-              {duplicateSongs.map((song, idx) => (
-                <li key={idx}>{song.title}</li>
-              ))}
-            </Box>
+            {/* Updated to not rely on the removed duplicateSongs variable */}
+            Some songs with the same titles were found in the collection.
             What would you like to do with these duplicates?
           </DialogContentText>
         </DialogContent>

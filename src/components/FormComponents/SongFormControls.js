@@ -20,7 +20,9 @@ import {
   DialogContent,
   DialogActions,
   Button,
-  DialogContentText
+  DialogContentText,
+  Tabs,
+  Tab
 } from '@mui/material';
 import { createFilterOptions } from '@mui/material/Autocomplete';
 import { isValidYouTubeURL } from '../../utils/validators';
@@ -51,7 +53,6 @@ export const SongFormControls = ({
     content,
     youtube,
     newFlag,
-    newTts,
     selectedTirthankar
   } = formData;
 
@@ -63,14 +64,52 @@ export const SongFormControls = ({
     setContent,
     setYoutube,
     setNewFlag,
-    setNewTts,
     setSelectedTirthankar,
     setTagInput,
-    commitTagInput
   } = setters;
 
   const [openChangeCollectionDialog, setOpenChangeCollectionDialog] = useState(false);
   const [pendingCollectionChange, setPendingCollectionChange] = useState('');
+  const [selectedLangTab, setSelectedLangTab] = useState(0);
+
+  // Get content for current language or empty string
+  const getContentByLanguage = (langIndex) => {
+    // Handle content whether it's an array or string
+    if (Array.isArray(content)) {
+      return content[langIndex] || '';
+    } else if (langIndex === 0 && typeof content === 'string') {
+      // If we have legacy content (string), show it in the first tab
+      return content;
+    }
+    return '';
+  };
+
+  // Update content for a specific language
+  const handleContentChange = (e, langIndex) => {
+    const newValue = e.target.value;
+    let newContent;
+    
+    if (Array.isArray(content)) {
+      // Create a copy of the existing content array
+      newContent = [...content];
+      // Ensure the array has enough elements
+      while (newContent.length <= langIndex) {
+        newContent.push('');
+      }
+      // Update the specific language
+      newContent[langIndex] = newValue;
+    } else {
+      // Convert from string to array format
+      newContent = ['', '', ''];
+      if (typeof content === 'string' && langIndex === 0) {
+        // Preserve existing content in first language slot
+        newContent[0] = content;
+      }
+      newContent[langIndex] = newValue;
+    }
+    
+    setContent(newContent);
+  };
 
   // Memoize the combined tags to prevent unnecessary recalculations
   const combinedTagSuggestions = useMemo(() => {
@@ -109,6 +148,10 @@ export const SongFormControls = ({
   const handleCancelCollectionChange = () => {
     setPendingCollectionChange('');
     setOpenChangeCollectionDialog(false);
+  };
+
+  const handleLanguageTabChange = (event, newValue) => {
+    setSelectedLangTab(newValue);
   };
 
   return (
@@ -327,17 +370,56 @@ export const SongFormControls = ({
             </Grid>
 
             <Grid item xs={12}>
-              <TextField
-                label="Content"
-                variant="outlined"
-                fullWidth
-                required
-                multiline
-                rows={4}
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                error={!content && !!error}
-              />
+              <Typography variant="subtitle1" gutterBottom>
+                Content in Multiple Languages
+              </Typography>
+              
+              <Tabs 
+                value={selectedLangTab} 
+                onChange={handleLanguageTabChange} 
+                variant="fullWidth"
+                sx={{ mb: 2, borderBottom: 1, borderColor: 'divider' }}
+              >
+                <Tab label="Gujarati" />
+                <Tab label="Hindi" />
+                <Tab label="English" />
+              </Tabs>
+
+              {selectedLangTab === 0 && (
+                <TextField
+                  label="Gujarati Content"
+                  variant="outlined"
+                  fullWidth
+                  required={selectedLangTab === 0}
+                  multiline
+                  rows={4}
+                  value={getContentByLanguage(0)}
+                  onChange={(e) => handleContentChange(e, 0)}
+                  error={(!getContentByLanguage(0) && selectedLangTab === 0) && !!error}
+                />
+              )}
+              {selectedLangTab === 1 && (
+                <TextField
+                  label="Hindi Content"
+                  variant="outlined"
+                  fullWidth
+                  multiline
+                  rows={4}
+                  value={getContentByLanguage(1)}
+                  onChange={(e) => handleContentChange(e, 1)}
+                />
+              )}
+              {selectedLangTab === 2 && (
+                <TextField
+                  label="English Content"
+                  variant="outlined"
+                  fullWidth
+                  multiline
+                  rows={4}
+                  value={getContentByLanguage(2)}
+                  onChange={(e) => handleContentChange(e, 2)}
+                />
+              )}
             </Grid>
 
             <Grid
@@ -345,7 +427,7 @@ export const SongFormControls = ({
               xs={12}
               sx={{
                 display: 'flex',
-                justifyContent: 'space-between',
+                justifyContent: 'flex-start',
                 flexWrap: 'wrap'
               }}
             >
@@ -357,15 +439,6 @@ export const SongFormControls = ({
                   />
                 }
                 label="New"
-              />
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={newTts}
-                    onChange={(e) => setNewTts(e.target.checked)}
-                  />
-                }
-                label="TTS"
               />
             </Grid>
           </Grid>

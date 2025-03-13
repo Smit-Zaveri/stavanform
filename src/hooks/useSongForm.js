@@ -10,7 +10,6 @@ export const useSongForm = (initialData, mode) => {
   const [content, setContent] = useState('');
   const [youtube, setYoutube] = useState('');
   const [newFlag, setNewFlag] = useState(false);
-  const [newTts, setNewTts] = useState(false);
   const [selectedTirthankar, setSelectedTirthankar] = useState('');
   const [artistOptions, setArtistOptions] = useState([]);
   const [tirthankarList, setTirthankarList] = useState([]);
@@ -35,7 +34,6 @@ export const useSongForm = (initialData, mode) => {
       setContent(initialData.content || '');
       setYoutube(initialData.youtube || '');
       setNewFlag(Boolean(initialData.newFlag));
-      setNewTts(Boolean(initialData.newTts));
       setSelectedTirthankar(initialData.tirthankarId || '');
       setTagInput('');
     } else {
@@ -47,7 +45,6 @@ export const useSongForm = (initialData, mode) => {
       setContent('');
       setYoutube('');
       setNewFlag(false);
-      setNewTts(false);
       setSelectedTirthankar('');
       setTagInput('');
     }
@@ -173,7 +170,6 @@ export const useSongForm = (initialData, mode) => {
     content,
     youtube,
     newFlag,
-    newTts,
     selectedTirthankar
   };
 
@@ -185,7 +181,6 @@ export const useSongForm = (initialData, mode) => {
     setContent,
     setYoutube,
     setNewFlag,
-    setNewTts,
     setSelectedTirthankar,
     setTagInput,
     commitTagInput

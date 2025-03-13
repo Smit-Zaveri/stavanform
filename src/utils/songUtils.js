@@ -33,21 +33,50 @@ export const filterSongs = (songs, searchInput) => {
 };
 
 export const exportSongsToCSV = (songs, selectedCollection) => {
-  const exportData = songs.map((song) => ({
-    Title: song.title || "",
-    Artist: song.artistName || "",
-    Content: song.content || "",
-    Order: song.order || "",
-    Tags: Array.isArray(song.tags) ? song.tags.join(", ") : "",
-    YouTube: song.youtube || "",
-    NewFlag: song.newFlag || false,
-    NewTTS: song.newTts || false,
-    PublishDate: song.publishDate ? song.publishDate.toDate().toISOString() : "",
-    TirthankarId: song.tirthankarId || song.selectedTirthankar || ""
-  }));
+  const exportData = songs.map((song) => {
+    // Handle content based on whether it's an array or string
+    let gujaratiContent = "";
+    let hindiContent = "";
+    let englishContent = "";
+
+    if (Array.isArray(song.content)) {
+      gujaratiContent = song.content[0] || "";
+      hindiContent = song.content[1] || "";
+      englishContent = song.content[2] || "";
+    } else {
+      // Legacy format - put in Gujarati content
+      gujaratiContent = song.content || "";
+    }
+
+    return {
+      Title: song.title || "",
+      Artist: song.artistName || "",
+      ContentGujarati: gujaratiContent,
+      ContentHindi: hindiContent,
+      ContentEnglish: englishContent,
+      Order: song.order || "",
+      Tags: Array.isArray(song.tags) ? song.tags.join(", ") : "",
+      YouTube: song.youtube || "",
+      NewFlag: song.newFlag || false,
+      PublishDate: song.publishDate ? song.publishDate.toDate().toISOString() : "",
+      TirthankarId: song.tirthankarId || song.selectedTirthankar || ""
+    };
+  });
 
   const csv = Papa.unparse({
-    fields: ["Title", "Artist", "Content", "Order", "Tags", "YouTube", "NewFlag", "NewTTS", "PublishDate", "TirthankarId"],
+    fields: [
+      "Title",
+      "Artist",
+      "ContentGujarati",
+      "ContentHindi",
+      "ContentEnglish",
+      "Order",
+      "Tags",
+      "YouTube",
+      "NewFlag",
+      "PublishDate",
+      "TirthankarId"
+    ],
     data: exportData,
   });
 
@@ -71,11 +100,24 @@ export const processRemainingImports = async (remainingSongs, collectionName, on
 
   for (const song of remainingSongs) {
     onProgress(`Processing: ${song.Title}`);
-    
+
     const existing = await collectionRef
       .where("title", "==", song.Title)
       .get();
-    
+
+    // Handle multilingual content from import
+    const contentArray = [];
+    if (song.ContentGujarati !== undefined || song.ContentHindi !== undefined || song.ContentEnglish !== undefined) {
+      // New format with separate language columns
+      contentArray[0] = song.ContentGujarati || "";
+      contentArray[1] = song.ContentHindi || "";
+      contentArray[2] = song.ContentEnglish || "";
+
+    } else if (song.Content) {
+      // Legacy format - put in first position (Gujarati)
+      contentArray[0] = song.Content || "";
+    }
+
     const songData = {
       title: song.Title,
       artistName: song.Artist,
@@ -83,13 +125,15 @@ export const processRemainingImports = async (remainingSongs, collectionName, on
       order: song.Order ? Number(song.Order) : null,
       youtube: song.YouTube,
       publishDate: firebase.firestore.Timestamp.now(),
-      content: song.Content,
+      content: contentArray.length > 0 ? contentArray : song.Content || "",
+      newFlag: Boolean(song.NewFlag === "true" || song.NewFlag === true),
+      tirthankarId: song.TirthankarId || ""
     };
 
     if (!existing.empty) {
       // Return for next individual confirmation, including total remaining count
-      return { 
-        duplicateFound: true, 
+      return {
+        duplicateFound: true,
         songData,
         existingDoc: existing.docs[0],
         remainingSongs: remainingSongs.slice(1),

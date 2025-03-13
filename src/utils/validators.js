@@ -5,9 +5,20 @@ export const isValidYouTubeURL = (url) => {
 };
 
 export const validateSongForm = ({ title, content, selectedCollection, youtube, order, tags = [], previousCollection, mode }) => {
-  if (!selectedCollection || !title || !content) {
+  if (!selectedCollection || !title) {
     return "Please fill in all required fields.";
   }
+  
+  // Check content - either as a string or as an array (for multilingual content)
+  if (Array.isArray(content)) {
+    // Check if at least one language has content (preferably Gujarati - index 0)
+    if (!content[0] || content[0].trim() === '') {
+      return "Please add content in at least Gujarati language.";
+    }
+  } else if (!content || content.trim() === '') {
+    return "Content is required.";
+  }
+
   if (youtube && !isValidYouTubeURL(youtube)) {
     return "Please enter a valid YouTube URL.";
   }
@@ -23,5 +34,5 @@ export const validateSongForm = ({ title, content, selectedCollection, youtube, 
       return "Both old and new collection must be specified when moving a song.";
     }
   }
-  return null;
+  return "";
 };
