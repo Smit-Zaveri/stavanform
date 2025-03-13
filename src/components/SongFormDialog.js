@@ -28,13 +28,13 @@ export const SongFormDialog = ({
   onSubmit,
 }) => {
   const navigate = useNavigate();
-  const [selectedCollection, setSelectedCollection] = useState(collectionName || "lyrics");
+  const [selectedCollection, setSelectedCollection] = useState("");  // Start with empty string
   const [collectionOptions, setCollectionOptions] = useState([]);
   const [error, setError] = useState("");
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const [newArtist, setNewArtist] = useState("");
-  const [previousCollection, setPreviousCollection] = useState(collectionName || "lyrics");
+  const [previousCollection, setPreviousCollection] = useState("");  // Start with empty string
   const [openDuplicateDialog, setOpenDuplicateDialog] = useState(false);
   const [duplicateAction, setDuplicateAction] = useState('');
   const [pendingDocData, setPendingDocData] = useState(null);

@@ -1,12 +1,22 @@
 export const useCSVOperations = (collectionName, collections) => {
   const exportToCSV = () => {
-    const csvHeaders = ["Name", "Display Name", "Order Number", "Picture URL"];
+    const csvHeaders = [
+      "Name",
+      "Display Name (Gujarati)",
+      "Display Name (Hindi)",
+      "Display Name (English)",
+      "Order Number",
+      "Picture URL"
+    ];
     const csvRows = collections.map(
       ({ name, displayName, numbering, picture }) => [
         name,
-        displayName,
+        // Handle displayName array, ensuring we don't output "undefined"
+        Array.isArray(displayName) ? displayName[0] || "" : "",
+        Array.isArray(displayName) ? displayName[1] || "" : "",
+        Array.isArray(displayName) ? displayName[2] || "" : "",
         numbering,
-        picture,
+        picture || "",
       ]
     );
 
@@ -33,13 +43,19 @@ export const useCSVOperations = (collectionName, collections) => {
       ?.map((header) => header.replace(/"/g, "").trim());
 
     const nameIndex = headers.indexOf("Name");
-    const displayNameIndex = headers.indexOf("Display Name");
+    const gujaratiIndex = headers.indexOf("Display Name (Gujarati)");
+    const hindiIndex = headers.indexOf("Display Name (Hindi)");
+    const englishIndex = headers.indexOf("Display Name (English)");
     const numberingIndex = headers.indexOf("Order Number");
     const pictureIndex = headers.indexOf("Picture URL");
 
-    if (nameIndex === -1 || displayNameIndex === -1 || numberingIndex === -1) {
+    // Support both new and old CSV formats
+    const hasMultilingualColumns = gujaratiIndex !== -1 && hindiIndex !== -1 && englishIndex !== -1;
+    const oldDisplayNameIndex = headers.indexOf("Display Name");
+
+    if (nameIndex === -1 || (!hasMultilingualColumns && oldDisplayNameIndex === -1) || numberingIndex === -1) {
       throw new Error(
-        "CSV must have Name, Display Name, and Order Number columns. Picture URL is optional."
+        "CSV must have Name, Display Names (either multilingual or single column), and Order Number columns. Picture URL is optional."
       );
     }
 
@@ -54,14 +70,30 @@ export const useCSVOperations = (collectionName, collections) => {
         const values = row?.split(",").map((value) => value.replace(/^"?|"$/g, ""));
         if (values.length < headers.length) return null;
 
+        let displayName;
+        if (hasMultilingualColumns) {
+          displayName = [
+            values[gujaratiIndex]?.trim() || "",
+            values[hindiIndex]?.trim() || "",
+            values[englishIndex]?.trim() || ""
+          ];
+        } else {
+          // Handle old format - put the single display name in the first position
+          displayName = [
+            values[oldDisplayNameIndex]?.trim() || "",
+            "",
+            ""
+          ];
+        }
+
         const item = {
           name: values[nameIndex]?.trim(),
-          displayName: values[displayNameIndex]?.trim(),
+          displayName,
           numbering: parseFloat(values[numberingIndex]?.trim()),
           picture: pictureIndex !== -1 ? values[pictureIndex]?.trim() : "",
         };
 
-        if (!item.name || !item.displayName || isNaN(item.numbering)) return null;
+        if (!item.name || !item.displayName.some(name => name.trim()) || isNaN(item.numbering)) return null;
 
         const normalizedName = item.name.toLowerCase();
         if (

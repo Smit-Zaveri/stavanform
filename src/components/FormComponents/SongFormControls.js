@@ -186,7 +186,9 @@ export const SongFormControls = ({
       ...tagsOptions,
       ...(tags || []),
       ...(tirthankarList?.map(t => t.name) || []),
-      ...(tirthankarList?.map(t => t.displayName) || [])
+      ...(tirthankarList?.map(t => 
+        typeof t.displayName === 'string' ? t.displayName : ''
+      ).filter(Boolean) || [])
     ]);
     return Array.from(uniqueTags);
   }, [tagsOptions, tags, tirthankarList]);

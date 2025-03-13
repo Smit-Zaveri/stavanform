@@ -18,6 +18,12 @@ const CollectionFormFields = ({
   onCancel,
   loading,
 }) => {
+  const handleDisplayNameChange = (index, value) => {
+    const newDisplayNames = [...formData.displayName];
+    newDisplayNames[index] = value;
+    setFormData({ ...formData, displayName: newDisplayNames });
+  };
+
   return (
     <Card variant="outlined" sx={{ mb: 4 }}>
       <CardContent>
@@ -26,7 +32,7 @@ const CollectionFormFields = ({
         </Typography>
         <Box component="form" onSubmit={onSubmit} noValidate>
           <Grid container spacing={2}>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={6}>
               <TextField
                 label="Name"
                 variant="outlined"
@@ -39,20 +45,7 @@ const CollectionFormFields = ({
                 helperText={error && " "}
               />
             </Grid>
-            <Grid item xs={12} md={4}>
-              <TextField
-                label="Display Name"
-                variant="outlined"
-                fullWidth
-                value={formData.displayName}
-                onChange={(e) =>
-                  setFormData({ ...formData, displayName: e.target.value })
-                }
-                error={!!error}
-                helperText={error && " "}
-              />
-            </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={6}>
               <TextField
                 label="Order Number"
                 variant="outlined"
@@ -69,7 +62,49 @@ const CollectionFormFields = ({
                 helperText={error && " "}
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+            
+            {/* Multilingual Display Names */}
+            <Grid item xs={12} md={4}>
+              <TextField
+                label="Display Name (Gujarati)"
+                variant="outlined"
+                fullWidth
+                value={formData.displayName[0]}
+                onChange={(e) => handleDisplayNameChange(0, e.target.value)}
+                error={!!error}
+                placeholder="સ્મિત"
+                InputProps={{
+                  style: { fontFamily: 'Noto Sans Gujarati, sans-serif' }
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <TextField
+                label="Display Name (Hindi)"
+                variant="outlined"
+                fullWidth
+                value={formData.displayName[1]}
+                onChange={(e) => handleDisplayNameChange(1, e.target.value)}
+                error={!!error}
+                placeholder="स्मित"
+                InputProps={{
+                  style: { fontFamily: 'Noto Sans Devanagari, sans-serif' }
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <TextField
+                label="Display Name (English)"
+                variant="outlined"
+                fullWidth
+                value={formData.displayName[2]}
+                onChange={(e) => handleDisplayNameChange(2, e.target.value)}
+                error={!!error}
+                placeholder="Smit"
+              />
+            </Grid>
+
+            <Grid item xs={12}>
               <TextField
                 label="Picture URL (Optional)"
                 variant="outlined"
@@ -82,9 +117,10 @@ const CollectionFormFields = ({
                 helperText={error && " "}
               />
             </Grid>
+            
             {/* Picture Preview */}
             {formData.picture && (
-              <Grid item xs={12} md={6}>
+              <Grid item xs={12}>
                 <Box
                   component="img"
                   src={formData.picture}
@@ -99,6 +135,7 @@ const CollectionFormFields = ({
                 />
               </Grid>
             )}
+            
             <Grid item xs={12} md={editingId ? 6 : 12}>
               <Button
                 variant="contained"

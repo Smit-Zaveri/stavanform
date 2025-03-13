@@ -4,7 +4,7 @@ import { firestore } from '../firebase';
 export const useCollectionForm = (collectionName) => {
   const [formData, setFormData] = useState({
     name: "",
-    displayName: "",
+    displayName: ["", "", ""], // [Gujarati, Hindi, English]
     numbering: 1,
     picture: "",
   });
@@ -37,7 +37,7 @@ export const useCollectionForm = (collectionName) => {
     // Don't reset numbering here as it will be handled by the useEffect
     setFormData(prev => ({
       name: "",
-      displayName: "",
+      displayName: ["", "", ""],
       numbering: prev.numbering,
       picture: "",
     }));
@@ -47,7 +47,7 @@ export const useCollectionForm = (collectionName) => {
     setEditingId(collection.id);
     setFormData({
       name: collection.name,
-      displayName: collection.displayName,
+      displayName: Array.isArray(collection.displayName) ? collection.displayName : ["", "", ""],
       numbering: collection.numbering,
       picture: collection.picture,
     });
@@ -56,8 +56,13 @@ export const useCollectionForm = (collectionName) => {
 
   const validateForm = () => {
     const { name, displayName, numbering } = formData;
-    if (!name || !displayName || !numbering) {
+    if (!name || !numbering) {
       setError("Please fill in all required fields and provide a valid order number.");
+      return false;
+    }
+    // Check if at least one language is filled
+    if (!displayName.some(name => name.trim())) {
+      setError("Please provide at least one display name (Gujarati, Hindi, or English).");
       return false;
     }
     return true;

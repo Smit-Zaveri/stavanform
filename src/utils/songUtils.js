@@ -51,7 +51,19 @@ export const filterSongs = (songs, searchInput) => {
 };
 
 export const exportSongsToCSV = (songs, selectedCollection) => {
-  const exportData = songs.map((song) => {
+  // Sort songs by order before export
+  const sortedSongs = [...songs].sort((a, b) => {
+    if (a.order != null && b.order != null) {
+      return a.order - b.order;
+    } else if (a.order != null) {
+      return -1;
+    } else if (b.order != null) {
+      return 1;
+    }
+    return 0;
+  });
+
+  const exportData = sortedSongs.map((song) => {
     // Handle content based on whether it's an array or string
     let gujaratiContent = "";
     let hindiContent = "";

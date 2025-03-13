@@ -230,9 +230,18 @@ const CollectionForm = ({ collectionName }) => {
   };
 
   // Filtering
-  const filteredCollections = collections.filter((coll) =>
-    coll.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredCollections = collections.filter((coll) => {
+    const searchLower = searchTerm.toLowerCase();
+    // Check collection name
+    if (coll.name.toLowerCase().includes(searchLower)) return true;
+    // Check display names in all languages
+    if (Array.isArray(coll.displayName)) {
+      return coll.displayName.some(name => 
+        name && name.toLowerCase().includes(searchLower)
+      );
+    }
+    return false;
+  });
 
   // UI event handlers
   const handleSnackbarClose = () => {

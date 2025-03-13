@@ -118,17 +118,23 @@ export const useSongForm = (initialData, mode) => {
 
     const allTirthTags = new Set();
     tirthankarList.forEach(t => {
-      allTirthTags.add(t.name.toLowerCase());
-      allTirthTags.add(t.displayName.toLowerCase());
+      // Only add valid string values
+      if (typeof t.name === 'string') allTirthTags.add(t.name.toLowerCase());
+      if (typeof t.displayName === 'string') allTirthTags.add(t.displayName.toLowerCase());
     });
 
     if (selectedTirthankar) {
       const selectedObj = tirthankarList.find(t => t.id === selectedTirthankar);
       if (selectedObj) {
-        const currentTirthTags = [selectedObj.name, selectedObj.displayName];
+        // Only include valid string values
+        const currentTirthTags = [
+          typeof selectedObj.name === 'string' ? selectedObj.name : '',
+          typeof selectedObj.displayName === 'string' ? selectedObj.displayName : ''
+        ].filter(Boolean);
         const currentTirthTagsLower = currentTirthTags.map(t => t.toLowerCase());
 
         const filteredTags = tags.filter(tag => {
+          if (typeof tag !== 'string') return false;
           const lowerTag = tag.toLowerCase();
           return !allTirthTags.has(lowerTag) || currentTirthTagsLower.includes(lowerTag);
         });
@@ -143,7 +149,10 @@ export const useSongForm = (initialData, mode) => {
         }
       }
     } else {
-      const filteredTags = tags.filter(tag => !allTirthTags.has(tag.toLowerCase()));
+      const filteredTags = tags.filter(tag => {
+        if (typeof tag !== 'string') return false;
+        return !allTirthTags.has(tag.toLowerCase());
+      });
       if (JSON.stringify(filteredTags) !== JSON.stringify(tags)) {
         setTags(filteredTags);
       }

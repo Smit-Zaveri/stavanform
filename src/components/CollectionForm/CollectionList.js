@@ -11,6 +11,8 @@ import {
   Box,
   Typography,
   Divider,
+  Stack,
+  Chip,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
@@ -24,6 +26,15 @@ const CollectionList = ({
   onDelete,
   collectionName,
 }) => {
+  const getLanguageLabel = (index) => {
+    switch(index) {
+      case 0: return "ગુજરાતી";
+      case 1: return "हिंदी";
+      case 2: return "English";
+      default: return "";
+    }
+  };
+
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
       <Typography variant="h6" sx={{ mb: 2 }}>
@@ -58,7 +69,7 @@ const CollectionList = ({
               <ListItem
                 sx={{
                   display: "flex",
-                  alignItems: "center",
+                  alignItems: "flex-start",
                   py: 1,
                 }}
                 secondaryAction={
@@ -90,8 +101,41 @@ const CollectionList = ({
                   </ListItemAvatar>
                 )}
                 <ListItemText
-                  primary={`#${collection.numbering} - ${collection.name}`}
-                  secondary={collection.displayName}
+                  primary={
+                    <Typography variant="subtitle1">
+                      #{collection.numbering} - {collection.name}
+                    </Typography>
+                  }
+                  secondary={
+                    <Stack direction="column" spacing={1} sx={{ mt: 1 }}>
+                      {Array.isArray(collection.displayName) && collection.displayName.map((name, index) => (
+                        name && (
+                          <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Chip 
+                              label={getLanguageLabel(index)}
+                              size="small"
+                              sx={{ 
+                                minWidth: 60,
+                                fontFamily: index === 0 ? 'Noto Sans Gujarati' :
+                                          index === 1 ? 'Noto Sans Devanagari' :
+                                          'inherit'
+                              }}
+                            />
+                            <Typography 
+                              variant="body2" 
+                              sx={{ 
+                                fontFamily: index === 0 ? 'Noto Sans Gujarati' :
+                                          index === 1 ? 'Noto Sans Devanagari' :
+                                          'inherit'
+                              }}
+                            >
+                              {name}
+                            </Typography>
+                          </Box>
+                        )
+                      ))}
+                    </Stack>
+                  }
                 />
               </ListItem>
               <Divider />
