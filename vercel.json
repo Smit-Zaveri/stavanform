@@ -1,0 +1,11 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "build",
+  "framework": "create-react-app",
+  "regions": ["iad1"],
+  "functions": {
+    "app/**": {
+      "maxDuration": 30
+    }
+  }
+}
