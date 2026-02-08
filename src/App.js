@@ -135,6 +135,10 @@ const App = () => {
   const handleProfileMenuClose = () => setAnchorElProfile(null);
   const handleProfileMenuOpen = (event) => setAnchorElProfile(event.currentTarget);
 
+  // Check if current route is a public route (no header)
+  const publicRoutes = ["/login", "/reset-password"];
+  const isPublicRoute = publicRoutes.includes(location.pathname) || (!user && location.pathname === "/");
+
   if (loading) {
     return (
       <Box
@@ -156,17 +160,19 @@ const App = () => {
       <Box sx={{ display: "flex", background: customTheme.palette.background.default }}>
         <CssBaseline />
         
-        <Header 
-          user={user}
-          isMobileView={isMobileView}
-          handleDrawerToggle={handleDrawerToggle}
-          companyName={companyName}
-          anchorElProfile={anchorElProfile}
-          handleProfileMenuOpen={handleProfileMenuOpen}
-          handleProfileMenuClose={handleProfileMenuClose}
-          handleLogout={handleLogout}
-          customTheme={customTheme}
-        />
+        {!isPublicRoute && (
+          <Header 
+            user={user}
+            isMobileView={isMobileView}
+            handleDrawerToggle={handleDrawerToggle}
+            companyName={companyName}
+            anchorElProfile={anchorElProfile}
+            handleProfileMenuOpen={handleProfileMenuOpen}
+            handleProfileMenuClose={handleProfileMenuClose}
+            handleLogout={handleLogout}
+            customTheme={customTheme}
+          />
+        )}
 
         {user && !isMobileView && (
           <Drawer
@@ -174,7 +180,29 @@ const App = () => {
             sx={{
               width: drawerWidth,
               flexShrink: 0,
-              "& .MuiDrawer-paper": { width: drawerWidth, boxSizing: "border-box" },
+              "& .MuiDrawer-paper": { 
+                width: drawerWidth, 
+                boxSizing: "border-box",
+                bgcolor: '#1a1a1a',
+                borderRight: '1px solid rgba(255,255,255,0.1)',
+                overflow: 'hidden',
+                '&:hover': {
+                  overflowY: 'auto',
+                },
+                '&::-webkit-scrollbar': {
+                  width: '6px',
+                },
+                '&::-webkit-scrollbar-track': {
+                  background: 'transparent',
+                },
+                '&::-webkit-scrollbar-thumb': {
+                  background: 'rgba(255,255,255,0.2)',
+                  borderRadius: '3px',
+                },
+                '&::-webkit-scrollbar-thumb:hover': {
+                  background: 'rgba(255,255,255,0.3)',
+                },
+              },
             }}
           >
             <Navigation 
@@ -191,7 +219,30 @@ const App = () => {
             open={mobileOpen}
             onClose={handleDrawerToggle}
             ModalProps={{ keepMounted: true }}
-            sx={{ "& .MuiDrawer-paper": { width: drawerWidth } }}
+            sx={{ 
+              "& .MuiDrawer-paper": { 
+                width: drawerWidth,
+                bgcolor: '#1a1a1a',
+                borderRight: '1px solid rgba(255,255,255,0.1)',
+                overflow: 'hidden',
+                '&:hover': {
+                  overflowY: 'auto',
+                },
+                '&::-webkit-scrollbar': {
+                  width: '6px',
+                },
+                '&::-webkit-scrollbar-track': {
+                  background: 'transparent',
+                },
+                '&::-webkit-scrollbar-thumb': {
+                  background: 'rgba(255,255,255,0.2)',
+                  borderRadius: '3px',
+                },
+                '&::-webkit-scrollbar-thumb:hover': {
+                  background: 'rgba(255,255,255,0.3)',
+                },
+              } 
+            }}
           >
             <Navigation 
               isMobileView={isMobileView} 
@@ -205,11 +256,11 @@ const App = () => {
           component="main"
           sx={{
             flexGrow: 1,
-            p: 3,
+            p: isPublicRoute ? 0 : 3,
             width: { sm: `calc(100% - ${drawerWidth}px)` },
           }}
         >
-          <Toolbar />
+          {!isPublicRoute && <Toolbar />}
           <Routes>
             <Route path="/" element={user ? <Navigate to="/list-song/lyrics" replace /> : <Login />} />
             <Route path="/list-song/:collectionName" element={user ? <SongList /> : <Login />} />

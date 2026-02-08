@@ -1,25 +1,25 @@
 import {
-  Alert,
   Box,
   Button,
-  Card,
-  CardContent,
-  CircularProgress,
   TextField,
   Typography,
-  useTheme,
+  Fade,
+  InputAdornment,
+  IconButton,
 } from "@mui/material";
 import React, { useState } from "react";
 import { useNavigate } from 'react-router-dom';
 import { auth } from "./firebase";
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
-  const theme = useTheme();
 
   const handleLogin = async () => {
     setLoading(true);
@@ -27,12 +27,18 @@ const Login = () => {
 
     try {
       await auth.signInWithEmailAndPassword(email, password);
-      navigate("/"); // Redirect to home page after login
+      navigate("/");
     } catch (err) {
       setError("Failed to log in. Please check your credentials.");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleClickShowPassword = () => setShowPassword((show) => !show);
+
+  const handleMouseDownPassword = (event) => {
+    event.preventDefault();
   };
 
   return (
@@ -41,114 +47,180 @@ const Login = () => {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        minHeight: "100vh",
+        height: "100vh",
         width: "100%",
-        padding: { 
-          xs: 2,  // 16px padding on extra-small screens
-          sm: 3,  // 24px padding on small screens
-          md: 4   // 32px padding on medium screens
-        },
+        backgroundColor: '#1a1a1a',
+        overflow: 'hidden',
       }}
     >
-      <Card 
-        sx={{ 
-          width: {
-            xs: '100%',    // Full width on mobile
-            sm: '450px',   // Fixed width on small screens
-            md: '500px'    // Slightly larger on medium screens
-          },
-          p: { 
-            xs: 2,
-            sm: 3 
-          },
-          borderRadius: 1,
-        }}
-      >
-        <CardContent>
+      <Fade in timeout={500}>
+        <Box 
+          sx={{ 
+            width: {
+              xs: '100%',
+              sm: '380px',
+              md: '400px'
+            },
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            px: 2,
+          }}
+        >
           <Typography 
-            variant="h4" 
-            gutterBottom 
+            variant="h5" 
             align="center"
             sx={{
-              fontSize: {
-                xs: '1.5rem',
-                sm: '2rem'
-              },
-              mb: 3
+              fontSize: '1.5rem',
+              fontWeight: 600,
+              color: '#fff',
+              mb: 2,
             }}
           >
-            Welcome Back
+            Log in to Stavan
           </Typography>
 
           {error && (
-            <Alert 
-              severity="error" 
+            <Typography 
+              variant="body2" 
+              align="center"
               sx={{ 
-                mb: 2,
-                borderRadius: 1
+                mb: 1.5,
+                color: '#ff6b6b',
+                fontSize: '0.875rem'
               }}
             >
               {error}
-            </Alert>
+            </Typography>
           )}
 
           <TextField
-            label="Email"
+            placeholder="Email"
             variant="outlined"
             fullWidth
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             sx={{
-              mb: 2
+              mb: 1.5,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
+                backgroundColor: '#252525',
+                height: '50px',
+                '& fieldset': {
+                  borderColor: 'transparent',
+                },
+                '&:hover fieldset': {
+                  borderColor: 'rgba(255, 255, 255, 0.1)',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: 'rgba(255, 255, 255, 0.2)',
+                },
+              },
+              '& .MuiOutlinedInput-input': {
+                color: '#fff',
+                '&::placeholder': {
+                  color: '#666',
+                  opacity: 1,
+                },
+              },
             }}
           />
 
           <TextField
-            label="Password"
-            type="password"
+            placeholder="Password"
+            type={showPassword ? 'text' : 'password'}
             variant="outlined"
             fullWidth
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    aria-label="toggle password visibility"
+                    onClick={handleClickShowPassword}
+                    onMouseDown={handleMouseDownPassword}
+                    edge="end"
+                    sx={{ color: '#666' }}
+                  >
+                    {showPassword ? <VisibilityOff sx={{ fontSize: 20 }} /> : <Visibility sx={{ fontSize: 20 }} />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
             sx={{
-              mb: 3
+              mb: 1.5,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
+                backgroundColor: '#252525',
+                height: '50px',
+                '& fieldset': {
+                  borderColor: 'transparent',
+                },
+                '&:hover fieldset': {
+                  borderColor: 'rgba(255, 255, 255, 0.1)',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: 'rgba(255, 255, 255, 0.2)',
+                },
+              },
+              '& .MuiOutlinedInput-input': {
+                color: '#fff',
+                '&::placeholder': {
+                  color: '#666',
+                  opacity: 1,
+                },
+              },
             }}
           />
+
+          <Box sx={{ width: '100%', textAlign: 'right', mb: 2 }}>
+            <a 
+              href="/reset-password" 
+              style={{ 
+                color: '#666', 
+                textDecoration: 'none',
+                fontSize: '0.875rem',
+                transition: 'color 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.color = '#999';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.color = '#666';
+              }}
+            >
+              Forgot your password?
+            </a>
+          </Box>
 
           <Button
             variant="contained"
             fullWidth
             onClick={handleLogin}
-            sx={{
-              py: { 
-                xs: 1,
-                sm: 1.5 
-              },
-              fontSize: {
-                xs: '0.9rem',
-                sm: '1rem'
-              }
-            }}
             disabled={loading}
-          >
-            {loading ? <CircularProgress size={24} /> : "Sign In"}
-          </Button>
-
-          <Typography 
-            variant="body2" 
-            align="center" 
-            sx={{ 
-              mt: 3,
-              fontSize: {
-                xs: '0.8rem',
-                sm: '0.875rem'
-              }
+            sx={{
+              py: 1.5,
+              borderRadius: 2,
+              fontSize: '0.95rem',
+              fontWeight: 500,
+              textTransform: 'none',
+              backgroundColor: '#fff',
+              color: '#1a1a1a',
+              height: '50px',
+              '&:hover': {
+                backgroundColor: '#e0e0e0',
+              },
+              '&:disabled': {
+                backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                color: '#999',
+              },
             }}
           >
-            Forgot your password? <a href="/reset-password">Reset it here</a>
-          </Typography>
-        </CardContent>
-      </Card>
+            {loading ? 'Loading...' : 'Log in'}
+          </Button>
+        </Box>
+      </Fade>
     </Box>
   );
 };

@@ -8,7 +8,6 @@ import { DeleteDialog, ResolveDialog } from "./components/DialogComponents/SongD
 import { sortSongs, filterSongs, exportSongsToCSV, importSongsFromCSV, handleSingleDuplicate, processRemainingImports } from "./utils/songUtils";
 import {
   Box,
-  Container,
   LinearProgress,
   TablePagination,
   CircularProgress,
@@ -25,6 +24,7 @@ import {
   useMediaQuery,
   useTheme,
   Checkbox,
+  Fade,
 } from "@mui/material";
 import ArrowUpward from "@mui/icons-material/ArrowUpward";
 import { firestore } from "./firebase";
@@ -428,44 +428,47 @@ const ListSong = () => {
     reports.some((r) => r.title === song.title)
   );
 
-  if (loading) return <LinearProgress />;
+  if (loading) return <LinearProgress sx={{ bgcolor: '#252525', '& .MuiLinearProgress-bar': { bgcolor: '#fff' } }} />;
 
   return (
-    <Container maxWidth="xl" sx={{ mt: 4, mb: 4, px: { xs: 2, sm: 3, md: 4 } }}>
-      <Box sx={{
-        mb: 4,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: 2
+    <Fade in timeout={500}>
+      <Box sx={{ 
+        minHeight: '100vh',
+        backgroundColor: '#1a1a1a',
+        px: { xs: 2, sm: 3, md: 4 },
+        py: 4,
       }}>
-        <Box>
-          <Typography
-            variant="h3"
-            sx={{
-              fontWeight: 600,
-              fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.75rem' },
-              mb: 0.5,
-              background: 'linear-gradient(45deg, currentColor 30%, rgba(255,255,255,0.6) 90%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text'
-            }}
-          >
-            Song Management
-          </Typography>
-          <Typography
-            variant="body2"
-            sx={{
-              color: 'text.secondary',
-              fontSize: { xs: '0.875rem', sm: '1rem' }
-            }}
-          >
-            Manage your song collection with ease
-          </Typography>
+        <Box sx={{
+          mb: 4,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 2
+        }}>
+          <Box>
+            <Typography
+              variant="h3"
+              sx={{
+                fontWeight: 600,
+                fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.75rem' },
+                mb: 0.5,
+                color: '#fff',
+              }}
+            >
+              Song Management
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                color: '#999',
+                fontSize: { xs: '0.875rem', sm: '1rem' }
+              }}
+            >
+              Manage your song collection with ease
+            </Typography>
+          </Box>
         </Box>
-      </Box>
 
       <SongControls
         selectedCollection={selectedCollection}
@@ -488,14 +491,14 @@ const ListSong = () => {
             alignItems: "center",
             mb: 3,
             p: 2,
-            bgcolor: 'action.hover',
+            bgcolor: '#252525',
             borderRadius: 2,
             border: '1px solid',
-            borderColor: 'divider'
+            borderColor: 'rgba(255,255,255,0.1)'
           }}
         >
-          <CircularProgress size={24} />
-          <Typography variant="body1" sx={{ ml: 2, fontWeight: 500 }}>
+          <CircularProgress size={24} sx={{ color: '#fff' }} />
+          <Typography variant="body1" sx={{ ml: 2, fontWeight: 500, color: '#fff' }}>
             {importMessage}
           </Typography>
         </Box>
@@ -510,11 +513,10 @@ const ListSong = () => {
               display: 'flex',
               alignItems: 'center',
               p: 2,
-              bgcolor: 'background.paper',
+              bgcolor: '#252525',
               borderRadius: 2,
               border: '1px solid',
-              borderColor: 'divider',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+              borderColor: 'rgba(255,255,255,0.1)',
             }}
           >
             <Checkbox
@@ -527,8 +529,9 @@ const ListSong = () => {
                   setSelectedSongIds([]);
                 }
               }}
+              sx={{ color: '#fff', '&.Mui-checked': { color: '#fff' } }}
             />
-            <Typography variant="body1" sx={{ fontWeight: 500 }}>
+            <Typography variant="body1" sx={{ fontWeight: 500, color: '#fff' }}>
               Select All ({selectedSongIds.length}/{paginatedSongs.length})
             </Typography>
           </Box>
@@ -594,11 +597,20 @@ const ListSong = () => {
           mt: 3,
           display: 'flex',
           justifyContent: 'center',
-          bgcolor: 'background.paper',
+          bgcolor: '#252525',
           borderRadius: 2,
           border: '1px solid',
-          borderColor: 'divider',
-          overflow: 'hidden'
+          borderColor: 'rgba(255,255,255,0.1)',
+          overflow: 'hidden',
+          '& .MuiTablePagination-root': {
+            color: '#fff',
+          },
+          '& .MuiTablePagination-selectIcon': {
+            color: '#fff',
+          },
+          '& .Mui-disabled': {
+            color: 'rgba(255,255,255,0.3)',
+          }
         }}
       >
         <TablePagination
@@ -663,52 +675,69 @@ const ListSong = () => {
         }}
       />
 
-      <Dialog open={duplicatesDialogOpen} onClose={() => setDuplicatesDialogOpen(false)}>
-        <DialogTitle>Duplicate Songs Found</DialogTitle>
+      <Dialog 
+        open={duplicatesDialogOpen} 
+        onClose={() => setDuplicatesDialogOpen(false)}
+        PaperProps={{
+          sx: {
+            bgcolor: '#1a1a1a',
+            color: '#fff',
+            border: '1px solid rgba(255,255,255,0.1)',
+          }
+        }}
+      >
+        <DialogTitle sx={{ color: '#fff' }}>Duplicate Songs Found</DialogTitle>
         <DialogContent>
-          <DialogContentText>
+          <DialogContentText sx={{ color: '#999' }}>
             {/* Updated to not rely on the removed duplicateSongs variable */}
             Some songs with the same titles were found in the collection.
             What would you like to do with these duplicates?
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => handleImportWithDuplicateAction('skip')}>Skip All</Button>
-          <Button onClick={() => handleImportWithDuplicateAction('replace')} color="warning">Replace All</Button>
-          <Button onClick={() => handleImportWithDuplicateAction('add')} color="primary">Add All as New</Button>
+          <Button onClick={() => handleImportWithDuplicateAction('skip')} sx={{ color: '#999' }}>Skip All</Button>
+          <Button onClick={() => handleImportWithDuplicateAction('replace')} sx={{ color: '#ff9800' }}>Replace All</Button>
+          <Button onClick={() => handleImportWithDuplicateAction('add')} sx={{ color: '#fff', bgcolor: 'rgba(255,255,255,0.1)', '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' } }}>Add All as New</Button>
         </DialogActions>
       </Dialog>
 
       <Dialog 
         open={singleDuplicateDialogOpen} 
         onClose={() => setSingleDuplicateDialogOpen(false)}
+        PaperProps={{
+          sx: {
+            bgcolor: '#1a1a1a',
+            color: '#fff',
+            border: '1px solid rgba(255,255,255,0.1)',
+          }
+        }}
       >
-        <DialogTitle>Duplicate Song Found ({importProgress.processed + 1} of {importProgress.total})</DialogTitle>
+        <DialogTitle sx={{ color: '#fff' }}>Duplicate Song Found ({importProgress.processed + 1} of {importProgress.total})</DialogTitle>
         <DialogContent>
-          <DialogContentText>
+          <DialogContentText sx={{ color: '#999' }}>
             A song with the title "{currentDuplicate?.songData.title}" already exists in this collection. What would you like to do?
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{ flexDirection: 'column', alignItems: 'stretch', gap: 1 }}>
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-            <Button onClick={() => handleSingleDuplicateAction('skip')}>
+            <Button onClick={() => handleSingleDuplicateAction('skip')} sx={{ color: '#999' }}>
               Skip This
             </Button>
-            <Button onClick={() => handleSingleDuplicateAction('replace')} color="warning">
+            <Button onClick={() => handleSingleDuplicateAction('replace')} sx={{ color: '#ff9800' }}>
               Replace Existing
             </Button>
-            <Button onClick={() => handleSingleDuplicateAction('add')} color="primary">
+            <Button onClick={() => handleSingleDuplicateAction('add')} sx={{ color: '#fff', bgcolor: 'rgba(255,255,255,0.1)', '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' } }}>
               Add as New
             </Button>
           </Box>
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, borderTop: 1, pt: 1, borderColor: 'divider' }}>
-            <Button onClick={() => handleSingleDuplicateAction('skip', true)}>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, borderTop: 1, pt: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
+            <Button onClick={() => handleSingleDuplicateAction('skip', true)} sx={{ color: '#999' }}>
               Skip All
             </Button>
-            <Button onClick={() => handleSingleDuplicateAction('replace', true)} color="warning">
+            <Button onClick={() => handleSingleDuplicateAction('replace', true)} sx={{ color: '#ff9800' }}>
               Replace All
             </Button>
-            <Button onClick={() => handleSingleDuplicateAction('add', true)} color="primary">
+            <Button onClick={() => handleSingleDuplicateAction('add', true)} sx={{ color: '#fff', bgcolor: 'rgba(255,255,255,0.1)', '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' } }}>
               Add All as New
             </Button>
           </Box>
@@ -723,7 +752,14 @@ const ListSong = () => {
         <Alert
           onClose={() => setSnackbarOpen(false)}
           severity={importMessage.includes("Error") ? "error" : "success"}
-          sx={{ width: "100%" }}
+          sx={{ 
+            width: "100%",
+            bgcolor: importMessage.includes("Error") ? '#3d1f1f' : '#1a3d1a',
+            color: '#fff',
+            '& .MuiAlert-icon': {
+              color: importMessage.includes("Error") ? '#ff6b6b' : '#4caf50',
+            }
+          }}
         >
           {importMessage}
         </Alert>
@@ -731,16 +767,17 @@ const ListSong = () => {
 
       {showGoToTop && (
         <Fab
-          color="primary"
-          size="medium"
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
           sx={{
             position: "fixed",
             bottom: 24,
             right: 24,
             zIndex: 1000,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            backgroundColor: '#fff',
+            color: '#1a1a1a',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
             '&:hover': {
+              backgroundColor: '#e0e0e0',
               transform: 'scale(1.1)',
               transition: 'transform 0.2s ease-in-out'
             }
@@ -749,7 +786,29 @@ const ListSong = () => {
           <ArrowUpward />
         </Fab>
       )}
-    </Container>
+      {showGoToTop && (
+        <Fab
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          sx={{
+            position: "fixed",
+            bottom: 24,
+            right: 24,
+            zIndex: 1000,
+            backgroundColor: '#fff',
+            color: '#1a1a1a',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+            '&:hover': {
+              backgroundColor: '#e0e0e0',
+              transform: 'scale(1.1)',
+              transition: 'transform 0.2s ease-in-out'
+            }
+          }}
+        >
+          <ArrowUpward />
+        </Fab>
+      )}
+    </Box>
+    </Fade>
   );
 };
 

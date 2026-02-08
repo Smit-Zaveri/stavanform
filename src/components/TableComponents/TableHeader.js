@@ -9,7 +9,7 @@ const TableHeader = ({
 }) => {
   return (
     <TableHead>
-      <TableRow>
+      <TableRow sx={{ bgcolor: '#1a1a1a' }}>
         <TableCell padding="checkbox">
           <Checkbox
             indeterminate={
@@ -21,13 +21,18 @@ const TableHeader = ({
               selectedSongIds.length === paginatedSongs.length
             }
             onChange={handleSelectAll}
+            sx={{ 
+              color: '#999',
+              '&.Mui-checked': { color: '#fff' },
+              '&.Mui-indeterminate': { color: '#fff' }
+            }}
           />
         </TableCell>
-        {hasAnyReport && <TableCell>Report Text</TableCell>}
-        <TableCell>Order</TableCell>
-        <TableCell>Title</TableCell>
-        <TableCell>Tags</TableCell>
-        <TableCell>Actions</TableCell>
+        {hasAnyReport && <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Report Text</TableCell>}
+        <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Order</TableCell>
+        <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Title</TableCell>
+        <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Tags</TableCell>
+        <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Actions</TableCell>
       </TableRow>
     </TableHead>
   );

@@ -7,8 +7,6 @@ import {
   ListItemIcon,
   ListItemText,
   Toolbar,
-  Typography,
-  Collapse,
 } from "@mui/material";
 import { useLocation, useNavigate } from "react-router-dom";
 import CollectionsIcon from "@mui/icons-material/Collections";
@@ -29,7 +27,6 @@ const Navigation = ({ isMobileView, setMobileOpen, customTheme }) => {
   const location = useLocation();
   const [isAdmin, setIsAdmin] = useState(false);
   const [menuItems, setMenuItems] = useState([]);
-  const [expandedGroups, setExpandedGroups] = useState({});
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -118,25 +115,13 @@ const Navigation = ({ isMobileView, setMobileOpen, customTheme }) => {
     }
   };
 
-  const toggleGroup = (groupId) => {
-    setExpandedGroups(prev => ({
-      ...prev,
-      [groupId]: !prev[groupId]
-    }));
-  };
-
   return (
-    <Box sx={{ width: drawerWidth }}>
+    <Box sx={{ width: drawerWidth, bgcolor: '#1a1a1a', minHeight: '100vh' }}>
       <Toolbar />
-      <Divider />
+      <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)', mx: 2 }} />
       <List sx={{ 
-        py: 0,
-        '& .MuiListItem-root': {
-          borderRadius: 1,
-          mx: 1,
-          my: 0.5,
-          transition: 'all 0.2s'
-        }
+        py: 2,
+        px: 1,
       }}>
         {menuItems.map((item) => (
           <ListItem
@@ -145,58 +130,63 @@ const Navigation = ({ isMobileView, setMobileOpen, customTheme }) => {
             onClick={() => handleNavigate(item)}
             sx={{
               backgroundColor: location.pathname === item.path
-                ? customTheme.palette.action.selected
+                ? 'rgba(255,255,255,0.1)'
                 : "transparent",
               "&:hover": {
-                backgroundColor: customTheme.palette.action.hover,
+                backgroundColor: 'rgba(255,255,255,0.05)',
               },
-              pl: item.indentLevel ? 4 : 2, // Add indentation if specified
+              pl: item.indentLevel ? 4 : 2,
+              borderRadius: 2,
+              mb: 0.5,
+              py: 1,
+              transition: 'all 0.2s ease',
             }}
           >
-            <ListItemIcon sx={{ minWidth: 40 }}>
+            <ListItemIcon sx={{ minWidth: 36, color: location.pathname === item.path ? '#fff' : '#999' }}>
               {getIcon(item.icon, item.type)}
             </ListItemIcon>
             <ListItemText 
               primary={item.name} 
               primaryTypographyProps={{
                 style: {
-                  fontWeight: location.pathname === item.path ? 500 : 400,
-                  fontSize: '0.9rem'
+                  fontWeight: location.pathname === item.path ? 600 : 400,
+                  fontSize: '0.9rem',
+                  color: location.pathname === item.path ? '#fff' : '#ccc'
                 }
               }}
             />
-            {item.items && (
-              expandedGroups[item.id] ? 
-                <KeyboardArrowUpIcon /> : 
-                <KeyboardArrowDownIcon />
-            )}
           </ListItem>
         ))}
 
         {isAdmin && (
           <>
-            <Divider sx={{ my: 1 }} />
+            <Divider sx={{ my: 2, borderColor: 'rgba(255,255,255,0.1)', mx: 1 }} />
             <ListItem
               button
               onClick={() => handleNavigate({ path: '/admin' })}
               sx={{
                 backgroundColor: location.pathname === '/admin'
-                  ? customTheme.palette.action.selected
+                  ? 'rgba(255,255,255,0.1)'
                   : "transparent",
                 "&:hover": {
-                  backgroundColor: customTheme.palette.action.hover,
+                  backgroundColor: 'rgba(255,255,255,0.05)',
                 },
+                pl: 2,
+                borderRadius: 2,
+                py: 1,
+                transition: 'all 0.2s ease',
               }}
             >
-              <ListItemIcon sx={{ minWidth: 40 }}>
+              <ListItemIcon sx={{ minWidth: 36, color: location.pathname === '/admin' ? '#fff' : '#999' }}>
                 <AdminPanelSettingsIcon />
               </ListItemIcon>
               <ListItemText 
                 primary="Admin Dashboard"
                 primaryTypographyProps={{
                   style: {
-                    fontWeight: location.pathname === '/admin' ? 500 : 400,
-                    fontSize: '0.9rem'
+                    fontWeight: location.pathname === '/admin' ? 600 : 400,
+                    fontSize: '0.9rem',
+                    color: location.pathname === '/admin' ? '#fff' : '#ccc'
                   }
                 }}
               />

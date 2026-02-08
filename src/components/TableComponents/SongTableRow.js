@@ -21,19 +21,27 @@ const SongTableRow = ({
   return (
     <MuiTableRow
       sx={{
-        backgroundColor: report ? "rgba(255,0,0,0.1)" : "inherit",
+        backgroundColor: report ? "rgba(255,0,0,0.15)" : "transparent",
+        '&:hover': {
+          backgroundColor: report ? "rgba(255,0,0,0.2)" : "rgba(255,255,255,0.05)",
+        },
+        borderBottom: '1px solid rgba(255,255,255,0.05)',
       }}
     >
       <TableCell padding="checkbox">
         <Checkbox
           checked={isItemSelected}
           onChange={() => handleSelectSong(song.id)}
+          sx={{ 
+            color: '#999',
+            '&.Mui-checked': { color: '#fff' }
+          }}
         />
       </TableCell>
       {report !== undefined && (
-        <TableCell>{report ? report.reportText || "—" : "—"}</TableCell>
+        <TableCell sx={{ color: '#fff' }}>{report ? report.reportText || "—" : "—"}</TableCell>
       )}
-      <TableCell>{song.order != null ? song.order : "—"}</TableCell>
+      <TableCell sx={{ color: '#fff' }}>{song.order != null ? song.order : "—"}</TableCell>
       <TableCell>
         <Typography
           variant="subtitle1"
@@ -42,6 +50,7 @@ const SongTableRow = ({
             whiteSpace: "nowrap",
             overflow: "hidden",
             textOverflow: "ellipsis",
+            color: '#fff',
           }}
         >
           {song.title}
@@ -56,6 +65,7 @@ const SongTableRow = ({
             whiteSpace: "nowrap",
             overflow: "hidden",
             textOverflow: "ellipsis",
+            color: '#999',
           }}
         >
           {song.tags ? song.tags.join(", ") : "—"}
@@ -66,10 +76,20 @@ const SongTableRow = ({
           variant="contained"
           size="small"
           onClick={() => handleEditClick(song)}
+          sx={{
+            backgroundColor: '#fff',
+            color: '#1a1a1a',
+            '&:hover': {
+              backgroundColor: '#e0e0e0',
+            },
+          }}
         >
           Edit
         </Button>
-        <IconButton onClick={() => handleDeleteClick(song.id)}>
+        <IconButton 
+          onClick={() => handleDeleteClick(song.id)}
+          sx={{ color: '#ff6b6b' }}
+        >
           <Delete />
         </IconButton>
         {report && (
@@ -77,6 +97,13 @@ const SongTableRow = ({
             variant="contained"
             size="small"
             onClick={() => handleResolveClick(report.id)}
+            sx={{
+              backgroundColor: '#fff',
+              color: '#1a1a1a',
+              '&:hover': {
+                backgroundColor: '#e0e0e0',
+              },
+            }}
           >
             Resolve
           </Button>

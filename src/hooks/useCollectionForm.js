@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { firestore } from '../firebase';
 
 export const useCollectionForm = (collectionName) => {
@@ -31,7 +31,7 @@ export const useCollectionForm = (collectionName) => {
     }
   }, [collectionName, editingId]);
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setEditingId(null);
     setError("");
     // Don't reset numbering here as it will be handled by the useEffect
@@ -41,7 +41,7 @@ export const useCollectionForm = (collectionName) => {
       numbering: prev.numbering,
       picture: "",
     }));
-  };
+  }, []);
 
   const setEditData = (collection) => {
     setEditingId(collection.id);

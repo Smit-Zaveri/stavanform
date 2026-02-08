@@ -11,6 +11,7 @@ import {
   Typography,
   Snackbar,
   DialogContentText,
+  Fade,
 } from "@mui/material";
 import { firestore } from "../firebase";
 import firebase from "firebase/compat/app";
@@ -28,13 +29,13 @@ export const SongFormDialog = ({
   onSubmit,
 }) => {
   const navigate = useNavigate();
-  const [selectedCollection, setSelectedCollection] = useState("");  // Start with empty string
+  const [selectedCollection, setSelectedCollection] = useState("");
   const [collectionOptions, setCollectionOptions] = useState([]);
   const [error, setError] = useState("");
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const [newArtist, setNewArtist] = useState("");
-  const [previousCollection, setPreviousCollection] = useState("");  // Start with empty string
+  const [previousCollection, setPreviousCollection] = useState("");
   const [openDuplicateDialog, setOpenDuplicateDialog] = useState(false);
   const [duplicateAction, setDuplicateAction] = useState('');
   const [pendingDocData, setPendingDocData] = useState(null);
@@ -48,7 +49,6 @@ export const SongFormDialog = ({
     tagsOptions
   } = useSongForm(initialData, mode);
 
-  // Update collection when initialData changes
   useEffect(() => {
     if (initialData && initialData.collection) {
       setSelectedCollection(initialData.collection);
@@ -59,7 +59,6 @@ export const SongFormDialog = ({
     }
   }, [initialData, collectionName]);
 
-  // Fetch collection list
   useEffect(() => {
     const fetchCollections = async () => {
       try {
@@ -116,7 +115,6 @@ export const SongFormDialog = ({
     };
 
     try {
-      // Check for duplicates
       const duplicateQuery = await firestore.collection(selectedCollection)
         .where("title", "==", formData.title)
         .get();
@@ -194,17 +192,46 @@ export const SongFormDialog = ({
         onClose={onClose} 
         fullWidth 
         maxWidth="md"
-        keepMounted={false} // Force re-render on close
+        keepMounted={false}
+        PaperProps={{
+          sx: {
+            bgcolor: '#1a1a1a',
+            color: '#fff',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 2,
+            overflow: 'hidden',
+          }
+        }}
+        TransitionComponent={Fade}
+        transitionDuration={300}
       >
-        <DialogTitle>
+        <DialogTitle sx={{ color: '#fff', pb: 1 }}>
           {mode === "new" ? "Add New Song" : "Edit Song"}
           {mode === "edit" && selectedCollection !== previousCollection && (
-            <Typography variant="caption" color="text.secondary" display="block">
+            <Typography variant="caption" sx={{ color: '#999', display: 'block', mt: 0.5 }}>
               Moving song from {previousCollection} to {selectedCollection}
             </Typography>
           )}
         </DialogTitle>
-        <DialogContent>
+        <DialogContent 
+          sx={{ 
+            pt: 1,
+            // Custom scrollbar styling
+            '&::-webkit-scrollbar': {
+              width: '8px',
+            },
+            '&::-webkit-scrollbar-track': {
+              background: 'transparent',
+            },
+            '&::-webkit-scrollbar-thumb': {
+              background: 'rgba(255,255,255,0.2)',
+              borderRadius: '4px',
+            },
+            '&::-webkit-scrollbar-thumb:hover': {
+              background: 'rgba(255,255,255,0.3)',
+            },
+          }}
+        >
           <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
             <SongFormControls
               formData={formData}
@@ -221,24 +248,51 @@ export const SongFormDialog = ({
               mode={mode}
               previousCollection={previousCollection}
             />
-            <Button variant="contained" type="submit" fullWidth sx={{ mt: 3 }}>
+            <Button 
+              variant="contained" 
+              type="submit" 
+              fullWidth 
+              sx={{ 
+                mt: 3,
+                backgroundColor: '#fff',
+                color: '#1a1a1a',
+                borderRadius: 2,
+                textTransform: 'none',
+                fontWeight: 600,
+                py: 1.5,
+                fontSize: '1rem',
+                '&:hover': {
+                  backgroundColor: '#e0e0e0',
+                },
+              }}
+            >
               Submit
             </Button>
           </Box>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={openDuplicateDialog} onClose={() => setOpenDuplicateDialog(false)}>
-        <DialogTitle>Duplicate Song Found</DialogTitle>
+      <Dialog 
+        open={openDuplicateDialog} 
+        onClose={() => setOpenDuplicateDialog(false)}
+        PaperProps={{
+          sx: {
+            bgcolor: '#1a1a1a',
+            color: '#fff',
+            border: '1px solid rgba(255,255,255,0.1)',
+          }
+        }}
+      >
+        <DialogTitle sx={{ color: '#fff' }}>Duplicate Song Found</DialogTitle>
         <DialogContent>
-          <DialogContentText>
+          <DialogContentText sx={{ color: '#999' }}>
             A song with the title "{formData.title}" already exists in this collection. What would you like to do?
           </DialogContentText>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => handleDuplicateAction('skip')}>Skip This</Button>
-          <Button onClick={() => handleDuplicateAction('replace')} color="warning">Replace Existing</Button>
-          <Button onClick={() => handleDuplicateAction('add')} color="primary">Add as New</Button>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => handleDuplicateAction('skip')} sx={{ color: '#999' }}>Skip This</Button>
+          <Button onClick={() => handleDuplicateAction('replace')} sx={{ color: '#ff9800' }}>Replace Existing</Button>
+          <Button onClick={() => handleDuplicateAction('add')} sx={{ color: '#fff', bgcolor: 'rgba(255,255,255,0.1)', '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' } }}>Add as New</Button>
         </DialogActions>
       </Dialog>
 
@@ -250,25 +304,42 @@ export const SongFormDialog = ({
         <Alert
           onClose={() => setOpenSnackbar(false)}
           severity={error.includes("Success") ? "success" : "error"}
-          sx={{ width: "100%" }}
+          sx={{ 
+            width: "100%",
+            bgcolor: error.includes("Success") ? '#1a3d1a' : '#3d1f1f',
+            color: '#fff',
+            '& .MuiAlert-icon': {
+              color: error.includes("Success") ? '#4caf50' : '#ff6b6b',
+            }
+          }}
         >
           {error}
         </Alert>
       </Snackbar>
 
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
-        <DialogTitle>Create New Artist</DialogTitle>
+      <Dialog 
+        open={openDialog} 
+        onClose={() => setOpenDialog(false)}
+        PaperProps={{
+          sx: {
+            bgcolor: '#1a1a1a',
+            color: '#fff',
+            border: '1px solid rgba(255,255,255,0.1)',
+          }
+        }}
+      >
+        <DialogTitle sx={{ color: '#fff' }}>Create New Artist</DialogTitle>
         <DialogContent>
-          <Typography>
+          <Typography sx={{ color: '#999' }}>
             The artist "{newArtist}" does not exist. Would you like to create a
             new artist entry?
           </Typography>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenDialog(false)} color="secondary">
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setOpenDialog(false)} sx={{ color: '#999' }}>
             Cancel
           </Button>
-          <Button onClick={handleConfirmNewArtist} color="primary">
+          <Button onClick={handleConfirmNewArtist} sx={{ color: '#1a1a1a', bgcolor: '#fff', '&:hover': { bgcolor: '#e0e0e0' } }}>
             Yes, Create Artist
           </Button>
         </DialogActions>

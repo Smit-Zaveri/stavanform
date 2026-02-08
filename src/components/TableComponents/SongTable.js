@@ -20,7 +20,15 @@ const SongTable = ({
   handleResolveClick
 }) => {
   return (
-    <TableContainer component={Paper}>
+    <TableContainer 
+      component={Paper}
+      sx={{
+        bgcolor: '#252525',
+        border: '1px solid rgba(255,255,255,0.1)',
+        borderRadius: 2,
+        overflow: 'hidden',
+      }}
+    >
       <Table>
         <TableHeader
           hasAnyReport={hasAnyReport}

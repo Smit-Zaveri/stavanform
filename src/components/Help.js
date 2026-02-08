@@ -6,11 +6,9 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  Paper,
   List,
   ListItem,
   ListItemText,
-  Divider,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 

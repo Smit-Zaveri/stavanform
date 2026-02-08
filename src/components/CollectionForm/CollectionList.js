@@ -100,43 +100,44 @@ const CollectionList = ({
                     />
                   </ListItemAvatar>
                 )}
-                <ListItemText
-                  primary={
-                    <Typography variant="subtitle1">
-                      #{collection.numbering} - {collection.name}
-                    </Typography>
-                  }
-                  secondary={
-                    <Stack direction="column" spacing={1} sx={{ mt: 1 }}>
-                      {Array.isArray(collection.displayName) && collection.displayName.map((name, index) => (
-                        name && (
-                          <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Chip 
-                              label={getLanguageLabel(index)}
-                              size="small"
-                              sx={{ 
-                                minWidth: 60,
-                                fontFamily: index === 0 ? 'Noto Sans Gujarati' :
-                                          index === 1 ? 'Noto Sans Devanagari' :
-                                          'inherit'
-                              }}
-                            />
-                            <Typography 
-                              variant="body2" 
-                              sx={{ 
-                                fontFamily: index === 0 ? 'Noto Sans Gujarati' :
-                                          index === 1 ? 'Noto Sans Devanagari' :
-                                          'inherit'
-                              }}
-                            >
-                              {name}
-                            </Typography>
-                          </Box>
-                        )
-                      ))}
-                    </Stack>
-                  }
-                />
+                 <ListItemText
+                   primary={
+                     <Typography variant="subtitle1">
+                       #{collection.numbering} - {collection.name}
+                     </Typography>
+                   }
+                   secondary={
+                     <Stack direction="column" spacing={1} sx={{ mt: 1 }}>
+                       {Array.isArray(collection.displayName) && collection.displayName.map((name, index) => (
+                         name && (
+                           <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                             <Chip 
+                               label={getLanguageLabel(index)}
+                               size="small"
+                               sx={{ 
+                                 minWidth: 60,
+                                 fontFamily: index === 0 ? 'Noto Sans Gujarati' :
+                                           index === 1 ? 'Noto Sans Devanagari' :
+                                           'inherit'
+                               }}
+                             />
+                             <Typography 
+                               variant="body2" 
+                               sx={{ 
+                                 fontFamily: index === 0 ? 'Noto Sans Gujarati' :
+                                           index === 1 ? 'Noto Sans Devanagari' :
+                                           'inherit'
+                               }}
+                             >
+                               {name}
+                             </Typography>
+                           </Box>
+                         )
+                       ))}
+                     </Stack>
+                   }
+                   secondaryTypographyProps={{ component: 'div' }}
+                 />
               </ListItem>
               <Divider />
             </React.Fragment>

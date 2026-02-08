@@ -44,7 +44,7 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     menuManagement.loadNavItems();
-  }, [menuManagement.loadNavItems]);
+  }, [menuManagement.loadNavItems, menuManagement]);
 
   const handleCollectionChange = (event) => {
     setSelectedCollection(event.target.value);

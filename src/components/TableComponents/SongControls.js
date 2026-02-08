@@ -33,11 +33,10 @@ const SongControls = ({
         gap: 2,
         mb: 4,
         p: { xs: 2, sm: 3 },
-        bgcolor: 'background.paper',
-        borderRadius: 3,
+        bgcolor: '#252525',
+        borderRadius: 2,
         border: '1px solid',
-        borderColor: 'divider',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+        borderColor: 'rgba(255,255,255,0.1)',
       }}
     >
       <Box sx={{
@@ -53,7 +52,24 @@ const SongControls = ({
             minWidth: { xs: '100%', sm: 220 },
             '& .MuiOutlinedInput-root': {
               borderRadius: 2,
-            }
+              backgroundColor: '#1a1a1a',
+              color: '#fff',
+              '& fieldset': {
+                borderColor: 'transparent',
+              },
+              '&:hover fieldset': {
+                borderColor: 'rgba(255, 255, 255, 0.1)',
+              },
+              '&.Mui-focused fieldset': {
+                borderColor: 'rgba(255, 255, 255, 0.2)',
+              },
+            },
+            '& .MuiInputLabel-root': {
+              color: '#999',
+            },
+            '& .MuiInputLabel-root.Mui-focused': {
+              color: '#fff',
+            },
           }}
         >
           <InputLabel id="collection-select-label">Collection</InputLabel>
@@ -62,6 +78,28 @@ const SongControls = ({
             value={selectedCollection}
             onChange={handleCollectionChange}
             label="Collection"
+            sx={{
+              '& .MuiSelect-icon': {
+                color: '#999',
+              },
+            }}
+            MenuProps={{
+              PaperProps: {
+                sx: {
+                  bgcolor: '#1a1a1a',
+                  color: '#fff',
+                  '& .MuiMenuItem-root': {
+                    color: '#fff',
+                    '&:hover': {
+                      bgcolor: 'rgba(255,255,255,0.1)',
+                    },
+                    '&.Mui-selected': {
+                      bgcolor: 'rgba(255,255,255,0.15)',
+                    },
+                  },
+                },
+              },
+            }}
           >
             {collectionList
               .sort((a, b) => a.numbering - b.numbering)
@@ -74,7 +112,7 @@ const SongControls = ({
         </FormControl>
 
         <TextField
-          label="Search songs or tags"
+          placeholder="Search songs or tags"
           variant="outlined"
           size="medium"
           value={searchInput}
@@ -88,7 +126,24 @@ const SongControls = ({
             minWidth: { sm: 250 },
             '& .MuiOutlinedInput-root': {
               borderRadius: 2,
-            }
+              backgroundColor: '#1a1a1a',
+              '& fieldset': {
+                borderColor: 'transparent',
+              },
+              '&:hover fieldset': {
+                borderColor: 'rgba(255, 255, 255, 0.1)',
+              },
+              '&.Mui-focused fieldset': {
+                borderColor: 'rgba(255, 255, 255, 0.2)',
+              },
+            },
+            '& .MuiOutlinedInput-input': {
+              color: '#fff',
+              '&::placeholder': {
+                color: '#666',
+                opacity: 1,
+              },
+            },
           }}
         />
       </Box>
@@ -110,10 +165,11 @@ const SongControls = ({
             textTransform: 'none',
             fontWeight: 600,
             px: 3,
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            backgroundColor: '#fff',
+            color: '#1a1a1a',
             '&:hover': {
-              boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
-            }
+              backgroundColor: '#e0e0e0',
+            },
           }}
         >
           Export Songs
@@ -130,10 +186,11 @@ const SongControls = ({
             textTransform: 'none',
             fontWeight: 600,
             px: 3,
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            backgroundColor: '#fff',
+            color: '#1a1a1a',
             '&:hover': {
-              boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
-            }
+              backgroundColor: '#e0e0e0',
+            },
           }}
         >
           Import Songs
@@ -151,10 +208,11 @@ const SongControls = ({
             textTransform: 'none',
             fontWeight: 600,
             px: 3,
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            backgroundColor: '#fff',
+            color: '#1a1a1a',
             '&:hover': {
-              boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
-            }
+              backgroundColor: '#e0e0e0',
+            },
           }}
         >
           Add New Song
@@ -163,7 +221,6 @@ const SongControls = ({
         {selectedSongIds.length > 0 && (
           <Button
             variant="contained"
-            color="error"
             onClick={() => setDeleteDialogOpen(true)}
             fullWidth={true}
             sx={{
@@ -172,10 +229,11 @@ const SongControls = ({
               textTransform: 'none',
               fontWeight: 600,
               px: 3,
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              backgroundColor: '#d32f2f',
+              color: '#fff',
               '&:hover': {
-                boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
-              }
+                backgroundColor: '#b71c1c',
+              },
             }}
           >
             Delete Selected ({selectedSongIds.length})

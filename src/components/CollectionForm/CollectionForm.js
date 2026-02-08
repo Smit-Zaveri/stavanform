@@ -1,25 +1,13 @@
 import React, { useRef, useState, useEffect } from "react";
 import { useLocation } from 'react-router-dom';
 import {
-  Box,
   Button,
-  Card,
-  CardContent,
-  Checkbox,
   Container,
-  Divider,
   Grid,
-  IconButton,
   InputAdornment,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemAvatar,
-  Avatar,
   Paper,
   Snackbar,
   TextField,
-  Typography,
   Alert,
   CircularProgress,
 } from "@mui/material";
@@ -30,8 +18,6 @@ import {
   DialogContentText,
   DialogTitle,
 } from "@mui/material";
-import DeleteIcon from "@mui/icons-material/Delete";
-import EditIcon from "@mui/icons-material/Edit";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -46,7 +32,6 @@ const CollectionForm = ({ collectionName }) => {
   const {
     collections,
     loading,
-    error: collectionError,
     fetchCollections,
     addCollection,
     updateCollection,
@@ -86,7 +71,7 @@ const CollectionForm = ({ collectionName }) => {
   // Add URL change detection
   useEffect(() => {
     resetForm();
-  }, [location.pathname]);
+  }, [location.pathname, resetForm]);
 
   // Add function to get next order number
   const getNextOrderNumber = () => {

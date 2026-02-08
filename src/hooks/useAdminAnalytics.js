@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { firestore, auth, checkSuperAdmin, storage } from '../firebase';
-import { logActivity } from '../utils/analyticsUtils';
 
 export const useAdminAnalytics = () => {
   const [analyticsData, setAnalyticsData] = useState({
@@ -18,7 +17,7 @@ export const useAdminAnalytics = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const loadAnalytics = async () => {
+  const loadAnalytics = useCallback(async () => {
     if (!auth.currentUser) {
       setError("You must be logged in to view analytics");
       setLoading(false);
@@ -138,11 +137,11 @@ export const useAdminAnalytics = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [analyticsData.recentActivity]);
 
   useEffect(() => {
     loadAnalytics();
-  }, []);
+  }, [loadAnalytics]);
 
   useEffect(() => {
     const unsubscribe = firestore.collection('activity_log')
