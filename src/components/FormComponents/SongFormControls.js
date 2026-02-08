@@ -9,7 +9,6 @@ import {
   Autocomplete,
   FormControlLabel,
   Checkbox,
-  Chip,
   Paper,
   Card,
   CardContent,
@@ -161,16 +160,14 @@ export const SongFormControls = ({
   const [translatingContent, setTranslatingContent] = useState(false);
   const [translatingTitle, setTranslatingTitle] = useState(false);
   const [translationError, setTranslationError] = useState(null);
-  const [translationCache, setTranslationCache] = useState({});
+  
 
   // Debug content changes
   useEffect(() => {
     console.log('Content changed:', content);
   }, [content]);
 
-  const getCacheKey = (text, targetLanguage) => {
-    return `${text}_${targetLanguage}`;
-  };
+  
 
   // Transliteration: Convert Gujarati to Hindi or English (same pronunciation)
   const transliterateGujarati = (text, targetScript) => {
@@ -193,11 +190,11 @@ export const SongFormControls = ({
       // Matras (vowel signs)
       'ા': 'ा', 'િ': 'ि', 'ી': 'ी', 'ુ': 'ु', 'ૂ': 'ू',
       'ે': 'े', 'ૈ': 'ै', 'ો': 'ो', 'ૌ': 'ौ', 'ં': 'ं', 'ઃ': 'ः',
-      '્': '्',
+'્': '्',
       // Numbers and punctuation
       '૦': '०', '૧': '१', '૨': '२', '૩': '३', '૪': '४',
-      '૫': '५', '૬': '६', '૭': '७', '૮': '८', '૯': '९',
-      '।': '।', '્': '्',
+      '૫': '५', '૬': '૬', '૭': '७', '૮': '૮', '૯': '૯',
+      '।': '।',
       // Special combinations
       'ક્ષ': 'क्ष', 'ત્ર': 'त्र', 'જ્ઞ': 'ज्ञ', 'શ્ર': 'श्र',
       'દ્વ': 'द्व', 'દ્ય': 'द्य', 'દ્મ': 'द्म'
@@ -293,7 +290,6 @@ export const SongFormControls = ({
     while (i < text.length) {
       const char = text[i];
       const nextChar = text[i + 1] || '';
-      const prevChar = text[i - 1] || '';
       
       // Track sentence starts for capitalization
       if (char === '\n' || char === '.' || char === '।' || char === '॥') {
@@ -397,16 +393,7 @@ export const SongFormControls = ({
     return result;
   };
 
-  // Copy text to clipboard
-  const copyToClipboard = async (text) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch (err) {
-      console.error('Failed to copy:', err);
-      return false;
-    }
-  };
+  
 
   // Fallback: Open text in Google Translate
   const openInGoogleTranslate = (text, targetLanguage) => {

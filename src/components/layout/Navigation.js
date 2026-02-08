@@ -16,8 +16,7 @@ import MusicNoteIcon from "@mui/icons-material/MusicNote";
 import PlaylistAddCheckIcon from "@mui/icons-material/PlaylistAddCheck";
 import QueueMusicIcon from "@mui/icons-material/QueueMusic";
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+
 import { checkSuperAdmin, sidebarConfigRef, auth } from '../../firebase';
 
 const drawerWidth = 245;

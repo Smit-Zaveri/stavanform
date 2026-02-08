@@ -54,12 +54,11 @@ const CollectionFormFields = ({
       'જ્ઞ': 'ज्ञ', 'શ્ર': 'श्र',
       // Matras (vowel signs)
       'ા': 'ा', 'િ': 'ि', 'ી': 'ी', 'ુ': 'ु', 'ૂ': 'ू',
-      'ે': 'े', 'ૈ': 'ै', 'ો': 'ो', 'ૌ': 'ौ', 'ં': 'ं', 'ઃ': 'ः',
-      '્': '्',
+      'ે': 'े', 'ૈ': 'ै', 'ો': 'ो', 'ૌ': 'ौ', 'ં': 'ं', 'ઃ': 'ः', '્': '्',
       // Numbers and punctuation
       '૦': '०', '૧': '१', '૨': '२', '૩': '३', '૪': '४',
-      '૫': '५', '૬': '६', '૭': '७', '૮': '८', '૯': '९',
-      '।': '।', '્': '्',
+      '૫': '५', '૬': '६', '૭': '७', '૮': '૮', '૯': '૯',
+      '।': '।',
     };
 
     // For Hindi script, use simple character mapping
@@ -146,7 +145,6 @@ const CollectionFormFields = ({
     while (i < text.length) {
       const char = text[i];
       const nextChar = text[i + 1] || '';
-      const prevChar = text[i - 1] || '';
       
       if (char === '\n' || char === '.' || char === '।' || char === '॥') {
         isStartOfSentence = true;
