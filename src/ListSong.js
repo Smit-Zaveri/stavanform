@@ -431,11 +431,40 @@ const ListSong = () => {
   if (loading) return <LinearProgress />;
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4, px: { xs: 2, sm: 4 } }}>
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" gutterBottom>
-          Song Management
-        </Typography>
+    <Container maxWidth="xl" sx={{ mt: 4, mb: 4, px: { xs: 2, sm: 3, md: 4 } }}>
+      <Box sx={{
+        mb: 4,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: 2
+      }}>
+        <Box>
+          <Typography
+            variant="h3"
+            sx={{
+              fontWeight: 600,
+              fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.75rem' },
+              mb: 0.5,
+              background: 'linear-gradient(45deg, currentColor 30%, rgba(255,255,255,0.6) 90%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text'
+            }}
+          >
+            Song Management
+          </Typography>
+          <Typography
+            variant="body2"
+            sx={{
+              color: 'text.secondary',
+              fontSize: { xs: '0.875rem', sm: '1rem' }
+            }}
+          >
+            Manage your song collection with ease
+          </Typography>
+        </Box>
       </Box>
 
       <SongControls
@@ -453,9 +482,20 @@ const ListSong = () => {
       />
 
       {importing && (
-        <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-          <CircularProgress size={20} />
-          <Typography variant="body2" sx={{ ml: 1 }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            mb: 3,
+            p: 2,
+            bgcolor: 'action.hover',
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: 'divider'
+          }}
+        >
+          <CircularProgress size={24} />
+          <Typography variant="body1" sx={{ ml: 2, fontWeight: 500 }}>
             {importMessage}
           </Typography>
         </Box>
@@ -464,7 +504,19 @@ const ListSong = () => {
       {isMobile ? (
         // Mobile card view
         <Box>
-          <Box sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
+          <Box
+            sx={{
+              mb: 3,
+              display: 'flex',
+              alignItems: 'center',
+              p: 2,
+              bgcolor: 'background.paper',
+              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'divider',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+            }}
+          >
             <Checkbox
               checked={paginatedSongs.length > 0 && selectedSongIds.length === paginatedSongs.length}
               indeterminate={selectedSongIds.length > 0 && selectedSongIds.length < paginatedSongs.length}
@@ -476,7 +528,7 @@ const ListSong = () => {
                 }
               }}
             />
-            <Typography variant="body1">
+            <Typography variant="body1" sx={{ fontWeight: 500 }}>
               Select All ({selectedSongIds.length}/{paginatedSongs.length})
             </Typography>
           </Box>
@@ -537,18 +589,31 @@ const ListSong = () => {
         />
       )}
 
-      <TablePagination
-        rowsPerPageOptions={[5, 10, 25, { label: "All", value: filteredSongs.length }]}
-        component="div"
-        count={filteredSongs.length}
-        rowsPerPage={rowsPerPage}
-        page={page}
-        onPageChange={(event, newPage) => setPage(newPage)}
-        onRowsPerPageChange={(event) => {
-          setRowsPerPage(parseInt(event.target.value, 10));
-          setPage(0);
+      <Box
+        sx={{
+          mt: 3,
+          display: 'flex',
+          justifyContent: 'center',
+          bgcolor: 'background.paper',
+          borderRadius: 2,
+          border: '1px solid',
+          borderColor: 'divider',
+          overflow: 'hidden'
         }}
-      />
+      >
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25, { label: "All", value: filteredSongs.length }]}
+          component="div"
+          count={filteredSongs.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={(event, newPage) => setPage(newPage)}
+          onRowsPerPageChange={(event) => {
+            setRowsPerPage(parseInt(event.target.value, 10));
+            setPage(0);
+          }}
+        />
+      </Box>
 
       <SongFormDialog
         open={songFormOpen}
@@ -667,9 +732,19 @@ const ListSong = () => {
       {showGoToTop && (
         <Fab
           color="primary"
-          size="small"
+          size="medium"
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          sx={{ position: "fixed", bottom: 16, right: 16, zIndex: 1000 }}
+          sx={{
+            position: "fixed",
+            bottom: 24,
+            right: 24,
+            zIndex: 1000,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            '&:hover': {
+              transform: 'scale(1.1)',
+              transition: 'transform 0.2s ease-in-out'
+            }
+          }}
         >
           <ArrowUpward />
         </Fab>
