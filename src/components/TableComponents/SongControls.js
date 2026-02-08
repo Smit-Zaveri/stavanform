@@ -31,19 +31,29 @@ const SongControls = ({
         flexWrap: 'wrap',
         alignItems: 'stretch',
         gap: 2,
-        mb: 3,
+        mb: 4,
+        p: { xs: 2, sm: 3 },
+        bgcolor: 'background.paper',
+        borderRadius: 3,
+        border: '1px solid',
+        borderColor: 'divider',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
       }}
     >
-      <Box sx={{ 
-        display: 'flex', 
-        flexDirection: { xs: 'column', sm: 'row' }, 
+      <Box sx={{
+        display: 'flex',
+        flexDirection: { xs: 'column', sm: 'row' },
         gap: 2,
-        width: { xs: '100%', sm: 'auto' } 
+        flex: 1,
+        minWidth: { xs: '100%', sm: 'auto' }
       }}>
         <FormControl
           size="medium"
           sx={{
-            minWidth: { xs: '100%', sm: 200 },
+            minWidth: { xs: '100%', sm: 220 },
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 2,
+            }
           }}
         >
           <InputLabel id="collection-select-label">Collection</InputLabel>
@@ -75,23 +85,36 @@ const SongControls = ({
           sx={{
             flexGrow: { xs: 0, sm: 1 },
             width: { xs: '100%', sm: 'auto' },
-            minWidth: { sm: 200 },
+            minWidth: { sm: 250 },
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 2,
+            }
           }}
         />
       </Box>
 
-      <Box sx={{ 
-        display: 'flex', 
-        flexDirection: { xs: 'column', sm: 'row' }, 
+      <Box sx={{
+        display: 'flex',
+        flexDirection: { xs: 'column', sm: 'row' },
         gap: 2,
-        width: { xs: '100%', sm: 'auto' } 
+        width: { xs: '100%', sm: 'auto' }
       }}>
         <Button
           variant="contained"
           startIcon={<Save />}
           onClick={exportData}
           fullWidth={true}
-          sx={{ height: { xs: 'auto', sm: '56px' } }}
+          sx={{
+            height: { xs: 'auto', sm: '56px' },
+            borderRadius: 2,
+            textTransform: 'none',
+            fontWeight: 600,
+            px: 3,
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            '&:hover': {
+              boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
+            }
+          }}
         >
           Export Songs
         </Button>
@@ -101,7 +124,17 @@ const SongControls = ({
           component="label"
           startIcon={<FileUpload />}
           fullWidth={true}
-          sx={{ height: { xs: 'auto', sm: '56px' } }}
+          sx={{
+            height: { xs: 'auto', sm: '56px' },
+            borderRadius: 2,
+            textTransform: 'none',
+            fontWeight: 600,
+            px: 3,
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            '&:hover': {
+              boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
+            }
+          }}
         >
           Import Songs
           <input type="file" accept=".csv" hidden onChange={handleImport} />
@@ -112,7 +145,17 @@ const SongControls = ({
           startIcon={<Add />}
           onClick={handleAddNewClick}
           fullWidth={true}
-          sx={{ height: { xs: 'auto', sm: '56px' } }}
+          sx={{
+            height: { xs: 'auto', sm: '56px' },
+            borderRadius: 2,
+            textTransform: 'none',
+            fontWeight: 600,
+            px: 3,
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            '&:hover': {
+              boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
+            }
+          }}
         >
           Add New Song
         </Button>
@@ -123,7 +166,17 @@ const SongControls = ({
             color="error"
             onClick={() => setDeleteDialogOpen(true)}
             fullWidth={true}
-            sx={{ height: { xs: 'auto', sm: '56px' } }}
+            sx={{
+              height: { xs: 'auto', sm: '56px' },
+              borderRadius: 2,
+              textTransform: 'none',
+              fontWeight: 600,
+              px: 3,
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              '&:hover': {
+                boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
+              }
+            }}
           >
             Delete Selected ({selectedSongIds.length})
           </Button>
