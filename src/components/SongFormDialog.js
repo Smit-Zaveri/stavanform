@@ -191,7 +191,7 @@ export const SongFormDialog = ({
         open={open} 
         onClose={onClose} 
         fullWidth 
-        maxWidth="md"
+        maxWidth="lg"
         keepMounted={false}
         PaperProps={{
           sx: {

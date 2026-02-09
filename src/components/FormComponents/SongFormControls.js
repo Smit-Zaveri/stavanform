@@ -26,13 +26,17 @@ import {
   Badge,
   Stack,
   CircularProgress,
-  Tooltip
+  Tooltip,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from '@mui/material';
 import { createFilterOptions } from '@mui/material/Autocomplete';
 import { isValidYouTubeURL } from '../../utils/validators';
 import CancelIcon from '@mui/icons-material/Cancel';
 import TranslateIcon from '@mui/icons-material/Translate';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 const filter = createFilterOptions();
 
@@ -160,297 +164,145 @@ export const SongFormControls = ({
   const [translatingContent, setTranslatingContent] = useState(false);
   const [translatingTitle, setTranslatingTitle] = useState(false);
   const [translationError, setTranslationError] = useState(null);
-  
+  const [expandedTitlePanels, setExpandedTitlePanels] = useState(['gujarati']); // Track expanded panels
+  const [expandedContentPanels, setExpandedContentPanels] = useState(['gujarati']); // Track expanded content panels
 
-  // Debug content changes
-  useEffect(() => {
-    console.log('Content changed:', content);
-  }, [content]);
-
-  
-
-  // Transliteration: Convert Gujarati to Hindi or English (same pronunciation)
-  const transliterateGujarati = (text, targetScript) => {
-    if (!text || !text.trim()) {
-      return '';
+  // Helper functions
+  const getTitleByLanguage = (langIndex) => {
+    if (Array.isArray(title)) {
+      return title[langIndex] || '';
     }
-
-    // Gujarati to Hindi (Devanagari) mapping
-    const gujaratiToHindi = {
-      'અ': 'अ', 'આ': 'आ', 'ઇ': 'इ', 'ઈ': 'ई', 'ઉ': 'उ', 'ઊ': 'ऊ',
-      'એ': 'ए', 'ઐ': 'ऐ', 'ઓ': 'ओ', 'ઔ': 'औ', 'અં': 'अं', 'અઃ': 'अः',
-      'ક': 'क', 'ખ': 'ख', 'ગ': 'ग', 'ઘ': 'घ', 'ઙ': 'ङ',
-      'ચ': 'च', 'છ': 'छ', 'જ': 'ज', 'ઝ': 'झ', 'ઞ': 'ञ',
-      'ટ': 'ट', 'ઠ': 'ठ', 'ડ': 'ड', 'ઢ': 'ढ', 'ણ': 'ण',
-      'ત': 'त', 'થ': 'थ', 'દ': 'द', 'ધ': 'ध', 'ન': 'न',
-      'પ': 'प', 'ફ': 'फ', 'બ': 'ब', 'ભ': 'भ', 'મ': 'म',
-      'ય': 'य', 'ર': 'र', 'લ': 'ल', 'વ': 'व', 'શ': 'श',
-      'ષ': 'ष', 'સ': 'स', 'હ': 'ह', 'ળ': 'ळ', 'ક્ષ': 'क्ष',
-      'જ્ઞ': 'ज्ञ', 'શ્ર': 'श्र',
-      // Matras (vowel signs)
-      'ા': 'ा', 'િ': 'ि', 'ી': 'ी', 'ુ': 'ु', 'ૂ': 'ू',
-      'ે': 'े', 'ૈ': 'ै', 'ો': 'ो', 'ૌ': 'ौ', 'ં': 'ं', 'ઃ': 'ः',
-'્': '्',
-      // Numbers and punctuation
-      '૦': '०', '૧': '१', '૨': '२', '૩': '३', '૪': '४',
-      '૫': '५', '૬': '૬', '૭': '७', '૮': '૮', '૯': '૯',
-      '।': '।',
-      // Additional special combinations
-      'ત્ર': 'त्र',
-      'દ્વ': 'द्व', 'દ્ય': 'द्य', 'દ્મ': 'द्म'
-    };
-
-    // For Hindi script, use simple character mapping
-    if (targetScript === 'Hindi') {
-      let result = '';
-      let i = 0;
-      
-      while (i < text.length) {
-        // Try 3-character combinations first
-        if (i + 2 < text.length) {
-          const threeChars = text[i] + text[i + 1] + text[i + 2];
-          if (gujaratiToHindi[threeChars]) {
-            result += gujaratiToHindi[threeChars];
-            i += 3;
-            continue;
-          }
-        }
-        // Try 2-character combinations
-        if (i + 1 < text.length) {
-          const twoChars = text[i] + text[i + 1];
-          if (gujaratiToHindi[twoChars]) {
-            result += gujaratiToHindi[twoChars];
-            i += 2;
-            continue;
-          }
-        }
-        
-        // Single character
-        const char = text[i];
-        if (gujaratiToHindi[char]) {
-          result += gujaratiToHindi[char];
-        } else {
-          result += char;
-        }
-        i++;
-      }
-      
-      return result;
-    }
-    
-    // For English transliteration - natural pronunciation style
-    // Consonants (without inherent vowel)
-    const consonants = {
-      'ક': 'k', 'ખ': 'kh', 'ગ': 'g', 'ઘ': 'gh', 'ઙ': 'ng',
-      'ચ': 'ch', 'છ': 'chh', 'જ': 'j', 'ઝ': 'jh', 'ઞ': 'ny',
-      'ટ': 't', 'ઠ': 'th', 'ડ': 'd', 'ઢ': 'dh', 'ણ': 'n',
-      'ત': 't', 'થ': 'th', 'દ': 'd', 'ધ': 'dh', 'ન': 'n',
-      'પ': 'p', 'ફ': 'ph', 'બ': 'b', 'ભ': 'bh', 'મ': 'm',
-      'ય': 'y', 'ર': 'r', 'લ': 'l', 'વ': 'v', 'શ': 'sh',
-      'ષ': 'sh', 'સ': 's', 'હ': 'h', 'ળ': 'l',
-    };
-    
-    // Independent vowels (at start of word or standalone)
-    const vowels = {
-      'અ': 'a', 'આ': 'aa', 'ઇ': 'i', 'ઈ': 'i', 'ઉ': 'u', 'ઊ': 'u',
-      'એ': 'e', 'ઐ': 'ai', 'ઓ': 'o', 'ઔ': 'au', 'ઋ': 'ru',
-    };
-    
-    // Vowel signs (matras) - simpler, natural pronunciation
-    const matras = {
-      'ા': 'a', 'િ': 'i', 'ી': 'i', 'ુ': 'u', 'ૂ': 'u',
-      'ે': 'e', 'ૈ': 'ai', 'ો': 'o', 'ૌ': 'au', 'ૃ': 'ru',
-    };
-    
-    // Special characters
-    const special = {
-      'ં': 'n', 'ઁ': 'n', 'ઃ': 'h', '્': '', // halant removes inherent vowel
-      '।': '.', '॥': '.',
-      // Numbers
-      '૦': '0', '૧': '1', '૨': '2', '૩': '3', '૪': '4',
-      '૫': '5', '૬': '6', '૭': '7', '૮': '8', '૯': '9',
-    };
-    
-    // Helper to check if character is a word boundary
-    const isWordBoundary = (ch) => {
-      return !ch || ch === ' ' || ch === '\n' || ch === '\t' || 
-             ch === ',' || ch === '।' || ch === '॥' || ch === '.' ||
-             ch === '(' || ch === ')' || ch === '-' || ch === '…';
-    };
-    
-    // Helper to check if next char is end of word or special
-    const isEndContext = (nextCh) => {
-      return isWordBoundary(nextCh) || special[nextCh] !== undefined;
-    };
-    
-    let result = '';
-    let i = 0;
-    let isStartOfSentence = true;
-    
-    while (i < text.length) {
-      const char = text[i];
-      const nextChar = text[i + 1] || '';
-      
-      // Track sentence starts for capitalization
-      if (char === '\n' || char === '.' || char === '।' || char === '॥') {
-        isStartOfSentence = true;
-        result += char;
-        i++;
-        continue;
-      }
-      
-      // Skip spaces but track them
-      if (char === ' ' || char === '\t') {
-        result += char;
-        i++;
-        continue;
-      }
-      
-      // Check for independent vowels (2-char like આ first)
-      if (vowels[char + nextChar]) {
-        let vowelResult = vowels[char + nextChar];
-        if (isStartOfSentence && /[a-z]/.test(vowelResult[0])) {
-          vowelResult = vowelResult[0].toUpperCase() + vowelResult.slice(1);
-          isStartOfSentence = false;
-        }
-        result += vowelResult;
-        i += 2;
-        continue;
-      }
-      
-      // Check for single independent vowel
-      if (vowels[char]) {
-        let vowelResult = vowels[char];
-        if (isStartOfSentence && /[a-z]/.test(vowelResult[0])) {
-          vowelResult = vowelResult[0].toUpperCase() + vowelResult.slice(1);
-          isStartOfSentence = false;
-        }
-        result += vowelResult;
-        i++;
-        continue;
-      }
-      
-      // Check for consonant
-      if (consonants[char]) {
-        let consonantRoman = consonants[char];
-        
-        // Capitalize if start of sentence
-        if (isStartOfSentence) {
-          consonantRoman = consonantRoman[0].toUpperCase() + consonantRoman.slice(1);
-          isStartOfSentence = false;
-        }
-        
-        // Check what follows the consonant
-        if (nextChar === '્') {
-          // Halant - no vowel, consonant continues to next
-          result += consonantRoman;
-          i += 2; // skip consonant and halant
-          continue;
-        } else if (matras[nextChar]) {
-          // Matra - use the matra vowel instead of inherent 'a'
-          let matraValue = matras[nextChar];
-          
-          // Special handling for 'e' matra at end of word - add 'y' for natural sound
-          // e.g., આંગણે → aanganey, બારણે → baraney
-          const afterMatra = text[i + 2] || '';
-          if (nextChar === 'ે' && isEndContext(afterMatra)) {
-            matraValue = 'ey';
-          }
-          
-          result += consonantRoman + matraValue;
-          i += 2;
-          continue;
-        } else if (special[nextChar] !== undefined && nextChar !== '્') {
-          // Special character like anusvara - add inherent 'a' then process special
-          result += consonantRoman + 'a';
-          i++;
-          continue;
-        } else if (isEndContext(nextChar) || consonants[nextChar] || vowels[nextChar] || vowels[nextChar + (text[i + 2] || '')]) {
-          // End of word, next consonant, or next vowel - add inherent 'a'
-          result += consonantRoman + 'a';
-          i++;
-          continue;
-        } else {
-          // Default: add consonant with inherent 'a'
-          result += consonantRoman + 'a';
-          i++;
-          continue;
-        }
-      }
-      
-      // Check for special characters
-      if (special[char] !== undefined) {
-        result += special[char];
-        i++;
-        continue;
-      }
-      
-      // Keep original character (punctuation, etc.)
-      result += char;
-      i++;
-    }
-    
-    return result;
+    return langIndex === 0 ? (title || '') : '';
   };
 
-  
-
-  // Fallback: Open text in Google Translate
-  const openInGoogleTranslate = (text, targetLanguage) => {
-    const langCodes = {
-      'Hindi': 'hi',
-      'English': 'en'
-    };
-    const targetCode = langCodes[targetLanguage] || 'en';
-    const encodedText = encodeURIComponent(text);
-    const url = `https://translate.google.com/?sl=gu&tl=${targetCode}&text=${encodedText}&op=translate`;
-    window.open(url, '_blank', 'noopener,noreferrer');
+  const getContentByLanguage = (langIndex) => {
+    if (Array.isArray(content)) {
+      return content[langIndex] || '';
+    }
+    return langIndex === 0 ? (content || '') : '';
   };
 
-  const handleAutoTranslateContent = async (targetLangIndex) => {
+  const hasTitleForLanguage = (langIndex) => {
+    return !!getTitleByLanguage(langIndex)?.trim();
+  };
+
+  const hasContentForLanguage = (langIndex) => {
+    return !!getContentByLanguage(langIndex)?.trim();
+  };
+
+  const handleTitleChange = (event, langIndex) => {
+    const value = event.target.value;
+    const newTitle = Array.isArray(title) ? [...title] : ['', '', ''];
+    newTitle[langIndex] = value;
+    setTitle(newTitle);
+  };
+
+  const handleContentChange = (event, langIndex) => {
+    const value = event.target.value;
+    const newContent = Array.isArray(content) ? [...content] : ['', '', ''];
+    newContent[langIndex] = value;
+    setContent(newContent);
+  };
+
+  const handleTitlePanelChange = (panel) => (event, isExpanded) => {
+    setExpandedTitlePanels(prev => 
+      isExpanded 
+        ? [...prev, panel] 
+        : prev.filter(p => p !== panel)
+    );
+  };
+
+  const handleContentPanelChange = (panel) => (event, isExpanded) => {
+    setExpandedContentPanels(prev => 
+      isExpanded 
+        ? [...prev, panel] 
+        : prev.filter(p => p !== panel)
+    );
+  };
+
+  const getLanguageName = (index) => {
+    const languages = ['Gujarati', 'Hindi', 'English'];
+    return languages[index] || '';
+  };
+
+  const handleTagChange = (event, newValue) => {
+    const cleanedTags = (newValue || [])
+      .map(tag => (typeof tag === 'string' ? tag.trim() : tag))
+      .filter(Boolean);
+    setTags(cleanedTags);
+  };
+
+  const handleCollectionChange = (e) => {
+    const newCollection = e.target.value;
+    if (mode === 'edit' && newCollection !== selectedCollection) {
+      setPendingCollectionChange(newCollection);
+      setOpenChangeCollectionDialog(true);
+    } else {
+      setSelectedCollection(newCollection);
+    }
+  };
+
+  const handleConfirmCollectionChange = () => {
+    setSelectedCollection(pendingCollectionChange);
+    setOpenChangeCollectionDialog(false);
+  };
+
+  const handleCancelCollectionChange = () => {
+    setPendingCollectionChange('');
+    setOpenChangeCollectionDialog(false);
+  };
+
+  const handleBulkTransliterateTitle = async () => {
+    const gujaratiTitle = getTitleByLanguage(0);
+    if (!gujaratiTitle || !gujaratiTitle.trim()) {
+      setTranslationError('Please enter Gujarati title first');
+      return;
+    }
+
+    setTranslatingTitle(true);
+    setTranslationError(null);
+
+    try {
+      // Transliterat Hindi if empty
+      if (!getTitleByLanguage(1)?.trim()) {
+        const hindiTitle = transliterateGujarati(gujaratiTitle, 'Hindi');
+        handleTitleChange({ target: { value: hindiTitle } }, 1);
+      }
+
+      // Transliterat English if empty
+      if (!getTitleByLanguage(2)?.trim()) {
+        const englishTitle = transliterateGujarati(gujaratiTitle, 'English');
+        handleTitleChange({ target: { value: englishTitle } }, 2);
+      }
+    } catch (error) {
+      setTranslationError(error.message);
+    } finally {
+      setTranslatingTitle(false);
+    }
+  };
+
+  const handleBulkTransliterateContent = async () => {
     const gujaratiContent = getContentByLanguage(0);
-
     if (!gujaratiContent || !gujaratiContent.trim()) {
       setTranslationError('Please enter Gujarati content first');
       return;
     }
 
-    // Check if target language content is already available
-    const targetContent = getContentByLanguage(targetLangIndex);
-    if (targetContent && targetContent.trim()) {
-      setTranslationError(`${getLanguageName(targetLangIndex)} content already exists. Transliteration skipped.`);
-      return;
-    }
-
-    console.log('Translating content:', { gujaratiContent, targetLangIndex, currentContent: content });
-
     setTranslatingContent(true);
     setTranslationError(null);
 
     try {
-      const targetLanguage = targetLangIndex === 1 ? 'Hindi' : 'English';
-      // Use transliteration instead of translation
-      const transliteratedText = transliterateGujarati(gujaratiContent, targetLanguage);
-
-      console.log('Transliteration result:', { transliteratedText, targetLangIndex });
-
-      // Ensure content is an array and preserve Gujarati content
-      let newContent;
-      if (Array.isArray(content)) {
-        newContent = [...content];
-      } else {
-        newContent = [gujaratiContent, '', ''];
+      // Transliterat Hindi if empty
+      if (!getContentByLanguage(1)?.trim()) {
+        const hindiContent = transliterateGujarati(gujaratiContent, 'Hindi');
+        handleContentChange({ target: { value: hindiContent } }, 1);
       }
 
-      // Ensure array has enough length
-      while (newContent.length <= targetLangIndex) {
-        newContent.push('');
+      // Transliterat English if empty
+      if (!getContentByLanguage(2)?.trim()) {
+        const englishContent = transliterateGujarati(gujaratiContent, 'English');
+        handleContentChange({ target: { value: englishContent } }, 2);
       }
-
-      newContent[targetLangIndex] = transliteratedText;
-
-      console.log('Setting new content:', newContent);
-      setContent(newContent);
     } catch (error) {
       setTranslationError(error.message);
     } finally {
@@ -508,74 +360,263 @@ export const SongFormControls = ({
     }
   };
 
-  const getContentByLanguage = (langIndex) => {
-    if (Array.isArray(content)) {
-      return content[langIndex] || '';
-    } else if (langIndex === 0 && typeof content === 'string') {
-      return content;
+  const handleAutoTranslateContent = async (targetLangIndex) => {
+    const gujaratiContent = getContentByLanguage(0);
+
+    if (!gujaratiContent || !gujaratiContent.trim()) {
+      setTranslationError('Please enter Gujarati content first');
+      return;
     }
-    return '';
-  };
 
-  const getTitleByLanguage = (langIndex) => {
-    if (Array.isArray(title)) {
-      return title[langIndex] || '';
-    } else if (langIndex === 0 && typeof title === 'string') {
-      return title;
+    // Check if target language content is already available
+    const targetContent = getContentByLanguage(targetLangIndex);
+    if (targetContent && targetContent.trim()) {
+      setTranslationError(`${getLanguageName(targetLangIndex)} content already exists. Transliteration skipped.`);
+      return;
     }
-    return '';
-  };
 
-  const hasTitleForLanguage = (langIndex) => {
-    return getTitleByLanguage(langIndex)?.trim().length > 0;
-  };
+    console.log('Translating content:', { gujaratiContent, targetLangIndex, currentContent: content });
 
-  const hasContentForLanguage = (langIndex) => {
-    return getContentByLanguage(langIndex)?.trim().length > 0;
-  };
+    setTranslatingContent(true);
+    setTranslationError(null);
 
-  const handleContentChange = (e, langIndex) => {
-    const newValue = e.target.value;
-    let newContent;
+    try {
+      const targetLanguage = targetLangIndex === 1 ? 'Hindi' : 'English';
+      // Use transliteration instead of translation
+      const transliteratedText = transliterateGujarati(gujaratiContent, targetLanguage);
 
-    if (Array.isArray(content)) {
-      newContent = [...content];
-      while (newContent.length <= langIndex) {
+      console.log('Transliteration result:', { transliteratedText, targetLangIndex });
+
+      // Ensure content is an array and preserve Gujarati content
+      let newContent;
+      if (Array.isArray(content)) {
+        newContent = [...content];
+      } else {
+        newContent = [gujaratiContent, '', ''];
+      }
+
+      // Ensure array has enough length
+      while (newContent.length <= targetLangIndex) {
         newContent.push('');
       }
-      newContent[langIndex] = newValue;
-    } else {
-      // Convert string to array, preserving existing content
-      newContent = ['', '', ''];
-      if (typeof content === 'string') {
-        newContent[0] = content; // Always preserve Gujarati at index 0
-      }
-      newContent[langIndex] = newValue;
-    }
 
-    console.log('handleContentChange:', { langIndex, newValue, newContent, originalContent: content });
-    setContent(newContent);
+      newContent[targetLangIndex] = transliteratedText;
+
+      console.log('Setting new content:', newContent);
+      setContent(newContent);
+    } catch (error) {
+      setTranslationError(error.message);
+    } finally {
+      setTranslatingContent(false);
+    }
   };
 
-  const handleTitleChange = (e, langIndex) => {
-    const newValue = e.target.value;
-    let newTitle;
-    
-    if (Array.isArray(title)) {
-      newTitle = [...title];
-      while (newTitle.length <= langIndex) {
-        newTitle.push('');
+  // Transliteration: Convert Gujarati to Hindi or English (same pronunciation)
+  const transliterateGujarati = (text, targetScript) => {
+    if (!text || !text.trim()) {
+      return '';
+    }
+
+    // Gujarati to Hindi (Devanagari) mapping
+    const gujaratiToHindi = {
+      'અ': 'अ', 'આ': 'आ', 'ઇ': 'इ', 'ઈ': 'ई', 'ઉ': 'उ', 'ઊ': 'ऊ',
+      'એ': 'ए', 'ઐ': 'ऐ', 'ઓ': 'ओ', 'ઔ': 'औ', 'અં': 'अं', 'અઃ': 'अः',
+      'ક': 'क', 'ખ': 'ख', 'ગ': 'ग', 'ઘ': 'घ', 'ઙ': 'ङ',
+      'ચ': 'च', 'છ': 'छ', 'જ': 'ज', 'ઝ': 'झ', 'ઞ': 'ञ',
+      'ટ': 'ट', 'ઠ': 'ठ', 'ડ': 'ड', 'ઢ': 'ढ', 'ણ': 'ण',
+      'ત': 'त', 'થ': 'थ', 'દ': 'द', 'ધ': 'ध', 'ન': 'न',
+      'પ': 'प', 'ફ': 'फ', 'બ': 'ब', 'ભ': 'भ', 'મ': 'म',
+      'ય': 'य', 'ર': 'र', 'લ': 'ल', 'વ': 'व', 'શ': 'श',
+      'ષ': 'ष', 'સ': 'स', 'હ': 'ह', 'ળ': 'ळ', 'ક્ષ': 'क्ष',
+      'જ્ઞ': 'ज्ञ', 'શ્ર': 'श्र',
+      // Matras (vowel signs)
+      'ા': 'ा', 'િ': 'ि', 'ી': 'ी', 'ુ': 'ु', 'ૂ': 'ू',
+      'ે': 'े', 'ૈ': 'ै', 'ો': 'ो', 'ૌ': 'ौ', 'ં': 'ं', 'ઃ': 'ः', '્': '्',
+      // Numbers and punctuation
+      '૦': '०', '૧': '१', '૨': '२', '૩': '३', '૪': '४',
+      '૫': '५', '૬': '६', '૭': '७', '૮': '૮', '૯': '૯',
+      '।': '।',
+    };
+
+    // For Hindi script, use simple character mapping
+    if (targetScript === 'Hindi') {
+      let result = '';
+      let i = 0;
+      
+      while (i < text.length) {
+        // Try 3-character combinations first
+        if (i + 2 < text.length) {
+          const threeChars = text[i] + text[i + 1] + text[i + 2];
+          if (gujaratiToHindi[threeChars]) {
+            result += gujaratiToHindi[threeChars];
+            i += 3;
+            continue;
+          }
+        }
+        // Try 2-character combinations
+        if (i + 1 < text.length) {
+          const twoChars = text[i] + text[i + 1];
+          if (gujaratiToHindi[twoChars]) {
+            result += gujaratiToHindi[twoChars];
+            i += 2;
+            continue;
+          }
+        }
+        
+        // Single character
+        const char = text[i];
+        if (gujaratiToHindi[char]) {
+          result += gujaratiToHindi[char];
+        } else {
+          result += char;
+        }
+        i++;
       }
-      newTitle[langIndex] = newValue;
-    } else {
-      newTitle = ['', '', ''];
-      if (typeof title === 'string') {
-        newTitle[0] = title;
-      }
-      newTitle[langIndex] = newValue;
+      
+      return result;
     }
     
-    setTitle(newTitle);
+    // For English transliteration - natural pronunciation style
+    // Similar logic as in SongFormControls
+    const consonants = {
+      'ક': 'k', 'ખ': 'kh', 'ગ': 'g', 'ઘ': 'gh', 'ઙ': 'ng',
+      'ચ': 'ch', 'છ': 'chh', 'જ': 'j', 'ઝ': 'jh', 'ઞ': 'ny',
+      'ટ': 't', 'ઠ': 'th', 'ડ': 'd', 'ઢ': 'dh', 'ણ': 'n',
+      'ત': 't', 'થ': 'th', 'દ': 'd', 'ધ': 'dh', 'ન': 'n',
+      'પ': 'p', 'ફ': 'ph', 'બ': 'b', 'ભ': 'bh', 'મ': 'm',
+      'ય': 'y', 'ર': 'r', 'લ': 'l', 'વ': 'v', 'શ': 'sh',
+      'ષ': 'sh', 'સ': 's', 'હ': 'h', 'ળ': 'l',
+    };
+    
+    const vowels = {
+      'અ': 'a', 'આ': 'aa', 'ઇ': 'i', 'ઈ': 'i', 'ઉ': 'u', 'ઊ': 'u',
+      'એ': 'e', 'ઐ': 'ai', 'ઓ': 'o', 'ઔ': 'au', 'ઋ': 'ru',
+    };
+    
+    const matras = {
+      'ા': 'a', 'િ': 'i', 'ી': 'i', 'ુ': 'u', 'ૂ': 'u',
+      'ે': 'e', 'ૈ': 'ai', 'ો': 'o', 'ૌ': 'au', 'ૃ': 'ru',
+    };
+    
+    const special = {
+      'ં': 'n', 'ઁ': 'n', 'ઃ': 'h', '્': '', // halant removes inherent vowel
+      '।': '.', '॥': '.',
+      '૦': '0', '૧': '1', '૨': '2', '૩': '3', '૪': '4',
+      '૫': '5', '૬': '6', '૭': '7', '૮': '8', '૯': '9',
+    };
+    
+    const isWordBoundary = (ch) => {
+      return !ch || ch === ' ' || ch === '\n' || ch === '\t' || 
+             ch === ',' || ch === '।' || ch === '॥' || ch === '.' ||
+             ch === '(' || ch === ')' || ch === '-' || ch === '…';
+    };
+    
+    const isEndContext = (nextCh) => {
+      return isWordBoundary(nextCh) || special[nextCh] !== undefined;
+    };
+    
+    let result = '';
+    let i = 0;
+    let isStartOfSentence = true;
+    
+    while (i < text.length) {
+      const char = text[i];
+      const nextChar = text[i + 1] || '';
+      
+      if (char === '\n' || char === '.' || char === '।' || char === '॥') {
+        isStartOfSentence = true;
+        result += char;
+        i++;
+        continue;
+      }
+      
+      if (char === ' ' || char === '\t') {
+        result += char;
+        i++;
+        continue;
+      }
+      
+      if (vowels[char + nextChar]) {
+        let vowelResult = vowels[char + nextChar];
+        if (isStartOfSentence && /[a-z]/.test(vowelResult[0])) {
+          vowelResult = vowelResult[0].toUpperCase() + vowelResult.slice(1);
+          isStartOfSentence = false;
+        }
+        result += vowelResult;
+        i += 2;
+        continue;
+      }
+      
+      if (vowels[char]) {
+        let vowelResult = vowels[char];
+        if (isStartOfSentence && /[a-z]/.test(vowelResult[0])) {
+          vowelResult = vowelResult[0].toUpperCase() + vowelResult.slice(1);
+          isStartOfSentence = false;
+        }
+        result += vowelResult;
+        i++;
+        continue;
+      }
+      
+      if (consonants[char]) {
+        let consonantRoman = consonants[char];
+        
+        if (isStartOfSentence) {
+          consonantRoman = consonantRoman[0].toUpperCase() + consonantRoman.slice(1);
+          isStartOfSentence = false;
+        }
+        
+        if (nextChar === '્') {
+          result += consonantRoman;
+          i += 2;
+          continue;
+        } else if (matras[nextChar]) {
+          let matraValue = matras[nextChar];
+          
+          if (nextChar === 'ે' && isEndContext(text[i + 2] || '')) {
+            matraValue = 'ey';
+          }
+          
+          result += consonantRoman + matraValue;
+          i += 2;
+          continue;
+        } else if (special[nextChar] !== undefined && nextChar !== '્') {
+          result += consonantRoman + 'a';
+          i++;
+          continue;
+        } else if (isEndContext(nextChar) || consonants[nextChar] || vowels[nextChar] || vowels[nextChar + (text[i + 2] || '')]) {
+          result += consonantRoman + 'a';
+          i++;
+          continue;
+        } else {
+          result += consonantRoman + 'a';
+          i++;
+          continue;
+        }
+      }
+      
+      if (special[char] !== undefined) {
+        result += special[char];
+        i++;
+        continue;
+      }
+      
+      result += char;
+      i++;
+    }
+    
+    return result;
+  };
+
+  const openInGoogleTranslate = (text, targetLanguage) => {
+    const langCodes = {
+      'Hindi': 'hi',
+      'English': 'en'
+    };
+    const targetCode = langCodes[targetLanguage] || 'en';
+    const encodedText = encodeURIComponent(text);
+    const url = `https://translate.google.com/?sl=gu&tl=${targetCode}&text=${encodedText}&op=translate`;
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const combinedTagSuggestions = useMemo(() => {
@@ -589,46 +630,6 @@ export const SongFormControls = ({
     ]);
     return Array.from(uniqueTags);
   }, [tagsOptions, tags, tirthankarList]);
-
-  const handleTagChange = (event, newValue) => {
-    const cleanedTags = (newValue || [])
-      .map(tag => (typeof tag === 'string' ? tag.trim() : tag))
-      .filter(Boolean);
-    setTags(cleanedTags);
-  };
-
-  const handleCollectionChange = (e) => {
-    const newCollection = e.target.value;
-    if (mode === 'edit' && newCollection !== selectedCollection) {
-      setPendingCollectionChange(newCollection);
-      setOpenChangeCollectionDialog(true);
-    } else {
-      setSelectedCollection(newCollection);
-    }
-  };
-
-  const handleConfirmCollectionChange = () => {
-    setSelectedCollection(pendingCollectionChange);
-    setOpenChangeCollectionDialog(false);
-  };
-
-  const handleCancelCollectionChange = () => {
-    setPendingCollectionChange('');
-    setOpenChangeCollectionDialog(false);
-  };
-
-  const handleLanguageTabChange = (event, newValue) => {
-    setSelectedLangTab(newValue);
-  };
-
-  const handleTitleLanguageTabChange = (event, newValue) => {
-    setSelectedTitleLangTab(newValue);
-  };
-
-  const getLanguageName = (index) => {
-    const languages = ['Gujarati', 'Hindi', 'English'];
-    return languages[index] || '';
-  };
 
   return (
     <>
@@ -702,83 +703,90 @@ export const SongFormControls = ({
             <Grid item xs={12}>
               <Card variant="outlined" sx={{ mb: 2, overflow: 'visible', bgcolor: '#1a1a1a', borderColor: 'rgba(255,255,255,0.1)' }}>
                 <CardContent sx={{ pb: 1 }}>
-                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
-                    <TranslateIcon sx={{ color: '#fff' }} />
-                    <Typography variant="subtitle1" fontWeight="medium" sx={{ color: '#fff' }}>
-                      Song Title in Multiple Languages
-                    </Typography>
-                  </Stack>
-                  
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <Tabs 
-                      value={selectedTitleLangTab} 
-                      onChange={handleTitleLanguageTabChange} 
-                      variant="scrollable"
-                      scrollButtons="auto"
-                      textColor="primary"
-                      indicatorColor="primary"
-                      sx={{ 
-                        borderBottom: 1, 
-                        borderColor: 'rgba(255,255,255,0.1)',
-                        minHeight: '48px',
-                        flex: 1,
-                        '& .MuiTab-root': {
-                          color: '#999',
-                          '&.Mui-selected': {
-                            color: '#fff',
-                          },
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, justifyContent: 'space-between' }}>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <TranslateIcon sx={{ color: '#fff' }} />
+                      <Typography variant="subtitle1" fontWeight="medium" sx={{ color: '#fff' }}>
+                        Song Title in Multiple Languages
+                      </Typography>
+                    </Stack>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={handleBulkTransliterateTitle}
+                      disabled={translatingTitle || !getTitleByLanguage(0)?.trim()}
+                      sx={{
+                        color: '#fff',
+                        borderColor: 'rgba(255,255,255,0.3)',
+                        textTransform: 'none',
+                        '&:hover': {
+                          borderColor: 'rgba(255,255,255,0.5)',
+                          bgcolor: 'rgba(255,255,255,0.05)',
+                        },
+                        '&.Mui-disabled': {
+                          color: 'rgba(255,255,255,0.3)',
+                          borderColor: 'rgba(255,255,255,0.1)',
                         },
                       }}
                     >
-                      <Tab 
-                        icon={
-                          <Box sx={{ display: 'flex', alignItems: 'center', color: '#fff' }}>
-                            <span>Gujarati</span>
-                            <LanguageIndicator filled={hasTitleForLanguage(0)} />
-                          </Box>
-                        } 
-                        sx={{ minHeight: '48px' }}
-                      />
-                      <Tab 
-                        icon={
-                          <Box sx={{ display: 'flex', alignItems: 'center', color: '#fff' }}>
-                            <span>Hindi</span>
-                            <LanguageIndicator filled={hasTitleForLanguage(1)} />
-                          </Box>
-                        } 
-                        sx={{ minHeight: '48px' }}
-                      />
-                      <Tab 
-                        icon={
-                          <Box sx={{ display: 'flex', alignItems: 'center', color: '#fff' }}>
-                            <span>English</span>
-                            <LanguageIndicator filled={hasTitleForLanguage(2)} />
-                          </Box>
-                        } 
-                        sx={{ minHeight: '48px' }}
-                      />
-                    </Tabs>
+                      {translatingTitle ? <CircularProgress size={16} /> : 'Fill All'}
+                    </Button>
                   </Box>
 
-                  <Box sx={{ p: 1 }}>
-                    {selectedTitleLangTab === 0 && (
-                      <TextField
-                        label={`${getLanguageName(selectedTitleLangTab)} Title`}
-                        variant="outlined"
-                        fullWidth
-                        required={selectedTitleLangTab === 0}
-                        value={getTitleByLanguage(0)}
-                        onChange={(e) => handleTitleChange(e, 0)}
-                        error={(!getTitleByLanguage(0) && selectedTitleLangTab === 0) && !!error}
-                        helperText={(!getTitleByLanguage(0) && selectedTitleLangTab === 0 && !!error) ? 
-                          "Gujarati title is required" : "Primary title (required)"}
-                        sx={darkTextFieldSx}
-                      />
-                    )}
-                    {selectedTitleLangTab === 1 && (
-                      <Box>
+                  <Box sx={{ mb: 2 }}>
+                    <Accordion 
+                      expanded={expandedTitlePanels.includes('gujarati')} 
+                      onChange={handleTitlePanelChange('gujarati')}
+                      defaultExpanded
+                      sx={{ 
+                        bgcolor: 'rgba(255,255,255,0.05)', 
+                        '&:before': { display: 'none' },
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: 1,
+                        mb: 1
+                      }}
+                    >
+                      <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: '#fff' }} />} sx={{ minHeight: '48px' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Typography sx={{ color: '#fff', mr: 1 }}>Gujarati</Typography>
+                          <LanguageIndicator filled={hasTitleForLanguage(0)} />
+                        </Box>
+                      </AccordionSummary>
+                      <AccordionDetails sx={{ p: 2 }}>
                         <TextField
-                          label={`${getLanguageName(selectedTitleLangTab)} Title`}
+                          label="Gujarati Title"
+                          variant="outlined"
+                          fullWidth
+                          required
+                          value={getTitleByLanguage(0)}
+                          onChange={(e) => handleTitleChange(e, 0)}
+                          error={(!getTitleByLanguage(0) && !!error)}
+                          helperText={(!getTitleByLanguage(0) && !!error) ? "Gujarati title is required" : "Primary title (required)"}
+                          sx={darkTextFieldSx}
+                        />
+                      </AccordionDetails>
+                    </Accordion>
+
+                    <Accordion 
+                      expanded={expandedTitlePanels.includes('hindi')} 
+                      onChange={handleTitlePanelChange('hindi')}
+                      sx={{ 
+                        bgcolor: 'rgba(255,255,255,0.05)', 
+                        '&:before': { display: 'none' },
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: 1,
+                        mb: 1
+                      }}
+                    >
+                      <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: '#fff' }} />} sx={{ minHeight: '48px' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Typography sx={{ color: '#fff', mr: 1 }}>Hindi</Typography>
+                          <LanguageIndicator filled={hasTitleForLanguage(1)} />
+                        </Box>
+                      </AccordionSummary>
+                      <AccordionDetails sx={{ p: 2 }}>
+                        <TextField
+                          label="Hindi Title"
                           variant="outlined"
                           fullWidth
                           value={getTitleByLanguage(1)}
@@ -787,14 +795,14 @@ export const SongFormControls = ({
                           sx={darkTextFieldSx}
                         />
                         <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-                           <Tooltip title="Convert to same pronunciation in Hindi/Devanagari script (only if field is empty)" arrow>
-                             <Button
-                               variant="outlined"
-                               size="small"
-                               startIcon={translatingTitle ? <CircularProgress size={16} /> : <AutoFixHighIcon />}
-                               onClick={() => handleAutoTranslateTitle(1)}
-                               disabled={translatingTitle || !getTitleByLanguage(0)?.trim() || getTitleByLanguage(1)?.trim()}
-                               sx={{
+                          <Tooltip title="Convert to same pronunciation in Hindi/Devanagari script (only if field is empty)" arrow>
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              startIcon={translatingTitle ? <CircularProgress size={16} /> : <AutoFixHighIcon />}
+                              onClick={() => handleAutoTranslateTitle(1)}
+                              disabled={translatingTitle || !getTitleByLanguage(0)?.trim() || getTitleByLanguage(1)?.trim()}
+                              sx={{
                                 color: '#fff',
                                 borderColor: 'rgba(255,255,255,0.3)',
                                 textTransform: 'none',
@@ -827,12 +835,29 @@ export const SongFormControls = ({
                             Open in Google Translate →
                           </Button>
                         </Stack>
-                      </Box>
-                    )}
-                    {selectedTitleLangTab === 2 && (
-                      <Box>
+                      </AccordionDetails>
+                    </Accordion>
+
+                    <Accordion 
+                      expanded={expandedTitlePanels.includes('english')} 
+                      onChange={handleTitlePanelChange('english')}
+                      sx={{ 
+                        bgcolor: 'rgba(255,255,255,0.05)', 
+                        '&:before': { display: 'none' },
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: 1,
+                        mb: 1
+                      }}
+                    >
+                      <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: '#fff' }} />} sx={{ minHeight: '48px' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Typography sx={{ color: '#fff', mr: 1 }}>English</Typography>
+                          <LanguageIndicator filled={hasTitleForLanguage(2)} />
+                        </Box>
+                      </AccordionSummary>
+                      <AccordionDetails sx={{ p: 2 }}>
                         <TextField
-                          label={`${getLanguageName(selectedTitleLangTab)} Title`}
+                          label="English Title"
                           variant="outlined"
                           fullWidth
                           value={getTitleByLanguage(2)}
@@ -841,14 +866,14 @@ export const SongFormControls = ({
                           sx={darkTextFieldSx}
                         />
                         <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-                           <Tooltip title="Convert to same pronunciation in Roman/English script (only if field is empty)" arrow>
-                             <Button
-                               variant="outlined"
-                               size="small"
-                               startIcon={translatingTitle ? <CircularProgress size={16} /> : <AutoFixHighIcon />}
-                               onClick={() => handleAutoTranslateTitle(2)}
-                               disabled={translatingTitle || !getTitleByLanguage(0)?.trim() || getTitleByLanguage(2)?.trim()}
-                               sx={{
+                          <Tooltip title="Convert to same pronunciation in Roman/English script (only if field is empty)" arrow>
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              startIcon={translatingTitle ? <CircularProgress size={16} /> : <AutoFixHighIcon />}
+                              onClick={() => handleAutoTranslateTitle(2)}
+                              disabled={translatingTitle || !getTitleByLanguage(0)?.trim() || getTitleByLanguage(2)?.trim()}
+                              sx={{
                                 color: '#fff',
                                 borderColor: 'rgba(255,255,255,0.3)',
                                 textTransform: 'none',
@@ -881,8 +906,8 @@ export const SongFormControls = ({
                             Open in Google Translate →
                           </Button>
                         </Stack>
-                      </Box>
-                    )}
+                      </AccordionDetails>
+                    </Accordion>
                   </Box>
                 </CardContent>
               </Card>
@@ -1100,85 +1125,92 @@ export const SongFormControls = ({
             <Grid item xs={12}>
               <Card variant="outlined" sx={{ mb: 2, overflow: 'visible', bgcolor: '#1a1a1a', borderColor: 'rgba(255,255,255,0.1)' }}>
                 <CardContent sx={{ pb: 1 }}>
-                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
-                    <TranslateIcon sx={{ color: '#fff' }} />
-                    <Typography variant="subtitle1" fontWeight="medium" sx={{ color: '#fff' }}>
-                      Content in Multiple Languages
-                    </Typography>
-                  </Stack>
-                  
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <Tabs 
-                      value={selectedLangTab} 
-                      onChange={handleLanguageTabChange} 
-                      variant="scrollable"
-                      scrollButtons="auto"
-                      textColor="primary"
-                      indicatorColor="primary"
-                      sx={{ 
-                        borderBottom: 1, 
-                        borderColor: 'rgba(255,255,255,0.1)',
-                        minHeight: '48px',
-                        flex: 1,
-                        '& .MuiTab-root': {
-                          color: '#999',
-                          '&.Mui-selected': {
-                            color: '#fff',
-                          },
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, justifyContent: 'space-between' }}>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <TranslateIcon sx={{ color: '#fff' }} />
+                      <Typography variant="subtitle1" fontWeight="medium" sx={{ color: '#fff' }}>
+                        Content in Multiple Languages
+                      </Typography>
+                    </Stack>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={handleBulkTransliterateContent}
+                      disabled={translatingContent || !getContentByLanguage(0)?.trim()}
+                      sx={{
+                        color: '#fff',
+                        borderColor: 'rgba(255,255,255,0.3)',
+                        textTransform: 'none',
+                        '&:hover': {
+                          borderColor: 'rgba(255,255,255,0.5)',
+                          bgcolor: 'rgba(255,255,255,0.05)',
+                        },
+                        '&.Mui-disabled': {
+                          color: 'rgba(255,255,255,0.3)',
+                          borderColor: 'rgba(255,255,255,0.1)',
                         },
                       }}
                     >
-                      <Tab 
-                        icon={
-                          <Box sx={{ display: 'flex', alignItems: 'center', color: '#fff' }}>
-                            <span>Gujarati</span>
-                            <LanguageIndicator filled={hasContentForLanguage(0)} />
-                          </Box>
-                        } 
-                        sx={{ minHeight: '48px' }}
-                      />
-                      <Tab 
-                        icon={
-                          <Box sx={{ display: 'flex', alignItems: 'center', color: '#fff' }}>
-                            <span>Hindi</span>
-                            <LanguageIndicator filled={hasContentForLanguage(1)} />
-                          </Box>
-                        } 
-                        sx={{ minHeight: '48px' }}
-                      />
-                      <Tab 
-                        icon={
-                          <Box sx={{ display: 'flex', alignItems: 'center', color: '#fff' }}>
-                            <span>English</span>
-                            <LanguageIndicator filled={hasContentForLanguage(2)} />
-                          </Box>
-                        } 
-                        sx={{ minHeight: '48px' }}
-                      />
-                    </Tabs>
+                      {translatingContent ? <CircularProgress size={16} /> : 'Fill All'}
+                    </Button>
                   </Box>
 
-                  <Box sx={{ p: 1 }}>
-                    {selectedLangTab === 0 && (
-                      <TextField
-                        label={`${getLanguageName(selectedLangTab)} Content`}
-                        variant="outlined"
-                        fullWidth
-                        required={selectedLangTab === 0}
-                        multiline
-                        rows={4}
-                        value={getContentByLanguage(0)}
-                        onChange={(e) => handleContentChange(e, 0)}
-                        error={(!getContentByLanguage(0) && selectedLangTab === 0) && !!error}
-                        helperText={(!getContentByLanguage(0) && selectedLangTab === 0 && !!error) ? 
-                          "Gujarati content is required" : "Primary content (required)"}
-                        sx={darkTextFieldSx}
-                      />
-                    )}
-                    {selectedLangTab === 1 && (
-                      <Box>
+                  <Box sx={{ mb: 2 }}>
+                    <Accordion 
+                      expanded={expandedContentPanels.includes('gujarati')} 
+                      onChange={handleContentPanelChange('gujarati')}
+                      defaultExpanded
+                      sx={{ 
+                        bgcolor: 'rgba(255,255,255,0.05)', 
+                        '&:before': { display: 'none' },
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: 1,
+                        mb: 1
+                      }}
+                    >
+                      <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: '#fff' }} />} sx={{ minHeight: '48px' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Typography sx={{ color: '#fff', mr: 1 }}>Gujarati</Typography>
+                          <LanguageIndicator filled={hasContentForLanguage(0)} />
+                        </Box>
+                      </AccordionSummary>
+                      <AccordionDetails sx={{ p: 2 }}>
                         <TextField
-                          label={`${getLanguageName(selectedLangTab)} Content`}
+                          label="Gujarati Content"
+                          variant="outlined"
+                          fullWidth
+                          required
+                          multiline
+                          rows={4}
+                          value={getContentByLanguage(0)}
+                          onChange={(e) => handleContentChange(e, 0)}
+                          error={(!getContentByLanguage(0) && !!error)}
+                          helperText={(!getContentByLanguage(0) && !!error) ? "Gujarati content is required" : "Primary content (required)"}
+                          sx={darkTextFieldSx}
+                        />
+                      </AccordionDetails>
+                    </Accordion>
+
+                    <Accordion 
+                      expanded={expandedContentPanels.includes('hindi')} 
+                      onChange={handleContentPanelChange('hindi')}
+                      sx={{ 
+                        bgcolor: 'rgba(255,255,255,0.05)', 
+                        '&:before': { display: 'none' },
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: 1,
+                        mb: 1
+                      }}
+                    >
+                      <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: '#fff' }} />} sx={{ minHeight: '48px' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Typography sx={{ color: '#fff', mr: 1 }}>Hindi</Typography>
+                          <LanguageIndicator filled={hasContentForLanguage(1)} />
+                        </Box>
+                      </AccordionSummary>
+                      <AccordionDetails sx={{ p: 2 }}>
+                        <TextField
+                          label="Hindi Content"
                           variant="outlined"
                           fullWidth
                           multiline
@@ -1189,14 +1221,14 @@ export const SongFormControls = ({
                           sx={darkTextFieldSx}
                         />
                         <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-                           <Tooltip title="Convert to same pronunciation in Hindi/Devanagari script (only if field is empty)" arrow>
-                             <Button
-                               variant="outlined"
-                               size="small"
-                               startIcon={translatingContent ? <CircularProgress size={16} /> : <AutoFixHighIcon />}
-                               onClick={() => handleAutoTranslateContent(1)}
-                               disabled={translatingContent || !getContentByLanguage(0)?.trim() || getContentByLanguage(1)?.trim()}
-                               sx={{
+                          <Tooltip title="Convert to same pronunciation in Hindi/Devanagari script (only if field is empty)" arrow>
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              startIcon={translatingContent ? <CircularProgress size={16} /> : <AutoFixHighIcon />}
+                              onClick={() => handleAutoTranslateContent(1)}
+                              disabled={translatingContent || !getContentByLanguage(0)?.trim() || getContentByLanguage(1)?.trim()}
+                              sx={{
                                 color: '#fff',
                                 borderColor: 'rgba(255,255,255,0.3)',
                                 textTransform: 'none',
@@ -1229,12 +1261,29 @@ export const SongFormControls = ({
                             Open in Google Translate →
                           </Button>
                         </Stack>
-                      </Box>
-                    )}
-                    {selectedLangTab === 2 && (
-                      <Box>
+                      </AccordionDetails>
+                    </Accordion>
+
+                    <Accordion 
+                      expanded={expandedContentPanels.includes('english')} 
+                      onChange={handleContentPanelChange('english')}
+                      sx={{ 
+                        bgcolor: 'rgba(255,255,255,0.05)', 
+                        '&:before': { display: 'none' },
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: 1,
+                        mb: 1
+                      }}
+                    >
+                      <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: '#fff' }} />} sx={{ minHeight: '48px' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Typography sx={{ color: '#fff', mr: 1 }}>English</Typography>
+                          <LanguageIndicator filled={hasContentForLanguage(2)} />
+                        </Box>
+                      </AccordionSummary>
+                      <AccordionDetails sx={{ p: 2 }}>
                         <TextField
-                          label={`${getLanguageName(selectedLangTab)} Content`}
+                          label="English Content"
                           variant="outlined"
                           fullWidth
                           multiline
@@ -1245,14 +1294,14 @@ export const SongFormControls = ({
                           sx={darkTextFieldSx}
                         />
                         <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-                           <Tooltip title="Convert to same pronunciation in Roman/English script (only if field is empty)" arrow>
-                             <Button
-                               variant="outlined"
-                               size="small"
-                               startIcon={translatingContent ? <CircularProgress size={16} /> : <AutoFixHighIcon />}
-                               onClick={() => handleAutoTranslateContent(2)}
-                               disabled={translatingContent || !getContentByLanguage(0)?.trim() || getContentByLanguage(2)?.trim()}
-                               sx={{
+                          <Tooltip title="Convert to same pronunciation in Roman/English script (only if field is empty)" arrow>
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              startIcon={translatingContent ? <CircularProgress size={16} /> : <AutoFixHighIcon />}
+                              onClick={() => handleAutoTranslateContent(2)}
+                              disabled={translatingContent || !getContentByLanguage(0)?.trim() || getContentByLanguage(2)?.trim()}
+                              sx={{
                                 color: '#fff',
                                 borderColor: 'rgba(255,255,255,0.3)',
                                 textTransform: 'none',
@@ -1285,8 +1334,8 @@ export const SongFormControls = ({
                             Open in Google Translate →
                           </Button>
                         </Stack>
-                      </Box>
-                    )}
+                      </AccordionDetails>
+                    </Accordion>
                   </Box>
                 </CardContent>
               </Card>

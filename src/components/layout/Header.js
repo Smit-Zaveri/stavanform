@@ -187,21 +187,6 @@ const Header = ({
           <MenuItem
             onClick={() => {
               handleProfileMenuClose();
-              navigate("/settings");
-            }}
-            sx={{
-              color: '#fff',
-              py: 1.5,
-              '&:hover': {
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
-              }
-            }}
-          >
-            Settings
-          </MenuItem>
-          <MenuItem
-            onClick={() => {
-              handleProfileMenuClose();
               navigate("/help");
             }}
             sx={{

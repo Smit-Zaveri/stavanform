@@ -12,8 +12,8 @@ import {
 
 import { onAuthStateChanged } from "firebase/auth";
 import { Route, Routes, useLocation, useNavigate, Navigate } from "react-router-dom";
-import { themeColors } from "./utils/themeConfig";
-import { auth, firestore, checkSuperAdmin } from "./firebase";
+
+import { auth, checkSuperAdmin } from "./firebase";
 
 // Components
 import Header from "./components/layout/Header";
@@ -23,7 +23,6 @@ import SongList from "./ListSong";
 import Login from "./Login";
 import ResetPassword from "./ResetPassword";
 import Profile from "./components/Profile";
-import Settings from "./components/Settings";
 import Help from "./components/Help";
 import AdminDashboard from "./components/AdminDashboard";
 import MainContent from "./components/SuggestedSongs/MainContent";
@@ -35,73 +34,24 @@ const App = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [companyName, setCompanyName] = useState("");
-  const [darkMode, setDarkMode] = useState(false);
-  const [themeColor, setThemeColor] = useState('default');
+  const [companyName] = useState("Lyrics");
   const [anchorElProfile, setAnchorElProfile] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   
-  // Theme and responsiveness
+  // Theme - always dark mode
   const customTheme = useMemo(() => {
-    const selectedTheme = themeColors.find(t => t.id === themeColor) || themeColors[0];
     return createTheme({
       palette: {
-        mode: darkMode ? 'dark' : 'light',
-        primary: { main: selectedTheme.primary },
-        secondary: { main: selectedTheme.secondary },
+        mode: 'dark',
+        primary: { main: '#fff' },
+        secondary: { main: '#666' },
       },
     });
-  }, [darkMode, themeColor]);
+  }, []);
 
   const isMobileView = useMediaQuery(customTheme.breakpoints.down("sm"));
   const navigate = useNavigate();
   const location = useLocation();
-
-  // Theme handlers
-  const handleThemeColorChange = useCallback((newThemeColor) => {
-    setThemeColor(newThemeColor);
-    localStorage.setItem('themeColor', newThemeColor);
-  }, []);
-
-  const toggleTheme = useCallback(() => {
-    setDarkMode(prev => {
-      const newMode = !prev;
-      localStorage.setItem('darkMode', JSON.stringify(newMode));
-      return newMode;
-    });
-  }, []);
-
-  // Load preferences and data
-  useEffect(() => {
-    const savedDarkMode = localStorage.getItem('darkMode');
-    const savedThemeColor = localStorage.getItem('themeColor');
-    
-    if (savedDarkMode === null) {
-      setDarkMode(true);
-      localStorage.setItem('darkMode', 'true');
-    } else {
-      setDarkMode(JSON.parse(savedDarkMode));
-    }
-
-    if (savedThemeColor) {
-      setThemeColor(savedThemeColor);
-    }
-  }, []);
-
-  useEffect(() => {
-    const loadCompanyName = async () => {
-      try {
-        const settingsDoc = await firestore.collection("settings").doc("general").get();
-        if (settingsDoc.exists) {
-          setCompanyName(settingsDoc.data().companyName || "Dashboard");
-        }
-      } catch (err) {
-        console.error("Error loading company name:", err);
-        setCompanyName("Dashboard");
-      }
-    };
-    loadCompanyName();
-  }, []);
 
   // Auth handlers
   const handleLogout = useCallback(async () => {
@@ -269,21 +219,7 @@ const App = () => {
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/profile" element={user ? <Profile /> : <Login />} />
             <Route path="/:path" element={user ? <CollectionForm collectionName={window.location.pathname.substring(1)} /> : <Login />} />
-            <Route 
-              path="/settings" 
-              element={
-                user ? (
-                  <Settings 
-                    darkMode={darkMode} 
-                    toggleTheme={toggleTheme}
-                    onThemeColorChange={handleThemeColorChange}
-                    currentTheme={themeColor}
-                  />
-                ) : (
-                  <Login />
-                )
-              } 
-            />
+
             <Route path="/help" element={user ? <Help /> : <Login />} />
             <Route 
               path="/admin" 

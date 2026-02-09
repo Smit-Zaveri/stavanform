@@ -231,9 +231,9 @@ const MainContent = () => {
 
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <AppBar position="static" elevation={1}>
+      <AppBar position="static" elevation={1} sx={{ backgroundColor: '#1a1a1a' }}>
         <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+          <Typography variant="h5" sx={{ flexGrow: 1, color: '#fff', fontSize: '1.5rem', fontWeight: 600 }}>
             Suggested Songs
           </Typography>
           <Button color="inherit" onClick={fetchSuggestions} startIcon={<Refresh />}>

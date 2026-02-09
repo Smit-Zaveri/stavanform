@@ -173,7 +173,7 @@ const AdminDashboard = () => {
 
   return (
     <Box p={3}>
-      <Typography variant="h4" gutterBottom>
+      <Typography variant="h5" sx={{ color: '#fff', fontSize: '1.5rem', fontWeight: 600, mb: 2 }}>
         Admin Dashboard
       </Typography>
       
