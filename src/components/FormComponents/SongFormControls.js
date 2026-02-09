@@ -415,6 +415,13 @@ export const SongFormControls = ({
       return;
     }
 
+    // Check if target language content is already available
+    const targetContent = getContentByLanguage(targetLangIndex);
+    if (targetContent && targetContent.trim()) {
+      setTranslationError(`${getLanguageName(targetLangIndex)} content already exists. Transliteration skipped.`);
+      return;
+    }
+
     console.log('Translating content:', { gujaratiContent, targetLangIndex, currentContent: content });
 
     setTranslatingContent(true);
@@ -456,6 +463,13 @@ export const SongFormControls = ({
 
     if (!gujaratiTitle || !gujaratiTitle.trim()) {
       setTranslationError('Please enter Gujarati title first');
+      return;
+    }
+
+    // Check if target language title is already available
+    const targetTitle = getTitleByLanguage(targetLangIndex);
+    if (targetTitle && targetTitle.trim()) {
+      setTranslationError(`${getLanguageName(targetLangIndex)} title already exists. Transliteration skipped.`);
       return;
     }
 
@@ -773,14 +787,14 @@ export const SongFormControls = ({
                           sx={darkTextFieldSx}
                         />
                         <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-                          <Tooltip title="Convert to same pronunciation in Hindi/Devanagari script (transliteration, not translation)" arrow>
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              startIcon={translatingTitle ? <CircularProgress size={16} /> : <AutoFixHighIcon />}
-                              onClick={() => handleAutoTranslateTitle(1)}
-                              disabled={translatingTitle || !getTitleByLanguage(0)?.trim()}
-                              sx={{
+                           <Tooltip title="Convert to same pronunciation in Hindi/Devanagari script (only if field is empty)" arrow>
+                             <Button
+                               variant="outlined"
+                               size="small"
+                               startIcon={translatingTitle ? <CircularProgress size={16} /> : <AutoFixHighIcon />}
+                               onClick={() => handleAutoTranslateTitle(1)}
+                               disabled={translatingTitle || !getTitleByLanguage(0)?.trim() || getTitleByLanguage(1)?.trim()}
+                               sx={{
                                 color: '#fff',
                                 borderColor: 'rgba(255,255,255,0.3)',
                                 textTransform: 'none',
@@ -827,14 +841,14 @@ export const SongFormControls = ({
                           sx={darkTextFieldSx}
                         />
                         <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-                          <Tooltip title="Convert to same pronunciation in Roman/English script (transliteration, not translation)" arrow>
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              startIcon={translatingTitle ? <CircularProgress size={16} /> : <AutoFixHighIcon />}
-                              onClick={() => handleAutoTranslateTitle(2)}
-                              disabled={translatingTitle || !getTitleByLanguage(0)?.trim()}
-                              sx={{
+                           <Tooltip title="Convert to same pronunciation in Roman/English script (only if field is empty)" arrow>
+                             <Button
+                               variant="outlined"
+                               size="small"
+                               startIcon={translatingTitle ? <CircularProgress size={16} /> : <AutoFixHighIcon />}
+                               onClick={() => handleAutoTranslateTitle(2)}
+                               disabled={translatingTitle || !getTitleByLanguage(0)?.trim() || getTitleByLanguage(2)?.trim()}
+                               sx={{
                                 color: '#fff',
                                 borderColor: 'rgba(255,255,255,0.3)',
                                 textTransform: 'none',
@@ -1175,14 +1189,14 @@ export const SongFormControls = ({
                           sx={darkTextFieldSx}
                         />
                         <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-                          <Tooltip title="Convert to same pronunciation in Hindi/Devanagari script (transliteration, not translation)" arrow>
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              startIcon={translatingContent ? <CircularProgress size={16} /> : <AutoFixHighIcon />}
-                              onClick={() => handleAutoTranslateContent(1)}
-                              disabled={translatingContent || !getContentByLanguage(0)?.trim()}
-                              sx={{
+                           <Tooltip title="Convert to same pronunciation in Hindi/Devanagari script (only if field is empty)" arrow>
+                             <Button
+                               variant="outlined"
+                               size="small"
+                               startIcon={translatingContent ? <CircularProgress size={16} /> : <AutoFixHighIcon />}
+                               onClick={() => handleAutoTranslateContent(1)}
+                               disabled={translatingContent || !getContentByLanguage(0)?.trim() || getContentByLanguage(1)?.trim()}
+                               sx={{
                                 color: '#fff',
                                 borderColor: 'rgba(255,255,255,0.3)',
                                 textTransform: 'none',
@@ -1231,14 +1245,14 @@ export const SongFormControls = ({
                           sx={darkTextFieldSx}
                         />
                         <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-                          <Tooltip title="Convert to same pronunciation in Roman/English script (transliteration, not translation)" arrow>
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              startIcon={translatingContent ? <CircularProgress size={16} /> : <AutoFixHighIcon />}
-                              onClick={() => handleAutoTranslateContent(2)}
-                              disabled={translatingContent || !getContentByLanguage(0)?.trim()}
-                              sx={{
+                           <Tooltip title="Convert to same pronunciation in Roman/English script (only if field is empty)" arrow>
+                             <Button
+                               variant="outlined"
+                               size="small"
+                               startIcon={translatingContent ? <CircularProgress size={16} /> : <AutoFixHighIcon />}
+                               onClick={() => handleAutoTranslateContent(2)}
+                               disabled={translatingContent || !getContentByLanguage(0)?.trim() || getContentByLanguage(2)?.trim()}
+                               sx={{
                                 color: '#fff',
                                 borderColor: 'rgba(255,255,255,0.3)',
                                 textTransform: 'none',

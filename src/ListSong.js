@@ -54,6 +54,16 @@ const ListSong = () => {
   const [duplicatesDialogOpen, setDuplicatesDialogOpen] = useState(false);
   const [importFile, setImportFile] = useState(null);
 
+  // Sort and Filter state
+  const [sortBy, setSortBy] = useState('default');
+  const [sortOrder, setSortOrder] = useState('asc');
+  const [filterOptions, setFilterOptions] = useState({
+    tagFilter: '',
+    artistFilter: '',
+    newFlagFilter: '',
+    reportFilter: '',
+  });
+
   const [currentDuplicate, setCurrentDuplicate] = useState(null);
   const [remainingImports, setRemainingImports] = useState(null);
   const [importProgress, setImportProgress] = useState({ processed: 0, total: 0 });
@@ -416,18 +426,27 @@ const ListSong = () => {
     );
   };
 
+  // Clear all filters
+  const handleClearFilters = () => {
+    setSortBy('default');
+    setSortOrder('asc');
+    setFilterOptions({
+      tagFilter: '',
+      artistFilter: '',
+      newFlagFilter: '',
+      reportFilter: '',
+    });
+    setSearchInput('');
+    setPage(0);
+  };
+
   // Computed values
-  const sortedSongs = sortSongs(songs, reports);
-  const filteredSongs = filterSongs(sortedSongs, searchInput);
+  const sortedSongs = sortSongs(songs, reports, sortBy, sortOrder);
+  const filteredSongs = filterSongs(sortedSongs, searchInput, { ...filterOptions, reports });
   const paginatedSongs = filteredSongs.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
-  // Update report check to compare by title instead of lyricsId
-  const hasAnyReport = filteredSongs.some((song) =>
-    reports.some((r) => r.title === song.title)
-  );
-
   if (loading) return <LinearProgress sx={{ bgcolor: '#252525', '& .MuiLinearProgress-bar': { bgcolor: '#fff' } }} />;
 
   return (
@@ -482,6 +501,13 @@ const ListSong = () => {
         selectedSongIds={selectedSongIds}
         setDeleteDialogOpen={setDeleteDialogOpen}
         collectionList={collectionList}
+        sortBy={sortBy}
+        setSortBy={setSortBy}
+        sortOrder={sortOrder}
+        setSortOrder={setSortOrder}
+        filterOptions={filterOptions}
+        setFilterOptions={setFilterOptions}
+        handleClearFilters={handleClearFilters}
       />
 
       {importing && (
@@ -536,8 +562,8 @@ const ListSong = () => {
             </Typography>
           </Box>
           {paginatedSongs.map((song) => {
-            // Update to find report by title instead of lyricsId
-            const report = reports.find((r) => r.lyricsTitle === song.title);
+            // Find report by id or title for consistency
+            const report = reports.find((r) => r.lyricsId === song.id || r.lyricsTitle === song.title);
             const isItemSelected = selectedSongIds.includes(song.id);
             return (
               <SongCard
@@ -562,7 +588,6 @@ const ListSong = () => {
       ) : (
         // Desktop table view
         <SongTable
-          hasAnyReport={hasAnyReport}
           paginatedSongs={paginatedSongs}
           selectedSongIds={selectedSongIds}
           reports={reports}

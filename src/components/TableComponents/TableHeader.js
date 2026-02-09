@@ -2,7 +2,6 @@ import React from 'react';
 import { TableHead, TableRow, TableCell, Checkbox } from '@mui/material';
 
 const TableHeader = ({
-  hasAnyReport,
   selectedSongIds,
   paginatedSongs,
   handleSelectAll
@@ -21,16 +20,17 @@ const TableHeader = ({
               selectedSongIds.length === paginatedSongs.length
             }
             onChange={handleSelectAll}
-            sx={{ 
+            sx={{
               color: '#999',
               '&.Mui-checked': { color: '#fff' },
               '&.Mui-indeterminate': { color: '#fff' }
             }}
           />
         </TableCell>
-        {hasAnyReport && <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Report Text</TableCell>}
+        <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Status</TableCell>
         <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Order</TableCell>
         <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Title</TableCell>
+        <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Languages</TableCell>
         <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Tags</TableCell>
         <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Actions</TableCell>
       </TableRow>

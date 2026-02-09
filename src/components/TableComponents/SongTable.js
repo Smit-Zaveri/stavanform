@@ -9,7 +9,6 @@ import TableHeader from './TableHeader';
 import SongTableRow from './SongTableRow';
 
 const SongTable = ({
-  hasAnyReport,
   paginatedSongs,
   selectedSongIds,
   reports,
@@ -31,14 +30,14 @@ const SongTable = ({
     >
       <Table>
         <TableHeader
-          hasAnyReport={hasAnyReport}
           selectedSongIds={selectedSongIds}
           paginatedSongs={paginatedSongs}
           handleSelectAll={handleSelectAll}
         />
         <TableBody>
           {paginatedSongs.map((song) => {
-            const report = reports.find((r) => r.lyricsId === song.id);
+            // Find report by id or title for consistency
+            const report = reports.find((r) => r.lyricsId === song.id || r.lyricsTitle === song.title);
             const isItemSelected = selectedSongIds.includes(song.id);
             return (
               <SongTableRow
