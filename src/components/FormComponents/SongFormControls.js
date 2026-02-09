@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Grid,
   TextField,
@@ -20,8 +20,6 @@ import {
   DialogActions,
   Button,
   DialogContentText,
-  Tabs,
-  Tab,
   Box,
   Badge,
   Stack,
@@ -159,8 +157,6 @@ export const SongFormControls = ({
 
   const [openChangeCollectionDialog, setOpenChangeCollectionDialog] = useState(false);
   const [pendingCollectionChange, setPendingCollectionChange] = useState('');
-  const [selectedLangTab, setSelectedLangTab] = useState(0);
-  const [selectedTitleLangTab, setSelectedTitleLangTab] = useState(0);
   const [translatingContent, setTranslatingContent] = useState(false);
   const [translatingTitle, setTranslatingTitle] = useState(false);
   const [translationError, setTranslationError] = useState(null);
