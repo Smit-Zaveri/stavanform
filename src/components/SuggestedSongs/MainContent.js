@@ -5,7 +5,6 @@ import {
   Button,
   CircularProgress,
   IconButton,
-  Paper,
   Snackbar,
   TextField,
   Toolbar,
@@ -18,6 +17,8 @@ import {
   Close,
   ArrowUpward,
   ArrowDownward,
+  Search,
+  LibraryMusic,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { firestore } from "../../firebase";
@@ -213,16 +214,36 @@ const MainContent = () => {
 
   if (loading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
-        <CircularProgress />
+      <Box sx={{ 
+        display: "flex", 
+        justifyContent: "center", 
+        alignItems: "center", 
+        height: "100vh",
+        backgroundColor: '#1a1a1a'
+      }}>
+        <Box sx={{ textAlign: 'center' }}>
+          <CircularProgress sx={{ color: '#fff' }} />
+          <Typography sx={{ mt: 2, color: '#999' }}>
+            Loading suggestions...
+          </Typography>
+        </Box>
       </Box>
     );
   }
 
   if (error) {
     return (
-      <Box sx={{ p: 2 }}>
-        <Typography color="error">{error}</Typography>
+      <Box sx={{ 
+        p: 2, 
+        backgroundColor: '#1a1a1a', 
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <Typography color="error" sx={{ textAlign: 'center' }}>
+          {error}
+        </Typography>
       </Box>
     );
   }
@@ -230,31 +251,89 @@ const MainContent = () => {
   const collections = Object.keys(groupedSuggestions);
 
   return (
-    <Box sx={{ flexGrow: 1 }}>
-      <AppBar position="static" elevation={1} sx={{ backgroundColor: '#1a1a1a' }}>
+    <Box sx={{ 
+      flexGrow: 1, 
+      backgroundColor: '#1a1a1a', 
+      minHeight: '100vh' 
+    }}>
+      <AppBar 
+        position="static" 
+        elevation={0}
+        sx={{ 
+          backgroundColor: '#1a1a1a',
+          borderBottom: '1px solid rgba(255,255,255,0.1)'
+        }}
+      >
         <Toolbar>
-          <Typography variant="h5" sx={{ flexGrow: 1, color: '#fff', fontSize: '1.5rem', fontWeight: 600 }}>
+          <Typography 
+            variant="h5" 
+            sx={{ 
+              flexGrow: 1, 
+              color: '#fff',
+              fontWeight: 600,
+              fontSize: '1.5rem'
+            }}
+          >
             Suggested Songs
           </Typography>
-          <Button color="inherit" onClick={fetchSuggestions} startIcon={<Refresh />}>
+          <Button 
+            color="inherit" 
+            onClick={fetchSuggestions} 
+            startIcon={<Refresh />}
+            sx={{ 
+              color: '#999',
+              textTransform: 'none',
+              fontWeight: 500,
+              '&:hover': { color: '#fff' }
+            }}
+          >
             Refresh
           </Button>
         </Toolbar>
       </AppBar>
 
-      <Box sx={{ p: 2 }}>
-        <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+      <Box sx={{ p: 3 }}>
+        <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
           <TextField
             variant="outlined"
             placeholder="Search suggestions..."
             value={searchTerm}
             onChange={handleSearchChange}
             fullWidth
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                backgroundColor: '#252525',
+                borderRadius: 2,
+                '& fieldset': {
+                  borderColor: 'rgba(255,255,255,0.1)',
+                },
+                '&:hover fieldset': {
+                  borderColor: 'rgba(255,255,255,0.2)',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#fff',
+                },
+              },
+              '& .MuiInputBase-input': {
+                color: '#fff',
+                '&::placeholder': {
+                  color: '#666',
+                },
+              },
+            }}
             InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search sx={{ color: '#666' }} />
+                </InputAdornment>
+              ),
               endAdornment: (
                 <InputAdornment position="end">
                   {searchTerm && (
-                    <IconButton onClick={() => setSearchTerm("")}>
+                    <IconButton 
+                      onClick={() => setSearchTerm("")}
+                      sx={{ color: '#666', '&:hover': { color: '#fff' } }}
+                    >
                       <Close />
                     </IconButton>
                   )}
@@ -262,7 +341,20 @@ const MainContent = () => {
               ),
             }}
           />
-          <IconButton onClick={toggleSortOrder} sx={{ ml: 1 }}>
+          <IconButton 
+            onClick={toggleSortOrder} 
+            sx={{ 
+              ml: 1,
+              color: '#999',
+              backgroundColor: '#252525',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 2,
+              '&:hover': { 
+                backgroundColor: '#2a2a2a',
+                borderColor: 'rgba(255,255,255,0.2)'
+              }
+            }}
+          >
             {sortOrder === "asc" ? <ArrowUpward /> : <ArrowDownward />}
           </IconButton>
         </Box>
@@ -287,7 +379,18 @@ const MainContent = () => {
                 onDelete={handleDeleteClick}
                 onOpenModal={handleOpenModal}
               />
-              <Paper sx={{ mt: 2 }}>
+              <Box sx={{
+                mt: 3,
+                display: 'flex',
+                justifyContent: 'center',
+                backgroundColor: '#252525',
+                borderRadius: 2,
+                border: '1px solid rgba(255,255,255,0.1)',
+                overflow: 'hidden',
+                '& .MuiTablePagination-root': { color: '#fff' },
+                '& .MuiTablePagination-selectIcon': { color: '#fff' },
+                '& .MuiIconButton-root': { color: '#fff' },
+              }}>
                 <TablePagination
                   component="div"
                   count={filteredSuggestions.length}
@@ -297,17 +400,43 @@ const MainContent = () => {
                   onRowsPerPageChange={handleChangeRowsPerPage}
                   rowsPerPageOptions={[6, 12, 24]}
                 />
-              </Paper>
+              </Box>
             </>
           ) : (
-            <Typography variant="body1" align="center" sx={{ mt: 4 }}>
-              No suggestions available in this collection.
-            </Typography>
+            <Box sx={{ 
+              textAlign: 'center', 
+              mt: 8, 
+              p: 4,
+              backgroundColor: '#252525',
+              borderRadius: 2,
+              border: '1px solid rgba(255,255,255,0.1)'
+            }}>
+              <Search sx={{ fontSize: 48, color: '#666', mb: 2 }} />
+              <Typography variant="h6" sx={{ color: '#fff', mb: 1, fontWeight: 500 }}>
+                No suggestions found
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#999' }}>
+                Try adjusting your search or check another collection
+              </Typography>
+            </Box>
           )
         ) : (
-          <Typography variant="body1" align="center" sx={{ mt: 4 }}>
-            Please select a collection.
-          </Typography>
+          <Box sx={{ 
+            textAlign: 'center', 
+            mt: 8, 
+            p: 4,
+            backgroundColor: '#252525',
+            borderRadius: 2,
+            border: '1px solid rgba(255,255,255,0.1)'
+          }}>
+            <LibraryMusic sx={{ fontSize: 48, color: '#666', mb: 2 }} />
+            <Typography variant="h6" sx={{ color: '#fff', mb: 1, fontWeight: 500 }}>
+              Select a collection
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#999' }}>
+              Choose a collection above to view suggestions
+            </Typography>
+          </Box>
         )}
       </Box>
 

@@ -13,25 +13,54 @@ const SongModal = ({ open, onClose, selectedSong }) => (
           maxWidth: 600,
           maxHeight: "80vh",
           overflowY: "auto",
-          backgroundColor: "background.paper",
+          backgroundColor: "#1a1a1a",
           borderRadius: 2,
           boxShadow: 24,
+          border: '1px solid rgba(255,255,255,0.1)',
         }}
       >
-        <Typography variant="h5" gutterBottom>
+        <Typography 
+          variant="h5" 
+          gutterBottom
+          sx={{ color: '#fff', fontWeight: 600, fontSize: '1.5rem' }}
+        >
           {selectedSong.title}
         </Typography>
 
         {selectedSong.artistName && (
-          <Typography variant="subtitle1" color="text.secondary" gutterBottom>
+          <Typography 
+            variant="subtitle1" 
+            gutterBottom
+            sx={{ color: '#999', fontSize: '1rem' }}
+          >
             Artist: {selectedSong.artistName}
           </Typography>
         )}
-        <Typography variant="body1" sx={{ whiteSpace: "pre-wrap", mt: 2 }}>
+        <Typography 
+          variant="body1" 
+          sx={{ 
+            whiteSpace: "pre-wrap", 
+            mt: 3,
+            color: '#ccc',
+            lineHeight: 1.8,
+            fontSize: '0.95rem'
+          }}
+        >
           {selectedSong.content}
         </Typography>
-        <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
-          <Button onClick={onClose} variant="contained">
+        <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 4, pt: 2, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+          <Button 
+            onClick={onClose} 
+            variant="contained"
+            sx={{
+              backgroundColor: '#fff',
+              color: '#1a1a1a',
+              '&:hover': { backgroundColor: '#e0e0e0' },
+              textTransform: 'none',
+              fontWeight: 500,
+              px: 3,
+            }}
+          >
             Close
           </Button>
         </Box>

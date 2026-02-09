@@ -9,10 +9,19 @@ const CollectionsTabs = ({ collections, selectedCollection, onSelectCollection }
     scrollButtons="auto"
     indicatorColor="primary"
     textColor="primary"
-    sx={{ mb: 2 }}
+    sx={{ mb: 3, borderBottom: '1px solid rgba(255,255,255,0.1)' }}
   >
     {collections.map((collection) => (
-      <Tab key={collection} value={collection} label={collection} />
+      <Tab 
+        key={collection} 
+        value={collection} 
+        label={collection}
+        sx={{ 
+          textTransform: 'none',
+          fontWeight: 500,
+          '&.Mui-selected': { fontWeight: 600 }
+        }}
+      />
     ))}
   </Tabs>
 );

@@ -15,7 +15,6 @@ import {
   Grid,
   IconButton,
   Modal,
-  Paper,
   Snackbar,
   Tab,
   Tabs,
@@ -34,6 +33,8 @@ import {
   Close,
   ArrowUpward,
   ArrowDownward,
+  Search,
+  LibraryMusic,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { firestore } from "./firebase";
@@ -64,10 +65,19 @@ const CollectionsTabs = ({ collections, selectedCollection, onSelectCollection }
     scrollButtons="auto"
     indicatorColor="primary"
     textColor="primary"
-    sx={{ mb: 2 }}
+    sx={{ mb: 3, borderBottom: '1px solid rgba(255,255,255,0.1)' }}
   >
     {collections.map((collection) => (
-      <Tab key={collection} value={collection} label={collection} />
+      <Tab 
+        key={collection} 
+        value={collection} 
+        label={collection}
+        sx={{ 
+          textTransform: 'none',
+          fontWeight: 500,
+          '&.Mui-selected': { fontWeight: 600 }
+        }}
+      />
     ))}
   </Tabs>
 );
@@ -77,28 +87,102 @@ const SuggestionsGrid = ({ suggestions, onApply, onDelete, onOpenModal }) => (
   <Grid container spacing={2}>
     {suggestions.map((song) => (
       <Grid item xs={12} sm={6} md={4} key={song.id}>
-        <Card elevation={3}>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
+        <Card 
+          elevation={0}
+          sx={{
+            backgroundColor: '#252525',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 2,
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            transition: 'all 0.2s ease-in-out',
+            '&:hover': {
+              borderColor: 'rgba(255,255,255,0.2)',
+              backgroundColor: '#2a2a2a',
+            }
+          }}
+        >
+          <CardContent sx={{ flexGrow: 1, pb: 1 }}>
+            <Typography 
+              variant="h6" 
+              gutterBottom
+              sx={{
+                color: '#fff',
+                fontWeight: 600,
+                fontSize: '1.1rem',
+                lineHeight: 1.3,
+              }}
+            >
               {song.title}
             </Typography>
             {song.artistName && (
-              <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+              <Typography 
+                variant="subtitle2" 
+                sx={{ 
+                  color: '#999',
+                  mb: 1.5,
+                  fontSize: '0.85rem'
+                }}
+              >
                 By: {song.artistName}
               </Typography>
             )}
-            <Typography variant="body2" color="text.secondary">
-              {song.content.length > 100 ? song.content.substring(0, 100) + "..." : song.content}
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                color: '#999',
+                lineHeight: 1.5,
+                display: '-webkit-box',
+                WebkitLineClamp: 3,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+              }}
+            >
+              {song.content.length > 120 ? song.content.substring(0, 120) + "..." : song.content}
             </Typography>
           </CardContent>
-          <CardActions>
-            <Button size="small" startIcon={<Edit />} onClick={() => onApply(song)}>
+          <CardActions sx={{ pt: 1, gap: 1 }}>
+            <Button 
+              size="small" 
+              startIcon={<Edit />} 
+              onClick={() => onApply(song)}
+              variant="contained"
+              sx={{
+                backgroundColor: '#fff',
+                color: '#1a1a1a',
+                '&:hover': { backgroundColor: '#e0e0e0' },
+                textTransform: 'none',
+                fontWeight: 500,
+                minWidth: '70px',
+              }}
+            >
               Apply
             </Button>
-            <Button size="small" startIcon={<Delete />} onClick={() => onDelete(song)} color="error">
-              Delete
+            <Button 
+              size="small" 
+              startIcon={<Delete />} 
+              onClick={() => onDelete(song)} 
+              sx={{
+                color: '#ff6b6b',
+                textTransform: 'none',
+                fontWeight: 500,
+                '&:hover': { backgroundColor: 'rgba(255,107,107,0.1)' }
+              }}
+            >
+              Delete smit
             </Button>
-            <Button size="small" startIcon={<InfoIcon />} onClick={() => onOpenModal(song)}>
+            <Button 
+              size="small" 
+              startIcon={<InfoIcon />} 
+              onClick={() => onOpenModal(song)}
+              sx={{
+                color: '#999',
+                textTransform: 'none',
+                fontWeight: 500,
+                '&:hover': { backgroundColor: 'rgba(255,255,255,0.05)' }
+              }}
+            >
               Info
             </Button>
           </CardActions>
@@ -110,16 +194,49 @@ const SuggestionsGrid = ({ suggestions, onApply, onDelete, onOpenModal }) => (
 
 // --- Delete Confirmation Dialog ---
 const DeleteDialog = ({ open, onCancel, onConfirm, suggestionToDelete }) => (
-  <Dialog open={open} onClose={onCancel} TransitionComponent={Transition}>
-    <DialogTitle>Delete Suggestion</DialogTitle>
+  <Dialog 
+    open={open} 
+    onClose={onCancel} 
+    TransitionComponent={Transition}
+    PaperProps={{
+      sx: {
+        backgroundColor: '#1a1a1a',
+        color: '#fff',
+        border: '1px solid rgba(255,255,255,0.1)',
+        borderRadius: 2,
+      }
+    }}
+  >
+    <DialogTitle sx={{ color: '#fff', fontWeight: 600 }}>
+      Delete Suggestion
+    </DialogTitle>
     <DialogContent>
-      <DialogContentText>
+      <DialogContentText sx={{ color: '#999' }}>
         Are you sure you want to delete the suggestion for "{suggestionToDelete?.title}"?
       </DialogContentText>
     </DialogContent>
-    <DialogActions>
-      <Button onClick={onCancel}>Cancel</Button>
-      <Button onClick={onConfirm} color="error">
+    <DialogActions sx={{ p: 2, pt: 0 }}>
+      <Button 
+        onClick={onCancel}
+        sx={{ 
+          color: '#999',
+          textTransform: 'none',
+          fontWeight: 500
+        }}
+      >
+        Cancel
+      </Button>
+      <Button 
+        onClick={onConfirm} 
+        variant="contained"
+        sx={{ 
+          backgroundColor: '#ff6b6b',
+          color: '#fff',
+          textTransform: 'none',
+          fontWeight: 500,
+          '&:hover': { backgroundColor: '#ff5252' }
+        }}
+      >
         Delete
       </Button>
     </DialogActions>
@@ -139,25 +256,54 @@ const SongModal = ({ open, onClose, selectedSong }) => (
           maxWidth: 600,
           maxHeight: "80vh",
           overflowY: "auto",
-          backgroundColor: "background.paper",
+          backgroundColor: "#1a1a1a",
           borderRadius: 2,
           boxShadow: 24,
+          border: '1px solid rgba(255,255,255,0.1)',
         }}
       >
-        <Typography variant="h5" gutterBottom>
+        <Typography 
+          variant="h5" 
+          gutterBottom
+          sx={{ color: '#fff', fontWeight: 600, fontSize: '1.5rem' }}
+        >
           {selectedSong.title}
         </Typography>
 
         {selectedSong.artistName && (
-          <Typography variant="subtitle1" color="text.secondary" gutterBottom>
+          <Typography 
+            variant="subtitle1" 
+            gutterBottom
+            sx={{ color: '#999', fontSize: '1rem' }}
+          >
             Artist: {selectedSong.artistName}
           </Typography>
         )}
-        <Typography variant="body1" sx={{ whiteSpace: "pre-wrap", mt: 2 }}>
+        <Typography 
+          variant="body1" 
+          sx={{ 
+            whiteSpace: "pre-wrap", 
+            mt: 3,
+            color: '#ccc',
+            lineHeight: 1.8,
+            fontSize: '0.95rem'
+          }}
+        >
           {selectedSong.content}
         </Typography>
-        <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
-          <Button onClick={onClose} variant="contained">
+        <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 4, pt: 2, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+          <Button 
+            onClick={onClose} 
+            variant="contained"
+            sx={{
+              backgroundColor: '#fff',
+              color: '#1a1a1a',
+              '&:hover': { backgroundColor: '#e0e0e0' },
+              textTransform: 'none',
+              fontWeight: 500,
+              px: 3,
+            }}
+          >
             Close
           </Button>
         </Box>
@@ -364,47 +510,125 @@ const SuggestedSongs = () => {
 
   if (loading)
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
-        <CircularProgress />
+      <Box sx={{ 
+        display: "flex", 
+        justifyContent: "center", 
+        alignItems: "center", 
+        height: "100vh",
+        backgroundColor: '#1a1a1a'
+      }}>
+        <Box sx={{ textAlign: 'center' }}>
+          <CircularProgress sx={{ color: '#fff' }} />
+          <Typography sx={{ mt: 2, color: '#999' }}>
+            Loading suggestions...
+          </Typography>
+        </Box>
       </Box>
     );
   if (error)
     return (
-      <Box sx={{ p: 2 }}>
-        <Typography color="error">{error}</Typography>
+      <Box sx={{ 
+        p: 2, 
+        backgroundColor: '#1a1a1a', 
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <Typography color="error" sx={{ textAlign: 'center' }}>
+          {error}
+        </Typography>
       </Box>
     );
 
   const collections = Object.keys(groupedSuggestions);
 
   return (
-    <Box sx={{ flexGrow: 1 }}>
+    <Box sx={{ 
+      flexGrow: 1, 
+      backgroundColor: '#1a1a1a', 
+      minHeight: '100vh' 
+    }}>
       {/* --- AppBar Header --- */}
-      <AppBar position="static" elevation={1}>
+      <AppBar 
+        position="static" 
+        elevation={0}
+        sx={{ 
+          backgroundColor: '#1a1a1a',
+          borderBottom: '1px solid rgba(255,255,255,0.1)'
+        }}
+      >
         <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+          <Typography 
+            variant="h5" 
+            sx={{ 
+              flexGrow: 1, 
+              color: '#fff',
+              fontWeight: 600,
+              fontSize: '1.5rem'
+            }}
+          >
             Suggested Songs
           </Typography>
-          <Button color="inherit" onClick={fetchSuggestions} startIcon={<Refresh />}>
+          <Button 
+            color="inherit" 
+            onClick={fetchSuggestions} 
+            startIcon={<Refresh />}
+            sx={{ 
+              color: '#999',
+              textTransform: 'none',
+              fontWeight: 500,
+              '&:hover': { color: '#fff' }
+            }}
+          >
             Refresh
           </Button>
         </Toolbar>
       </AppBar>
 
-      <Box sx={{ p: 2 }}>
+      <Box sx={{ p: 3 }}>
         {/* --- Search and Sort Controls --- */}
-        <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+        <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
           <TextField
             variant="outlined"
             placeholder="Search suggestions..."
             value={searchTerm}
             onChange={handleSearchChange}
             fullWidth
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                backgroundColor: '#252525',
+                borderRadius: 2,
+                '& fieldset': {
+                  borderColor: 'rgba(255,255,255,0.1)',
+                },
+                '&:hover fieldset': {
+                  borderColor: 'rgba(255,255,255,0.2)',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#fff',
+                },
+              },
+              '& .MuiInputBase-input': {
+                color: '#fff',
+                '&::placeholder': {
+                  color: '#666',
+                },
+              },
+            }}
             InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search sx={{ color: '#666' }} />
+                </InputAdornment>
+              ),
               endAdornment: (
                 <InputAdornment position="end">
                   {searchTerm && (
-                    <IconButton onClick={() => setSearchTerm("")}>
+                    <IconButton 
+                      onClick={() => setSearchTerm("")}
+                      sx={{ color: '#666', '&:hover': { color: '#fff' } }}
+                    >
                       <Close />
                     </IconButton>
                   )}
@@ -412,7 +636,20 @@ const SuggestedSongs = () => {
               ),
             }}
           />
-          <IconButton onClick={toggleSortOrder} sx={{ ml: 1 }}>
+          <IconButton 
+            onClick={toggleSortOrder} 
+            sx={{ 
+              ml: 1,
+              color: '#999',
+              backgroundColor: '#252525',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 2,
+              '&:hover': { 
+                backgroundColor: '#2a2a2a',
+                borderColor: 'rgba(255,255,255,0.2)'
+              }
+            }}
+          >
             {sortOrder === "asc" ? <ArrowUpward /> : <ArrowDownward />}
           </IconButton>
         </Box>
@@ -439,7 +676,18 @@ const SuggestedSongs = () => {
                 onDelete={handleDeleteClick}
                 onOpenModal={handleOpenModal}
               />
-              <Paper sx={{ mt: 2 }}>
+              <Box sx={{
+                mt: 3,
+                display: 'flex',
+                justifyContent: 'center',
+                backgroundColor: '#252525',
+                borderRadius: 2,
+                border: '1px solid rgba(255,255,255,0.1)',
+                overflow: 'hidden',
+                '& .MuiTablePagination-root': { color: '#fff' },
+                '& .MuiTablePagination-selectIcon': { color: '#fff' },
+                '& .MuiIconButton-root': { color: '#fff' },
+              }}>
                 <TablePagination
                   component="div"
                   count={filteredSuggestions.length}
@@ -449,17 +697,43 @@ const SuggestedSongs = () => {
                   onRowsPerPageChange={handleChangeRowsPerPage}
                   rowsPerPageOptions={[6, 12, 24]}
                 />
-              </Paper>
+              </Box>
             </>
           ) : (
-            <Typography variant="body1" align="center" sx={{ mt: 4 }}>
-              No suggestions available in this collection.
-            </Typography>
+            <Box sx={{ 
+              textAlign: 'center', 
+              mt: 8, 
+              p: 4,
+              backgroundColor: '#252525',
+              borderRadius: 2,
+              border: '1px solid rgba(255,255,255,0.1)'
+            }}>
+              <Search sx={{ fontSize: 48, color: '#666', mb: 2 }} />
+              <Typography variant="h6" sx={{ color: '#fff', mb: 1, fontWeight: 500 }}>
+                No suggestions found
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#999' }}>
+                Try adjusting your search or check another collection
+              </Typography>
+            </Box>
           )
         ) : (
-          <Typography variant="body1" align="center" sx={{ mt: 4 }}>
-            Please select a collection.
-          </Typography>
+          <Box sx={{ 
+            textAlign: 'center', 
+            mt: 8, 
+            p: 4,
+            backgroundColor: '#252525',
+            borderRadius: 2,
+            border: '1px solid rgba(255,255,255,0.1)'
+          }}>
+            <LibraryMusic sx={{ fontSize: 48, color: '#666', mb: 2 }} />
+            <Typography variant="h6" sx={{ color: '#fff', mb: 1, fontWeight: 500 }}>
+              Select a collection
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#999' }}>
+              Choose a collection above to view suggestions
+            </Typography>
+          </Box>
         )}
       </Box>
 
