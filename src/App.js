@@ -27,7 +27,7 @@ import Help from "./components/Help";
 
 import MainContent from "./components/SuggestedSongs/MainContent";
 
-const drawerWidth = 245;
+const drawerWidth = 260;
 
 const App = () => {
   // State
@@ -130,7 +130,7 @@ const App = () => {
                 width: drawerWidth, 
                 boxSizing: "border-box",
                 bgcolor: '#1a1a1a',
-                borderRight: '1px solid rgba(255,255,255,0.1)',
+                borderRight: '1px solid rgba(255,255,255,0.05)',
                 overflow: 'hidden',
                 '&:hover': {
                   overflowY: 'auto',
@@ -154,7 +154,8 @@ const App = () => {
             <Navigation 
               isMobileView={isMobileView} 
               setMobileOpen={setMobileOpen}
-              customTheme={customTheme} 
+              customTheme={customTheme}
+              user={user}
             />
           </Drawer>
         )}
@@ -169,7 +170,7 @@ const App = () => {
               "& .MuiDrawer-paper": { 
                 width: drawerWidth,
                 bgcolor: '#1a1a1a',
-                borderRight: '1px solid rgba(255,255,255,0.1)',
+                borderRight: '1px solid rgba(255,255,255,0.05)',
                 overflow: 'hidden',
                 '&:hover': {
                   overflowY: 'auto',
@@ -194,6 +195,7 @@ const App = () => {
               isMobileView={isMobileView} 
               setMobileOpen={setMobileOpen}
               customTheme={customTheme}
+              user={user}
             />
           </Drawer>
         )}
@@ -206,7 +208,7 @@ const App = () => {
             width: { sm: `calc(100% - ${drawerWidth}px)` },
           }}
         >
-          {!isPublicRoute && <Toolbar />}
+          {!isPublicRoute && <Toolbar sx={{ minHeight: '80px' }} />}
           <Routes>
             <Route path="/" element={user ? <Navigate to="/list-song/lyrics" replace /> : <Login />} />
             <Route path="/list-song/:collectionName" element={user ? <SongList /> : <Login />} />
