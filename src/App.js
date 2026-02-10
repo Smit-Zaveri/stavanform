@@ -132,22 +132,8 @@ const App = () => {
                 bgcolor: '#1a1a1a',
                 borderRight: '1px solid rgba(255,255,255,0.05)',
                 overflow: 'hidden',
-                '&:hover': {
-                  overflowY: 'auto',
-                },
-                '&::-webkit-scrollbar': {
-                  width: '6px',
-                },
-                '&::-webkit-scrollbar-track': {
-                  background: 'transparent',
-                },
-                '&::-webkit-scrollbar-thumb': {
-                  background: 'rgba(255,255,255,0.2)',
-                  borderRadius: '3px',
-                },
-                '&::-webkit-scrollbar-thumb:hover': {
-                  background: 'rgba(255,255,255,0.3)',
-                },
+                height: '100vh',
+                maxHeight: '100vh',
               },
             }}
           >
@@ -172,22 +158,8 @@ const App = () => {
                 bgcolor: '#1a1a1a',
                 borderRight: '1px solid rgba(255,255,255,0.05)',
                 overflow: 'hidden',
-                '&:hover': {
-                  overflowY: 'auto',
-                },
-                '&::-webkit-scrollbar': {
-                  width: '6px',
-                },
-                '&::-webkit-scrollbar-track': {
-                  background: 'transparent',
-                },
-                '&::-webkit-scrollbar-thumb': {
-                  background: 'rgba(255,255,255,0.2)',
-                  borderRadius: '3px',
-                },
-                '&::-webkit-scrollbar-thumb:hover': {
-                  background: 'rgba(255,255,255,0.3)',
-                },
+                height: '100vh',
+                maxHeight: '100vh',
               } 
             }}
           >

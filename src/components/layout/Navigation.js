@@ -143,12 +143,13 @@ const Navigation = ({ isMobileView, setMobileOpen, customTheme, user }) => {
   return (
     <Box sx={{ 
       width: drawerWidth, 
-      minHeight: '100vh',
+      height: '100vh',
       display: 'flex',
       flexDirection: 'column',
+      overflow: 'hidden',
     }}>
       {/* Logo Section */}
-      <Box sx={{ p: 2.5, pt: 3 }}>
+      <Box sx={{ p: 2.5, pt: isMobileView ? 2 : 3, flexShrink: 0 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Box
             sx={{
@@ -179,7 +180,7 @@ const Navigation = ({ isMobileView, setMobileOpen, customTheme, user }) => {
       </Box>
 
       {/* Menu Section */}
-      <Box sx={{ px: 2.5, mb: 1 }}>
+      <Box sx={{ px: 2.5, mb: 1, flexShrink: 0 }}>
         <Typography 
           variant="caption" 
           sx={{ 
@@ -199,6 +200,7 @@ const Navigation = ({ isMobileView, setMobileOpen, customTheme, user }) => {
         px: 1.5,
         flex: 1,
         overflowY: 'auto',
+        minHeight: 0,
         '&::-webkit-scrollbar': {
           width: '4px',
         },
@@ -292,7 +294,7 @@ const Navigation = ({ isMobileView, setMobileOpen, customTheme, user }) => {
       </List>
 
       {/* Bottom Section */}
-      <Box sx={{ p: 2 }}>
+      <Box sx={{ p: 2, flexShrink: 0, pb: isMobileView ? 4 : 2 }}>
         <Divider sx={{ borderColor: 'rgba(255,255,255,0.05)', mb: 2 }} />
 
         {/* User Profile */}
