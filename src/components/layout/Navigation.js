@@ -15,27 +15,14 @@ import LibraryMusicIcon from "@mui/icons-material/LibraryMusic";
 import MusicNoteIcon from "@mui/icons-material/MusicNote";
 import PlaylistAddCheckIcon from "@mui/icons-material/PlaylistAddCheck";
 import QueueMusicIcon from "@mui/icons-material/QueueMusic";
-import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
-
-import { checkSuperAdmin, sidebarConfigRef, auth } from '../../firebase';
+import { sidebarConfigRef } from '../../firebase';
 
 const drawerWidth = 245;
 
 const Navigation = ({ isMobileView, setMobileOpen, customTheme }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [isAdmin, setIsAdmin] = useState(false);
   const [menuItems, setMenuItems] = useState([]);
-
-  useEffect(() => {
-    const checkAdmin = async () => {
-      if (auth.currentUser) {
-        const adminStatus = await checkSuperAdmin(auth.currentUser.uid);
-        setIsAdmin(adminStatus);
-      }
-    };
-    checkAdmin();
-  }, []);
 
   useEffect(() => {
     const unsubscribe = sidebarConfigRef.doc('main').onSnapshot((doc) => {
@@ -157,41 +144,7 @@ const Navigation = ({ isMobileView, setMobileOpen, customTheme }) => {
           </ListItem>
         ))}
 
-        {isAdmin && (
-          <>
-            <Divider sx={{ my: 2, borderColor: 'rgba(255,255,255,0.1)', mx: 1 }} />
-            <ListItem
-              button
-              onClick={() => handleNavigate({ path: '/admin' })}
-              sx={{
-                backgroundColor: location.pathname === '/admin'
-                  ? 'rgba(255,255,255,0.1)'
-                  : "transparent",
-                "&:hover": {
-                  backgroundColor: 'rgba(255,255,255,0.05)',
-                },
-                pl: 2,
-                borderRadius: 2,
-                py: 1,
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <ListItemIcon sx={{ minWidth: 36, color: location.pathname === '/admin' ? '#fff' : '#999' }}>
-                <AdminPanelSettingsIcon />
-              </ListItemIcon>
-              <ListItemText 
-                primary="Admin Dashboard"
-                primaryTypographyProps={{
-                  style: {
-                    fontWeight: location.pathname === '/admin' ? 600 : 400,
-                    fontSize: '0.9rem',
-                    color: location.pathname === '/admin' ? '#fff' : '#ccc'
-                  }
-                }}
-              />
-            </ListItem>
-          </>
-        )}
+
       </List>
     </Box>
   );
