@@ -2,7 +2,7 @@ import React from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from '@mui/material';
 import { Transition } from './TransitionComponents';
 
-const DeleteDialog = ({ open, onCancel, onConfirm, suggestionToDelete }) => (
+const DeleteDialog = ({ open, onCancel, onConfirm, suggestionToDelete, isBulkDelete, selectedCount }) => (
   <Dialog 
     open={open} 
     onClose={onCancel} 
@@ -17,11 +17,14 @@ const DeleteDialog = ({ open, onCancel, onConfirm, suggestionToDelete }) => (
     }}
   >
     <DialogTitle sx={{ color: '#fff', fontWeight: 600 }}>
-      Delete Suggestion
+      {isBulkDelete ? 'Delete Multiple Suggestions' : 'Delete Suggestion'}
     </DialogTitle>
     <DialogContent>
       <DialogContentText sx={{ color: '#999' }}>
-        Are you sure you want to delete the suggestion for "{suggestionToDelete?.title}"?
+        {isBulkDelete 
+          ? `Are you sure you want to delete ${selectedCount} selected suggestion(s)? This action cannot be undone.`
+          : `Are you sure you want to delete the suggestion for "${suggestionToDelete?.title}"?`
+        }
       </DialogContentText>
     </DialogContent>
     <DialogActions sx={{ p: 2, pt: 0 }}>
@@ -46,7 +49,7 @@ const DeleteDialog = ({ open, onCancel, onConfirm, suggestionToDelete }) => (
           '&:hover': { backgroundColor: '#ff5252' }
         }}
       >
-        Delete
+        {isBulkDelete ? `Delete ${selectedCount} Item(s)` : 'Delete'}
       </Button>
     </DialogActions>
   </Dialog>
