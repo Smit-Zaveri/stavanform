@@ -240,7 +240,16 @@ const CollectionForm = ({ collectionName }) => {
   };
 
   return (
-    <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+    <Container 
+      maxWidth={false}
+      sx={{ 
+        mt: 4, 
+        mb: 4,
+        px: { xs: 2, sm: 3, md: 4, lg: 6 },
+        maxWidth: { xs: '100%', sm: '100%', md: '100%', lg: '1400px', xl: '1600px' },
+        mx: 'auto'
+      }}
+    >
       <CollectionFormFields
         formData={formData}
         setFormData={setFormData}
@@ -251,9 +260,9 @@ const CollectionForm = ({ collectionName }) => {
         loading={loading}
       />
 
-      <Paper variant="outlined" sx={{ p: 2, mb: 4 }}>
+      <Paper variant="outlined" sx={{ p: { xs: 2, md: 3 }, mb: 4 }}>
         <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={6} lg={8}>
             <TextField
               label="Search Collections"
               variant="outlined"
@@ -276,7 +285,7 @@ const CollectionForm = ({ collectionName }) => {
               }}
             />
           </Grid>
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={3} lg={2}>
             <Button
               variant="outlined"
               startIcon={<FileDownloadIcon />}
@@ -284,10 +293,10 @@ const CollectionForm = ({ collectionName }) => {
               fullWidth
               sx={{ py: 1.5 }}
             >
-              Export to CSV
+              Export CSV
             </Button>
           </Grid>
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={3} lg={2}>
             <Button
               variant="outlined"
               startIcon={<FileUploadIcon />}
@@ -295,7 +304,7 @@ const CollectionForm = ({ collectionName }) => {
               fullWidth
               sx={{ py: 1.5 }}
             >
-              Import from CSV
+              Import CSV
             </Button>
             <input
               type="file"
@@ -310,7 +319,7 @@ const CollectionForm = ({ collectionName }) => {
             />
           </Grid>
           {selectedIds.length > 0 && (
-            <Grid item xs={12}>
+            <Grid item xs={12} md={6} lg={4}>
               <Button
                 variant="contained"
                 color="error"

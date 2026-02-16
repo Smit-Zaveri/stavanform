@@ -276,13 +276,13 @@ const CollectionFormFields = ({
 
   return (
     <Card variant="outlined" sx={{ mb: 4 }}>
-      <CardContent>
+      <CardContent sx={{ p: { xs: 2, md: 3 } }}>
         <Typography variant="h5" gutterBottom>
           {editingId ? "Edit Collection" : "Create New Collection"}
         </Typography>
         <Box component="form" onSubmit={onSubmit} noValidate>
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={6} lg={4}>
               <TextField
                 label="Name"
                 variant="outlined"
@@ -295,7 +295,7 @@ const CollectionFormFields = ({
                 helperText={error && " "}
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} md={6} lg={4}>
               <TextField
                 label="Order Number"
                 variant="outlined"
@@ -307,6 +307,19 @@ const CollectionFormFields = ({
                     ...formData,
                     numbering: Number(e.target.value),
                   })
+                }
+                error={!!error}
+                helperText={error && " "}
+              />
+            </Grid>
+            <Grid item xs={12} md={12} lg={4}>
+              <TextField
+                label="Picture URL (Optional)"
+                variant="outlined"
+                fullWidth
+                value={formData.picture}
+                onChange={(e) =>
+                  setFormData({ ...formData, picture: e.target.value })
                 }
                 error={!!error}
                 helperText={error && " "}
@@ -564,20 +577,6 @@ const CollectionFormFields = ({
                  </CardContent>
                </Card>
              </Grid>
-
-            <Grid item xs={12}>
-              <TextField
-                label="Picture URL (Optional)"
-                variant="outlined"
-                fullWidth
-                value={formData.picture}
-                onChange={(e) =>
-                  setFormData({ ...formData, picture: e.target.value })
-                }
-                error={!!error}
-                helperText={error && " "}
-              />
-            </Grid>
             
             {/* Picture Preview */}
             {formData.picture && (
@@ -597,31 +596,31 @@ const CollectionFormFields = ({
               </Grid>
             )}
             
-            <Grid item xs={12} md={editingId ? 6 : 12}>
-              <Button
-                variant="contained"
-                color="primary"
-                type="submit"
-                fullWidth
-                disabled={loading}
-                sx={{ py: 1.5 }}
-              >
-                {loading ? "Loading..." : editingId ? "Update Collection" : "Submit"}
-              </Button>
-            </Grid>
-            {editingId && (
-              <Grid item xs={12} md={6}>
+            <Grid item xs={12}>
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, mt: 1 }}>
+                {editingId && (
+                  <Button
+                    variant="outlined"
+                    color="secondary"
+                    onClick={onCancel}
+                    size="small"
+                    sx={{ px: 3 }}
+                  >
+                    Cancel
+                  </Button>
+                )}
                 <Button
-                  variant="outlined"
-                  color="secondary"
-                  onClick={onCancel}
-                  fullWidth
-                  sx={{ py: 1.5 }}
+                  variant="contained"
+                  color="primary"
+                  type="submit"
+                  size="small"
+                  disabled={loading}
+                  sx={{ px: 3 }}
                 >
-                  Cancel Edit
+                  {loading ? "Loading..." : editingId ? "Update" : "Submit"}
                 </Button>
-              </Grid>
-            )}
+              </Box>
+            </Grid>
           </Grid>
         </Box>
       </CardContent>
