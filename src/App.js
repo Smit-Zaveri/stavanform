@@ -26,6 +26,7 @@ import Profile from "./components/Profile";
 import Help from "./components/Help";
 
 import MainContent from "./components/SuggestedSongs/MainContent";
+import Dashboard from "./components/Dashboard/Dashboard";
 
 const drawerWidth = 260;
 
@@ -182,7 +183,8 @@ const App = () => {
         >
           {!isPublicRoute && <Toolbar sx={{ minHeight: '80px' }} />}
           <Routes>
-            <Route path="/" element={user ? <Navigate to="/list-song/lyrics" replace /> : <Login />} />
+            <Route path="/" element={user ? <Navigate to="/dashboard" replace /> : <Login />} />
+            <Route path="/dashboard" element={user ? <Dashboard /> : <Login />} />
             <Route path="/list-song/:collectionName" element={user ? <SongList /> : <Login />} />
             <Route path="/suggestedsongs" element={user ? <MainContent /> : <Login />} />
             <Route path="/login" element={<Login />} />
