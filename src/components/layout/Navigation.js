@@ -40,7 +40,26 @@ const Navigation = ({ isMobileView, setMobileOpen, customTheme, user }) => {
           if (typeof b.order !== 'number') return -1;
           return a.order - b.order;
         });
-        setMenuItems(sortedItems);
+        // Add dashboard item at the beginning
+        const dashboardItem = {
+          id: 'dashboard',
+          name: 'Dashboard',
+          icon: 'home',
+          path: '/dashboard',
+          type: 'dashboard',
+          order: 0
+        };
+        setMenuItems([dashboardItem, ...sortedItems]);
+      } else {
+        // If no items in Firestore, just show dashboard
+        setMenuItems([{
+          id: 'dashboard',
+          name: 'Dashboard',
+          icon: 'home',
+          path: '/dashboard',
+          type: 'dashboard',
+          order: 0
+        }]);
       }
     }, (error) => {
       console.error("Error listening to menu items:", error);
@@ -114,6 +133,9 @@ const Navigation = ({ isMobileView, setMobileOpen, customTheme, user }) => {
       case 'suggestedSongs':
         path = '/suggestedsongs';
         break;
+      case 'dashboard':
+        path = '/dashboard';
+        break;
       default:
         break;
     }
@@ -135,7 +157,10 @@ const Navigation = ({ isMobileView, setMobileOpen, customTheme, user }) => {
 
   const isActive = (item) => {
     if (item.type === 'listSong') {
-      return location.pathname.includes(`/list-song/${item.collection || 'lyrics'}`);
+      return location.pathname.startsWith('/list-song/');
+    }
+    if (item.type === 'dashboard') {
+      return location.pathname === '/dashboard';
     }
     return location.pathname === item.path;
   };
