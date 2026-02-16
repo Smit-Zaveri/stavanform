@@ -5,9 +5,6 @@ const CollectionsTabs = ({ collections, selectedCollection, onSelectCollection, 
   // Calculate total count for "All" tab
   const totalCount = Object.values(groupedSuggestions).flat().length;
   
-  // Create tabs array with "All" first
-  const allTabs = ['all', ...collections];
-  
   return (
     <Box sx={{ 
       borderBottom: '1px solid rgba(255,255,255,0.1)',

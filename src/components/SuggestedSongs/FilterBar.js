@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, TextField, Button, ToggleButton, ToggleButtonGroup, Chip, MenuItem, Select, FormControl, InputLabel } from '@mui/material';
+import { Box, TextField, Button, ToggleButton, ToggleButtonGroup, Chip, MenuItem, Select, FormControl } from '@mui/material';
 import {
   Search,
   Close,

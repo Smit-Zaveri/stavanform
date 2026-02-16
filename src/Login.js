@@ -7,7 +7,7 @@ import {
   InputAdornment,
   IconButton,
 } from "@mui/material";
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from 'react-router-dom';
 import { auth } from "./firebase";
 import Visibility from '@mui/icons-material/Visibility';
@@ -19,7 +19,23 @@ const Login = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [mousePosition, setMousePosition] = useState({ x: 50, y: 50 });
+  const containerRef = useRef(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 100;
+        const y = ((e.clientY - rect.top) / rect.height) * 100;
+        setMousePosition({ x, y });
+      }
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
 
   const handleLogin = async () => {
     setLoading(true);
@@ -42,17 +58,64 @@ const Login = () => {
   };
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        height: "100vh",
-        width: "100%",
-        backgroundColor: '#1a1a1a',
-        overflow: 'hidden',
-      }}
-    >
+    <>
+      <style>{`
+        @keyframes autofill {
+          to {
+            background: #252525;
+            color: #fff;
+          }
+        }
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        input:-webkit-autofill:focus,
+        input:-webkit-autofill:active {
+          -webkit-box-shadow: 0 0 0 1000px #252525 inset !important;
+          -webkit-text-fill-color: #fff !important;
+          box-shadow: 0 0 0 1000px #252525 inset !important;
+          caret-color: #fff !important;
+          border-radius: 8px !important;
+          transition: background-color 5000s ease-in-out 0s;
+        }
+      `}</style>
+      <Box
+        ref={containerRef}
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+          width: "100%",
+          backgroundColor: '#0a0a0a',
+          overflow: 'hidden',
+          position: 'relative',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundImage: `
+              linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px)
+            `,
+            backgroundSize: '50px 50px',
+            pointerEvents: 'none',
+          },
+          '&::after': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: `radial-gradient(circle at ${mousePosition.x}% ${mousePosition.y}%, rgba(99, 102, 241, 0.15) 0%, rgba(99, 102, 241, 0.08) 20%, transparent 50%)`,
+            pointerEvents: 'none',
+            transition: 'background 0.1s ease-out',
+          },
+        }}
+      >
       <Fade in timeout={500}>
         <Box 
           sx={{ 
@@ -122,6 +185,20 @@ const Login = () => {
                   color: '#666',
                   opacity: 1,
                 },
+                '&:-webkit-autofill': {
+                  WebkitBoxShadow: '0 0 0 1000px #252525 inset',
+                  WebkitTextFillColor: '#fff',
+                  caretColor: '#fff',
+                  borderRadius: '8px',
+                },
+                '&:-webkit-autofill:hover': {
+                  WebkitBoxShadow: '0 0 0 1000px #252525 inset',
+                  WebkitTextFillColor: '#fff',
+                },
+                '&:-webkit-autofill:focus': {
+                  WebkitBoxShadow: '0 0 0 1000px #252525 inset',
+                  WebkitTextFillColor: '#fff',
+                },
               },
             }}
           />
@@ -169,6 +246,20 @@ const Login = () => {
                 '&::placeholder': {
                   color: '#666',
                   opacity: 1,
+                },
+                '&:-webkit-autofill': {
+                  WebkitBoxShadow: '0 0 0 1000px #252525 inset',
+                  WebkitTextFillColor: '#fff',
+                  caretColor: '#fff',
+                  borderRadius: '8px',
+                },
+                '&:-webkit-autofill:hover': {
+                  WebkitBoxShadow: '0 0 0 1000px #252525 inset',
+                  WebkitTextFillColor: '#fff',
+                },
+                '&:-webkit-autofill:focus': {
+                  WebkitBoxShadow: '0 0 0 1000px #252525 inset',
+                  WebkitTextFillColor: '#fff',
                 },
               },
             }}
@@ -222,6 +313,7 @@ const Login = () => {
         </Box>
       </Fade>
     </Box>
+    </>
   );
 };
 
