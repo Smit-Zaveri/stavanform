@@ -21,10 +21,14 @@ import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import HelpOutlineOutlinedIcon from "@mui/icons-material/HelpOutlineOutlined";
 import MusicNoteIcon from "@mui/icons-material/MusicNote";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
+import EventOutlinedIcon from "@mui/icons-material/EventOutlined";
 import { sidebarConfigRef } from '../../firebase';
 import { auth } from '../../firebase';
 
 const drawerWidth = 260;
+
+// Built-in page for the Jain Dhun app's calendar occasions (not part of sidebarConfig).
+const OCCASIONS_ITEM = { id: 'occasions', name: 'Occasions', icon: 'event', path: '/occasions', type: 'occasions', order: 0 };
 
 const Navigation = ({ isMobileView, setMobileOpen, customTheme, user }) => {
   const navigate = useNavigate();
@@ -49,7 +53,7 @@ const Navigation = ({ isMobileView, setMobileOpen, customTheme, user }) => {
           type: 'dashboard',
           order: 0
         };
-        setMenuItems([dashboardItem, ...sortedItems]);
+        setMenuItems([dashboardItem, OCCASIONS_ITEM, ...sortedItems]);
       } else {
         // If no items in Firestore, just show dashboard
         setMenuItems([{
@@ -59,7 +63,7 @@ const Navigation = ({ isMobileView, setMobileOpen, customTheme, user }) => {
           path: '/dashboard',
           type: 'dashboard',
           order: 0
-        }]);
+        }, OCCASIONS_ITEM]);
       }
     }, (error) => {
       console.error("Error listening to menu items:", error);
@@ -92,6 +96,8 @@ const Navigation = ({ isMobileView, setMobileOpen, customTheme, user }) => {
         switch (iconName) {
           case 'home':
             return <HomeOutlinedIcon sx={iconStyle} />;
+          case 'event':
+            return <EventOutlinedIcon sx={iconStyle} />;
           case 'activity':
             return <BarChartOutlinedIcon sx={iconStyle} />;
           case 'task':

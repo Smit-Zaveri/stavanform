@@ -27,6 +27,7 @@ import Help from "./components/Help";
 
 import MainContent from "./components/SuggestedSongs/MainContent";
 import Dashboard from "./components/Dashboard/Dashboard";
+import OccasionsPage from "./components/Occasions/OccasionsPage";
 
 const drawerWidth = 260;
 
@@ -190,6 +191,7 @@ const App = () => {
             <Route path="/login" element={<Login />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/profile" element={user ? <Profile /> : <Login />} />
+            <Route path="/occasions" element={user ? <OccasionsPage /> : <Login />} />
             <Route path="/:path" element={user ? <CollectionForm collectionName={window.location.pathname.substring(1)} /> : <Login />} />
 
             <Route path="/help" element={user ? <Help /> : <Login />} />
